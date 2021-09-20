@@ -53,35 +53,35 @@ pub struct JpcParams {
 
 #[derive(Serialize, Deserialize)]
 pub struct HttpParams {
-  headers: HashMap<String, Vec<String>>,
-  path: String,
-  query: HashMap<String, String>,
-  verb: String,
+  pub headers: HashMap<String, Vec<String>>,
+  pub path: String,
+  pub query: HashMap<String, String>,
+  pub verb: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct QInfo {
-  hash: String,
-  id: String,
-  qlib_id: String,
+  pub hash: String,
+  pub id: String,
+  pub qlib_id: String,
   #[serde(rename = "type")]
-  qtype: String,
-  write_token: String,
+  pub qtype: String,
+  pub write_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Request {
-  id: String,
-  jpc: String,
-  method: String,
-  params: JpcParams,
-  QInfo: QInfo,
+  pub id: String,
+  pub jpc: String,
+  pub method: String,
+  pub params: JpcParams,
+  pub QInfo: QInfo,
 }
 
 pub struct BitcodeContext<'a> {
-  request: &'a Request,
-  openStreams: Vec<String>,
-  hc: HostCallType,
+  pub request: &'a Request,
+  pub openStreams: Vec<String>,
+  pub hc: HostCallType,
 }
 
 type HostCallType = fn(binding: &str, ns: &str, op: &str, msg: &[u8]) -> CallResult;
