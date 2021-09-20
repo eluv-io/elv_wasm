@@ -1,5 +1,5 @@
 [package]
-name = "elv_wasm"
+name = "elvwasm"
 version = "0.1.0"
 edition = "2021"
 
