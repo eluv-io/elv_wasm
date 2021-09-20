@@ -47,12 +47,12 @@ lazy_static! {
 */
 
 #[derive(Serialize, Deserialize)]
-struct JpcParams {
+pub struct JpcParams {
   http: HttpParams
 }
 
 #[derive(Serialize, Deserialize)]
-struct HttpParams {
+pub struct HttpParams {
   headers: HashMap<String, Vec<String>>,
   path: String,
   query: HashMap<String, String>,
@@ -60,7 +60,7 @@ struct HttpParams {
 }
 
 #[derive(Serialize, Deserialize)]
-struct QInfo {
+pub struct QInfo {
   hash: String,
   id: String,
   qlib_id: String,
@@ -70,7 +70,7 @@ struct QInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Request {
+pub struct Request {
   id: String,
   jpc: String,
   method: String,
@@ -78,7 +78,7 @@ struct Request {
   QInfo: QInfo,
 }
 
-struct BitcodeContext<'a> {
+pub struct BitcodeContext<'a> {
   request: &'a Request,
   openStreams: Vec<String>,
   hc: HostCallType,
