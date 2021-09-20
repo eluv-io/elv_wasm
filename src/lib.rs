@@ -48,7 +48,7 @@ lazy_static! {
 
 #[derive(Serialize, Deserialize)]
 pub struct JpcParams {
-  http: HttpParams
+  pub http: HttpParams
 }
 
 #[derive(Serialize, Deserialize)]
@@ -106,11 +106,11 @@ impl<'a> BitcodeContext<'a> {
 
 type HandlerFunction = fn(&BitcodeContext) -> CallResult;
 
-fn register_handler(name: &str, h: HandlerFunction) {
+pub fn register_handler(name: &str, h: HandlerFunction) {
   CALLMAP.lock().unwrap().insert(name.to_string(), h);
 }
 
-fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
+pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   guest::console_log(&"Hello");
   let input_string = str::from_utf8(_msg)?;
   guest::console_log(&"Hello Again");
