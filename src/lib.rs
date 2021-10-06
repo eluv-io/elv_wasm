@@ -3,6 +3,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 extern crate wapc_guest as guest;
 
 use std::error::Error;
@@ -17,7 +18,7 @@ use lazy_static::lazy_static;
 use std::sync::Mutex;
 
 lazy_static! {
-  static ref CALLMAP: Mutex<HashMap<String, MethodHandlerType>> = Mutex::new(HashMap::new());
+  static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
 /*
@@ -101,7 +102,7 @@ pub struct Request {
   pub jpc: String,
   pub method: String,
   pub params: JpcParams,
-  #[serde(rename = "QInfo")]
+  #[serde(rename = "qinfo")]
   pub q_info: QInfo,
 }
 
@@ -109,6 +110,7 @@ pub struct Request {
 #[derive(Serialize, Deserialize)]
 pub struct Response {
   pub jpc: String,
+  #[serde(rename = "params")]
   pub params : serde_json::Value,
   pub id:String,
   pub module:String,
@@ -122,23 +124,22 @@ pub struct BitcodeContext<'a> {
   pub return_buffer: Vec<u8>,
 }
 
-type MethodHandlerType = fn(bcc: &BitcodeContext) -> CallResult;
-type HandlerFunction = fn(&BitcodeContext) -> CallResult;
+//type MethodHandlerType = fn(bcc: & mut BitcodeContext) -> CallResult;
+type HandlerFunction = fn(bcc: & mut BitcodeContext) -> CallResult;
+// impl<'b> BitcodeContext<'b> {
+//   fn new_stream_internal(self) -> String{
+//     match self.call_function("NewStream", serde_json::from_str(&"{}").unwrap(), "ctx"){
+//       Ok(f) => {
+//         let st: HashMap<&str, serde_json::Value> = serde_json::from_slice(&f).unwrap_or_default();
+//         return st[&"stream_id"].to_string();
+//       }
+//       Err(e) => {
+//         return e.to_string();
+//       }
+//     }
 
-impl<'b> BitcodeContext<'b> {
-  fn new_stream_internal(self) -> String{
-    match self.call_function("NewStream", serde_json::from_str(&"{}").unwrap(), "ctx"){
-      Ok(f) => {
-        let st: HashMap<&str, serde_json::Value> = serde_json::from_slice(&f).unwrap_or_default();
-        return st[&"stream_id"].to_string();
-      }
-      Err(e) => {
-        return e.to_string();
-      }
-    }
-
-  }
-}
+//   }
+// }
 
 impl<'a> BitcodeContext<'a> {
   fn new(request: &'a Request) -> BitcodeContext<'a> {
@@ -149,13 +150,32 @@ impl<'a> BitcodeContext<'a> {
     }
   }
 
-  pub fn write_stream(&'a mut self, stream:String,  src:&'a [u8], len: i32) -> CallResult {
+  pub fn write_stream(id:String, stream:String,  src:&'a [u8], len: usize) -> CallResult {
     let mut actual_len = src.len();
-    if len > 0 {
-      actual_len = len as usize
+    if len != usize::MAX {
+      actual_len = len
     }
     let v = serde_json::json!(src[..actual_len]);
-    return guest::host_call(&self.request.id, &stream, &"Write".to_string(), &serde_json::to_vec(&v).unwrap());
+    return guest::host_call(&id, &stream, &"Write".to_string(), &serde_json::to_vec(&v).unwrap());
+  }
+
+  pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
+    return guest::host_call(&id, &stream, &"Write".to_string(), src);
+  }
+
+  pub fn callback(&'a self, status:usize, content_type:&str, size:usize) -> CallResult{
+    let v = json!(
+      {"http" : {
+        "status": status,
+        "headers": {
+          "Content-Type": content_type,
+          "Content-Length": size,
+        }
+        }
+      }
+    );
+    let method  = "Callback";
+    return self.call_function(method, v, "ctx");
   }
 
   pub fn read_stream(&'a mut self, stream_to_read:String, sz:usize) -> CallResult {
@@ -176,12 +196,38 @@ impl<'a> BitcodeContext<'a> {
 
   }
 
-
-  pub fn new_stream(&'a mut self) -> String{
-    let sid = self.clone().new_stream_internal();
-    self.add_stream_to_close(&sid);
-    return sid.to_string();
+  pub fn make_success(&'a self, msg:&str, idStr:&str) -> CallResult {
+    let js_ret = json!({"jpc":"1.0", "id": idStr, "result" : msg});
+    let v = serde_json::to_vec(&js_ret);
+    return Ok(v.unwrap());
   }
+
+  pub fn make_success_bytes(&'a self, msg:&[u8], idStr:&str) -> CallResult {
+    let res:serde_json::Value = serde_json::from_slice(msg).unwrap();
+    let js_ret = json!({"jpc":"1.0", "id": idStr, "result" : res});
+    let v = serde_json::to_vec(&js_ret);
+    return Ok(v.unwrap());
+  }
+
+  pub fn sqmd_get_json(&'a self, s:&'a str) -> CallResult {
+    //let spath = format!("{\"{}\" : \"{}\"}", "path", s);
+    let sqmd_get = json!({"path": s});
+    let method = "SQMDGet";
+    return self.call_function(&method, sqmd_get, &"core");
+  }
+
+  pub fn proxy_http(&'a self, v:serde_json::Value) -> CallResult {
+    let method = "ProxyHttp";
+    let proxy_result = self.call_function(&method, v, &"ext").unwrap();
+    let id = self.request.id.clone();
+    return self.make_success_bytes(&proxy_result, &id);
+  }
+
+  // pub fn new_stream(&'a mut self) -> String{
+  //   let sid = self.clone().new_stream_internal();
+  //   self.add_stream_to_close(&sid);
+  //   return sid.to_string();
+  // }
 
   fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
     return guest::host_call(self.request.id.as_str(),ns,op,msg);
@@ -193,10 +239,17 @@ impl<'a> BitcodeContext<'a> {
       jpc:"1.0".to_string(),
       id:self.request.id.clone(),
       module:module.to_string(),
-      method : self.request.method.clone(),
+      method : fn_name.to_string(),
       params:params,
     };
-    return guest::host_call(self.request.id.as_str(),module, fn_name, &serde_json::to_vec(response).unwrap());
+    let call_val = serde_json::to_vec(response).unwrap();
+    let call_str = str::from_utf8(&call_val).unwrap();
+    let call_str2 = serde_json::to_string(response).unwrap();
+
+    console_log("CALL STRING");
+    console_log(call_str);
+    console_log(&call_str2);
+    return guest::host_call(self.request.id.as_str(),module, fn_name, &call_val);
   }
 }
 
@@ -211,17 +264,19 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   guest::console_log(&"Hello");
   let input_string = str::from_utf8(_msg)?;
   guest::console_log(&"Hello Again");
+  guest::console_log(&input_string);
+
   let json_params: Request = serde_json::from_str(input_string)?;
   guest::console_log(&"Hello Again");
 
-  let bcc = BitcodeContext::new(&json_params);
+  let mut bcc = BitcodeContext::new(&json_params);
   let j = serde_json::to_string(&json_params)?;
   guest::console_log(&"Hello Again");
   guest::console_log(&j);
   let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
   match CALLMAP.lock().unwrap().get(split_path[1]) {
     Some(f) => {
-      return f(&bcc);
+      return f(& mut bcc);
     }
     None => {return Err(Box::new(ElvError::new("No valid path provided")));}
   };
