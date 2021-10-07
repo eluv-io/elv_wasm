@@ -15,6 +15,7 @@ serde = "*"
 serde_json = "*"
 serde_derive = "*"
 lazy_static = "1.4.0"
+scopeguard = "1.1.0"
 
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

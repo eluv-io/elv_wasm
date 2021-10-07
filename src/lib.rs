@@ -5,6 +5,7 @@ extern crate serde_json;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 extern crate wapc_guest as guest;
+extern crate scopeguard;
 
 use std::error::Error;
 use std::fmt;
@@ -120,32 +121,15 @@ pub struct Response {
 #[derive(Debug, Clone)]
 pub struct BitcodeContext<'a> {
   pub request: &'a Request,
-  pub open_streams: Vec<String>,
   pub return_buffer: Vec<u8>,
 }
 
-//type MethodHandlerType = fn(bcc: & mut BitcodeContext) -> CallResult;
 type HandlerFunction = fn(bcc: & mut BitcodeContext) -> CallResult;
-// impl<'b> BitcodeContext<'b> {
-//   fn new_stream_internal(self) -> String{
-//     match self.call_function("NewStream", serde_json::from_str(&"{}").unwrap(), "ctx"){
-//       Ok(f) => {
-//         let st: HashMap<&str, serde_json::Value> = serde_json::from_slice(&f).unwrap_or_default();
-//         return st[&"stream_id"].to_string();
-//       }
-//       Err(e) => {
-//         return e.to_string();
-//       }
-//     }
-
-//   }
-// }
 
 impl<'a> BitcodeContext<'a> {
   fn new(request: &'a Request) -> BitcodeContext<'a> {
     BitcodeContext {
       request: request,
-      open_streams: vec![],
       return_buffer : vec![],
     }
   }
@@ -191,26 +175,20 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
   }
 
-  fn add_stream_to_close(&'a mut self, s:&str){
-    self.open_streams.push(s.to_string());
-
-  }
-
-  pub fn make_success(&'a self, msg:&str, idStr:&str) -> CallResult {
-    let js_ret = json!({"jpc":"1.0", "id": idStr, "result" : msg});
+  pub fn make_success(&'a self, msg:&str, id:&str) -> CallResult {
+    let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
     let v = serde_json::to_vec(&js_ret);
     return Ok(v.unwrap());
   }
 
-  pub fn make_success_bytes(&'a self, msg:&[u8], idStr:&str) -> CallResult {
+  pub fn make_success_bytes(&'a self, msg:&[u8], id:&str) -> CallResult {
     let res:serde_json::Value = serde_json::from_slice(msg).unwrap();
-    let js_ret = json!({"jpc":"1.0", "id": idStr, "result" : res});
+    let js_ret = json!({"jpc":"1.0", "id": id, "result" : res});
     let v = serde_json::to_vec(&js_ret);
     return Ok(v.unwrap());
   }
 
   pub fn sqmd_get_json(&'a self, s:&'a str) -> CallResult {
-    //let spath = format!("{\"{}\" : \"{}\"}", "path", s);
     let sqmd_get = json!({"path": s});
     let method = "SQMDGet";
     return self.call_function(&method, sqmd_get, &"core");
@@ -223,18 +201,11 @@ impl<'a> BitcodeContext<'a> {
     return self.make_success_bytes(&proxy_result, &id);
   }
 
-  // pub fn new_stream(&'a mut self) -> String{
-  //   let sid = self.clone().new_stream_internal();
-  //   self.add_stream_to_close(&sid);
-  //   return sid.to_string();
-  // }
-
   fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
     return guest::host_call(self.request.id.as_str(),ns,op,msg);
   }
 
   pub fn call_function(&'a self, fn_name:&str , params:serde_json::Value, module:&str) -> CallResult {
-    //`{ "jpc" : "1.0", "params" : __PARAMS__, "id" : __ID__, "module" : __MODULE__, "method" : __METHOD__}`;
     let response = &Response{
       jpc:"1.0".to_string(),
       id:self.request.id.clone(),
