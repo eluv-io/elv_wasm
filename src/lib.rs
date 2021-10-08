@@ -75,6 +75,12 @@ impl Error for ElvError {
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct FileStream {
+  pub stream_id:String,
+  pub file_name:String,
+}
+
+#[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct JpcParams {
   pub http: HttpParams
 }
@@ -171,7 +177,7 @@ impl<'a> BitcodeContext<'a> {
     return str::from_utf8(&self.call("TempDir", &"{}", &"ctx".as_bytes()).unwrap()).unwrap().to_string();
   }
 
-  pub fn close_stream(&'a mut self, sid : String) -> CallResult{
+  pub fn close_stream(&'a self, sid : String) -> CallResult{
     return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
   }
 
@@ -179,6 +185,10 @@ impl<'a> BitcodeContext<'a> {
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
     let v = serde_json::to_vec(&js_ret);
     return Ok(v.unwrap());
+  }
+
+  pub fn make_error(&'a self, msg:&str, id:&str) -> CallResult {
+    return Err(Box::new(ElvError::new(&format!("msg={} id={}", msg, id))));
   }
 
   pub fn make_success_bytes(&'a self, msg:&[u8], id:&str) -> CallResult {
@@ -222,7 +232,61 @@ impl<'a> BitcodeContext<'a> {
     console_log(&call_str2);
     return guest::host_call(self.request.id.as_str(),module, fn_name, &call_val);
   }
+    // NewStream creates a new stream and returns its ID.
+    pub fn new_stream(&'a self) -> String {
+      let v = json!({});
+      let strm = self.call_function("NewStream", v, "ctx").unwrap_or_default();
+      let strm_json:serde_json::Value = serde_json::from_slice(&strm).unwrap_or_default();
+      let sid:String = strm_json["stream_id"].to_string();
+      return sid;
+    }
+
+    pub fn new_file_stream(&'a self) -> FileStream{
+      let v = json!({});
+      return serde_json::from_slice(&self.call_function("NewFileStream", v, "ctx").unwrap()).unwrap();
+    }
+
+    pub fn ffmpeg_run(&'a self, cmdline:Vec<&str>) -> CallResult {
+      let params = json!({
+        "stream_params" : cmdline
+      });
+      return self.call_function( "FFMPEGRun", params, "ext");
+    }
+
+
+    pub fn q_download_file(&'a mut self, path:&str, hash_or_token:&str) -> CallResult{
+      console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
+      let sid = self.new_stream();
+      if sid == ""{
+        return self.make_error("Unable to find stream_id", "");
+      }
+      let j = json!({
+        "stream_id" : sid,
+        "path" : path,
+        "hash_or_token": hash_or_token,
+      });
+
+      let ret = self.call_function("QFileToStream", j, "core");
+      let v:serde_json::Value;
+      match ret{
+        Err(e) => return Err(e),
+        Ok(e) => v = serde_json::from_slice(&e).unwrap_or_default()
+      }
+
+      let jtemp = v.to_string();
+      console_log(&format!("json={}", jtemp));
+      let written = v["written"].as_u64().unwrap();
+
+      if written != 0 {
+        return self.read_stream(sid, written as usize);
+      }
+      return self.make_error("failed to write data", "");
+
+    }
+
 }
+
+
 
 
 #[no_mangle]
