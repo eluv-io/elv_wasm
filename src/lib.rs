@@ -49,6 +49,36 @@ lazy_static! {
     "write_token": "tqw__K2gHQyYdeMXKq2hTfZmNwPaiaXoEmJYiY6NeyvenGK8pJ6htkG2ggbwe8GjKUu3fC1ZANT3v"
   }
 }
+
+{
+  "id": "4a051bc6-35d9-4ee9-9230-9c787e5e2061",
+  "jpc": "1.0",
+    "http": {
+      "verb": "GET",
+      "path": "/image/default/assets/birds.jpg",
+      "fragment": "",
+      "query": {
+        "height": [
+          "666"
+        ]
+      },
+      "headers": null,
+      "host": "http://localhost:8008/",
+      "content_length": 0,
+      "client_ip": "",
+      "self_url": "http://localhost:8008/",
+      "proto": ""
+    }
+  },
+  "qinfo": {
+    "id": "iq__Hip8Cg3wuni31yzWsRZYzJ",
+    "hash": "hq__3Nq84nb7koGj8wf1xqJVg1WQBkz5nFgGoZt46Hc8gH8yyz3WsRrQ5gLJH9VMm8pDPJu8i",
+    "write_token": "tqw__K2jJSBHiHqASXaqy4d3YiyBnAdfTLFR9dJUqtSyS8CiXC9FsBprRfMPFKadrNwXPXvjjf1AK",
+    "type": "",
+    "qlib_id": "ilibKjDXjtfLWt3msxUZQA2JRm"
+  }
+}
+
 */
 
 #[derive(Debug)]
@@ -81,16 +111,34 @@ pub struct FileStream {
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct FileStreamSize {
+  pub file_size:usize,
+}
+#[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct JpcParams {
   pub http: HttpParams
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct HttpParams {
+  #[serde(default)]
   pub headers: HashMap<String, Vec<String>>,
   pub path: String,
-  pub query: HashMap<String, String>,
+  #[serde(default)]
+  pub query: HashMap<String, Vec<String>>,
   pub verb: String,
+  #[serde(default)]
+  pub fragment: String,
+  #[serde(default)]
+  pub content_length : String,
+  #[serde(default)]
+  pub client_ip : String,
+  #[serde(default)]
+  pub self_url : String,
+  #[serde(default)]
+  pub proto : String,
+  #[serde(default)]
+  pub host : String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -183,8 +231,16 @@ impl<'a> BitcodeContext<'a> {
 
   pub fn make_success(&'a self, msg:&str, id:&str) -> CallResult {
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
-    let v = serde_json::to_vec(&js_ret);
-    return Ok(v.unwrap());
+    let v = serde_json::to_vec(&js_ret).unwrap();
+    console_log(&format!("returning : {}", std::str::from_utf8(&v).unwrap()));
+    return Ok(v);
+  }
+
+  pub fn make_success_json(&'a self, msg:&serde_json::Value, id:&str) -> CallResult {
+    let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
+    let v = serde_json::to_vec(&js_ret).unwrap();
+    console_log(&format!("returning : {}", std::str::from_utf8(&v).unwrap()));
+    return Ok(v);
   }
 
   pub fn make_error(&'a self, msg:&str, id:&str) -> CallResult {
@@ -284,6 +340,33 @@ impl<'a> BitcodeContext<'a> {
 
     }
 
+    pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
+      let param = json!({ "stream_id" : stream, "path" : filename});
+      return self.call_function("FileToStream", param, "core");
+    }
+
+    pub fn file_stream_size(&'a self,filename:&str) -> usize {
+      console_log("file_stream_size");
+      let ret:Vec<u8> = match self.call_function("FileStreamSize", json!({"file_name" : filename}), "ctx"){
+         Ok(m) =>{ m }
+         Err(_e) => {
+           let j:FileStreamSize = serde_json::from_value(json!({"file_size" : 0})).unwrap();
+           return j.file_size;
+          }
+      };
+
+      match serde_json::from_slice::<FileStreamSize>(&ret){
+        Ok(msize) => {
+          console_log(&format!("FileStream returned={}", msize.file_size));
+          return msize.file_size;
+        }
+        Err(_e) => {
+          console_log("Err from FileStreamSize");
+          return 0;
+        }
+      };
+    }
+
 }
 
 
@@ -309,11 +392,12 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   guest::console_log(&"Hello Again");
   guest::console_log(&j);
   let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
+  console_log(&format!("splitpath={:?}", split_path));
   match CALLMAP.lock().unwrap().get(split_path[1]) {
     Some(f) => {
       return f(& mut bcc);
     }
-    None => {return Err(Box::new(ElvError::new("No valid path provided")));}
+    None => {console_log("HERE!!!"); return Err(Box::new(ElvError::new("No valid path provided")));}
   };
 }
 
