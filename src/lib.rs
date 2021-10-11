@@ -247,6 +247,14 @@ impl<'a> BitcodeContext<'a> {
     return Err(Box::new(ElvError::new(&format!("msg={} id={}", msg, id))));
   }
 
+  pub fn make_utf8_error(&'a self, err:std::string::FromUtf8Error) -> CallResult {
+    return Err(Box::new(ElvError::new(&format!("error={}", err))));
+  }
+
+  pub fn make_json_error(&'a self, err:serde_json::Error) -> CallResult {
+    return Err(Box::new(ElvError::new(&format!("error={}", err))));
+  }
+
   pub fn make_success_bytes(&'a self, msg:&[u8], id:&str) -> CallResult {
     let res:serde_json::Value = serde_json::from_slice(msg).unwrap();
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : res});
