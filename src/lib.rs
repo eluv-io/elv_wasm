@@ -24,14 +24,8 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
-
-trait BaseError<T>{
-  fn fmt(f: &mut std::fmt::Formatter) -> std::fmt::Result;
-}
-
 macro_rules! define_error {
-  // `()` indicates that the macro takes no argument.
-  ($class_name:ident,$global_static:ident) => {
+  ($class_name:ident,$global_static:ident,$message:expr) => {
     #[derive(Copy, Clone, Serialize)]
     pub struct $class_name {
     }
@@ -45,34 +39,22 @@ macro_rules! define_error {
         return $global_static;
       }
     }
+    pub static $global_static: &str = stringify!($message);
   };
 }
 
-define_error!{OtherError, OTHER_ERROR_DESC}
-define_error!{InvalidError, INVALID_ERROR_DESC}
-define_error!{PermissionError, PERMISSION_ERROR_DESC}
-define_error!{NotImplemented, NOT_IMPLEMENTED_ERROR_DESC}
-define_error!{IOError, IO_ERROR_DESC}
-define_error!{BadHttpParams, BAD_HHTP_PARAMS_ERROR_DESC}
-define_error!{ExistError, EXIST_ERROR_DESC}
-define_error!{NotExistError, NOT_EXIST_ERROR_DESC}
-define_error!{IsDirError, IS_DIR_ERROR_DESC}
-define_error!{NotDirError, NOT_DIR_ERROR_DESC}
-define_error!{FinalizedError, FINALIZED_ERROR_DESC}
-define_error!{NotFinalizedError, NOT_FINALIZED_ERROR_DESC}
-
-pub static INVALID_ERROR_DESC: &str = "invalid";                              // invalid operation for this type of item.
-pub static OTHER_ERROR_DESC: &str = "other";                              // invalid operation for this type of item.
-pub static PERMISSION_ERROR_DESC: &str = "permission denied";                 // Permission denied.
-pub static IO_ERROR_DESC: &str = "I/O error";                                 // I/O denied.
-pub static EXIST_ERROR_DESC: &str = "item already exists";                    // Item already exists.
-pub static NOT_EXIST_ERROR_DESC: &str = "item does not exist";                 // Item does not exist.
-pub static IS_DIR_ERROR_DESC: &str = "item is a directory";                    // Item is a directory.
-pub static NOT_DIR_ERROR_DESC: &str = "item is not a directory";               // Item is not a directory.
-pub static FINALIZED_ERROR_DESC: &str = "item is already finalized";          // Part or content is already finalized.
-pub static NOT_FINALIZED_ERROR_DESC: &str ="item is not finalized";            // Part or content is not yet finalized.
-pub static BAD_HHTP_PARAMS_ERROR_DESC: &str = "invalid Http params specified";  // Bitcode call with invalid HttpParams
-pub static NOT_IMPLEMENTED_ERROR_DESC: &str = "not implemented";                // Function not implemented
+define_error!{OtherError, OTHER_ERROR_DESC, "other"}                                      // other operation for this type of item.
+define_error!{InvalidError, INVALID_ERROR_DESC, "invalid"}                                // invalid operation for this type of item.
+define_error!{PermissionError, PERMISSION_ERROR_DESC, "permission denied"}                // Permission denied.
+define_error!{NotImplemented, NOT_IMPLEMENTED_ERROR_DESC,"not implemented"}               // Function not implemented
+define_error!{IOError, IO_ERROR_DESC,"I/O error"}                                         // I/O error.
+define_error!{BadHttpParams, BAD_HHTP_PARAMS_ERROR_DESC,"invalid Http params specified"}  // Bitcode call with invalid HttpParams
+define_error!{ExistError, EXIST_ERROR_DESC, "item already exists"}                        // Item already exists.
+define_error!{NotExistError, NOT_EXIST_ERROR_DESC,"item does not exist"}                  // Item does not exist.
+define_error!{IsDirError, IS_DIR_ERROR_DESC,"item is a directory"}                        // Item is a directory.
+define_error!{NotDirError, NOT_DIR_ERROR_DESC,"item is not a directory"}                  // Item is not a directory.
+define_error!{FinalizedError, FINALIZED_ERROR_DESC, "item is already finalized"}          // Part or content is already finalized.
+define_error!{NotFinalizedError, NOT_FINALIZED_ERROR_DESC, "item is not finalized"}       // Part or content is not yet finalized.
 
 #[derive(Debug, Clone, Serialize, Copy)]
 pub enum ErrorKinds{
@@ -93,6 +75,25 @@ pub enum ErrorKinds{
 impl fmt::Display for ErrorKinds {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     return write!(f, "{:?}", self);
+  }
+}
+
+impl ErrorKinds{
+  fn describe(&self) -> &str{
+    match &self {
+      ErrorKinds::Other => return OTHER_ERROR_DESC,
+      ErrorKinds::NotImplemented => return NOT_IMPLEMENTED_ERROR_DESC,
+      ErrorKinds::Invalid => return INVALID_ERROR_DESC,
+      ErrorKinds::Permission => return PERMISSION_ERROR_DESC,
+      ErrorKinds::IO => return IO_ERROR_DESC,
+      ErrorKinds::Exist => return EXIST_ERROR_DESC,
+      ErrorKinds::NotExist => return NOT_EXIST_ERROR_DESC,
+      ErrorKinds::IsDir => return IS_DIR_ERROR_DESC,
+      ErrorKinds::NotDir => return NOT_DIR_ERROR_DESC,
+      ErrorKinds::Finalized => return FINALIZED_ERROR_DESC,
+      ErrorKinds::NotFinalized => return NOT_FINALIZED_ERROR_DESC,
+      ErrorKinds::BadHttpParams => return BAD_HHTP_PARAMS_ERROR_DESC,
+    }
   }
 }
 
@@ -166,20 +167,7 @@ impl<T:Error> Kind for ElvError<T>{
 impl<T> std::error::Error for ElvError<T> where
 T: fmt::Display + Debug {
   fn description(&self) -> &str {
-      match self.kind {
-        ErrorKinds::BadHttpParams => return BadHttpParams::get_description(),
-        ErrorKinds::Other => return OtherError::get_description(),
-        ErrorKinds::NotImplemented => return NotImplemented::get_description(),
-        ErrorKinds::Invalid => return InvalidError::get_description(),
-        ErrorKinds::Permission => return PermissionError::get_description(),
-        ErrorKinds::IO => return IOError::get_description(),
-        ErrorKinds::Exist => return ExistError::get_description(),
-        ErrorKinds::NotExist => return NotExistError::get_description(),
-        ErrorKinds::IsDir => return IsDirError::get_description(),
-        ErrorKinds::NotDir => return NotDirError::get_description(),
-        ErrorKinds::Finalized => return FinalizedError::get_description(),
-        ErrorKinds::NotFinalized => return NotFinalizedError::get_description(),
-      }
+      return self.kind.describe();
   }
 }
 
@@ -314,8 +302,9 @@ pub fn make_json_error<T:Error>(err:ElvError<T>) -> CallResult {
   let msg = json!(
     {"error" :  err }
   );
-  let vr = serde_json::to_vec(&msg).unwrap();
-  console_log(&format!("returning a test {}", str::from_utf8(&vr).unwrap()));
+  let vr = serde_json::to_vec(&msg)?;
+  let out = str::from_utf8(&vr)?;
+  console_log(&format!("returning a test {}", out));
   return Ok(vr);
 }
 
@@ -334,7 +323,8 @@ impl<'a> BitcodeContext<'a> {
       actual_len = len
     }
     let v = serde_json::json!(src[..actual_len]);
-    return host_call(&id, &stream, &"Write".to_string(), &serde_json::to_vec(&v).unwrap());
+    let jv = &serde_json::to_vec(&v)?;
+    return host_call(&id, &stream, &"Write".to_string(), jv);
   }
 
   pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
@@ -373,15 +363,17 @@ impl<'a> BitcodeContext<'a> {
 
   pub fn make_success(&'a self, msg:&str, id:&str) -> CallResult {
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
-    let v = serde_json::to_vec(&js_ret).unwrap();
-    console_log(&format!("returning : {}", std::str::from_utf8(&v).unwrap()));
+    let v = serde_json::to_vec(&js_ret)?;
+    let out = std::str::from_utf8(&v)?;
+    console_log(&format!("returning : {}", out));
     return Ok(v);
   }
 
   pub fn make_success_json(&'a self, msg:&serde_json::Value, id:&str) -> CallResult {
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
-    let v = serde_json::to_vec(&js_ret).unwrap();
-    console_log(&format!("returning : {}", std::str::from_utf8(&v).unwrap()));
+    let v = serde_json::to_vec(&js_ret)?;
+    let out = std::str::from_utf8(&v)?;
+    console_log(&format!("returning : {}", out));
     return Ok(v);
   }
 
@@ -390,7 +382,7 @@ impl<'a> BitcodeContext<'a> {
   }
 
   pub fn make_success_bytes(&'a self, msg:&[u8], id:&str) -> CallResult {
-    let res:serde_json::Value = serde_json::from_slice(msg).unwrap();
+    let res:serde_json::Value = serde_json::from_slice(msg)?;
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : res});
     let v = serde_json::to_vec(&js_ret)?;
     return Ok(v);
