@@ -1,11 +1,12 @@
-
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
 extern crate wapc_guest as guest;
 extern crate scopeguard;
+
+use serde::ser::{Serializer, SerializeStruct};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use std::error::Error;
 use std::fmt;
@@ -21,70 +22,169 @@ use std::sync::Mutex;
 
 lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
-  pub static ref KINDS:ErrorKinds = ErrorKinds::new();
 }
 
-pub struct ErrorKinds {
-  pub other: &'static str,
-  pub not_implemented:  &'static str,
-  pub invalid: &'static str,
-  pub permission: &'static str,
-  pub io: &'static str,
-  pub exist: &'static str,
-  pub not_exist: &'static str,
-  pub is_dir: &'static str,
-  pub not_dir: &'static str,
-  pub finalized: &'static str,
-  pub not_finalized: &'static str,
-  pub bad_http_params: &'static str,
+
+trait BaseError<T>{
+  fn fmt(f: &mut std::fmt::Formatter) -> std::fmt::Result;
 }
 
-impl ErrorKinds {
-  fn new() -> ErrorKinds {
-    ErrorKinds{
-      other:"unclassified error",                       // Unclassified error. This value is not printed in the error message.
-      not_implemented:  "not implemented",               // The functionality is not yet implemented.
-      invalid: "invalid",                               // invalid operation for this type of item.
-      permission: "permission denied",                  // Permission denied.
-      io: "I/O error",                                  // External I/O error such as network failure.
-      exist: "item already exists",                     // Item already exists.
-      not_exist: "item does not exist",                  // Item does not exist.
-      is_dir: "item is a directory",                     // Item is a directory.
-      not_dir:"item is not a directory",                 // Item is not a directory.
-      finalized: "item is already finalized",           // Part or content is already finalized.
-      not_finalized:"item is not finalized",             // Part or content is not yet finalized.
-      bad_http_params: "invalid Http params specified",   // Bitcode call with invalid HttpParams
+macro_rules! define_error {
+  // `()` indicates that the macro takes no argument.
+  ($class_name:ident,$global_static:ident) => {
+    #[derive(Copy, Clone, Serialize)]
+    pub struct $class_name {
     }
+    impl Debug for $class_name {
+      fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        return write!(f, "{}", $class_name::get_description());
+      }
+    }
+    impl $class_name{
+      fn get_description() -> &'static str{
+        return $global_static;
+      }
+    }
+  };
+}
+
+define_error!{OtherError, OTHER_ERROR_DESC}
+define_error!{InvalidError, INVALID_ERROR_DESC}
+define_error!{PermissionError, PERMISSION_ERROR_DESC}
+define_error!{NotImplemented, NOT_IMPLEMENTED_ERROR_DESC}
+define_error!{IOError, IO_ERROR_DESC}
+define_error!{BadHttpParams, BAD_HHTP_PARAMS_ERROR_DESC}
+define_error!{ExistError, EXIST_ERROR_DESC}
+define_error!{NotExistError, NOT_EXIST_ERROR_DESC}
+define_error!{IsDirError, IS_DIR_ERROR_DESC}
+define_error!{NotDirError, NOT_DIR_ERROR_DESC}
+define_error!{FinalizedError, FINALIZED_ERROR_DESC}
+define_error!{NotFinalizedError, NOT_FINALIZED_ERROR_DESC}
+
+pub static INVALID_ERROR_DESC: &str = "invalid";                              // invalid operation for this type of item.
+pub static OTHER_ERROR_DESC: &str = "other";                              // invalid operation for this type of item.
+pub static PERMISSION_ERROR_DESC: &str = "permission denied";                 // Permission denied.
+pub static IO_ERROR_DESC: &str = "I/O error";                                 // I/O denied.
+pub static EXIST_ERROR_DESC: &str = "item already exists";                    // Item already exists.
+pub static NOT_EXIST_ERROR_DESC: &str = "item does not exist";                 // Item does not exist.
+pub static IS_DIR_ERROR_DESC: &str = "item is a directory";                    // Item is a directory.
+pub static NOT_DIR_ERROR_DESC: &str = "item is not a directory";               // Item is not a directory.
+pub static FINALIZED_ERROR_DESC: &str = "item is already finalized";          // Part or content is already finalized.
+pub static NOT_FINALIZED_ERROR_DESC: &str ="item is not finalized";            // Part or content is not yet finalized.
+pub static BAD_HHTP_PARAMS_ERROR_DESC: &str = "invalid Http params specified";  // Bitcode call with invalid HttpParams
+pub static NOT_IMPLEMENTED_ERROR_DESC: &str = "not implemented";                // Function not implemented
+
+#[derive(Debug, Clone, Serialize, Copy)]
+pub enum ErrorKinds{
+  Other,
+  NotImplemented,
+  Invalid,
+  Permission,
+  IO,
+  Exist,
+  NotExist,
+  IsDir,
+  NotDir,
+  Finalized,
+  NotFinalized,
+  BadHttpParams,
+}
+
+impl fmt::Display for ErrorKinds {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    return write!(f, "{:?}", self);
   }
 }
 
-struct ElvError<T> {
+struct NoSubError{
+}
+
+impl Error for NoSubError {
+  fn description(&self) -> &str {
+      &"No Sub Error"
+  }
+}
+
+impl std::fmt::Display for NoSubError {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      return write!(f,"No Sub Error");
+  }
+}
+
+impl std::fmt::Debug for NoSubError {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    return write!(f,"No Sub Error");
+  }
+}
+
+#[derive(Clone)]
+pub struct ElvError<T> {
     details: String,
-    kind: String,
+    kind: ErrorKinds,
     description : String,
     json_error : Option<T>,
 }
 
-impl<T> ElvError<T> {
-      fn new_json(msg: &str, kind: &str, sub_err : T) -> ElvError<T> {
+impl<T> ElvError<T>{
+      pub fn new_json(msg: &str, kind: ErrorKinds, sub_err : T) -> ElvError<T> {
       ElvError{
         details:  msg.to_string(),
-        kind:     kind.to_string(),
+        kind:     kind,
         description: format!("{{ details : {}, kind : {} }}", msg, kind),
         json_error : Some(sub_err),
       }
     }
-    fn new(msg: &str, kind: &str) -> ElvError<T> {
-      ElvError::<>{
-        details:  msg.to_string(),
-        kind:     kind.to_string(),
-        description: format!("{{ details : {}, kind : {} }}", msg, kind),
-        json_error: None,
-      }
-    }
 }
 
-impl<T:Debug> fmt::Display for ElvError<T> {
+impl<T> ElvError<T>{
+  fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
+    ElvError{
+      details:  msg.to_string(),
+      kind:     kind,
+      description: format!("{{ details : {}, kind : {} }}", msg, kind),
+      json_error: None,
+    }
+  }
+
+}
+
+trait Kind {
+  fn kind(&self) -> ErrorKinds;
+  fn desc(&self) -> String;
+}
+
+impl<T:Error> Kind for ElvError<T>{
+  fn kind(&self) -> ErrorKinds{
+    return self.kind;
+  }
+  fn desc(&self) -> String{
+    return self.description.clone();
+  }
+}
+
+
+impl<T> std::error::Error for ElvError<T> where
+T: fmt::Display + Debug {
+  fn description(&self) -> &str {
+      match self.kind {
+        ErrorKinds::BadHttpParams => return BadHttpParams::get_description(),
+        ErrorKinds::Other => return OtherError::get_description(),
+        ErrorKinds::NotImplemented => return NotImplemented::get_description(),
+        ErrorKinds::Invalid => return InvalidError::get_description(),
+        ErrorKinds::Permission => return PermissionError::get_description(),
+        ErrorKinds::IO => return IOError::get_description(),
+        ErrorKinds::Exist => return ExistError::get_description(),
+        ErrorKinds::NotExist => return NotExistError::get_description(),
+        ErrorKinds::IsDir => return IsDirError::get_description(),
+        ErrorKinds::NotDir => return NotDirError::get_description(),
+        ErrorKinds::Finalized => return FinalizedError::get_description(),
+        ErrorKinds::NotFinalized => return NotFinalizedError::get_description(),
+      }
+  }
+}
+
+impl<T> fmt::Display for ElvError<T> where
+T: fmt::Display + Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match &self.json_error{
        Some(e) => {return write!(f,"{{ details : {}, kind : {}, sub_error : {:?} }}", self.details, self.kind, e)},
@@ -93,7 +193,27 @@ impl<T:Debug> fmt::Display for ElvError<T> {
     }
 }
 
-impl<T:Debug> fmt::Debug for ElvError<T> {
+impl<T:fmt::Display + Debug> Serialize for ElvError<T> {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where T:fmt::Display + Debug, S:Serializer,
+  {
+    let mut state = serializer.serialize_struct("ElvError", 3)?;
+    state.serialize_field("description", &self.details)?;
+    state.serialize_field("op", &self.kind)?;
+    match &self.json_error{
+      Some(e) => {
+        state.serialize_field("message", &format!("{:?}", &e))?;
+      },
+      None => {
+        state.serialize_field("message", "no extra error info")?;
+      },
+    };
+    state.end()
+  }
+}
+
+impl<T>  Debug for ElvError<T>  where
+T: fmt::Display + Debug {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match &self.json_error{
      Some(e) => {return write!(f,"{{ details : {}, kind : {}, sub_error : {:?} }}", self.details, self.kind, e)},
@@ -102,10 +222,15 @@ impl<T:Debug> fmt::Debug for ElvError<T> {
   }
 }
 
-impl<T:Debug> Error for ElvError<T> {
-    fn description(&self) -> &str {
-        &self.description
-    }
+impl<T:Error> From<T> for ElvError<T> {
+  fn from(err: T) -> ElvError<T> {
+    ElvError::<T> {
+          details: err.to_string(),
+          description:"".to_string(),
+          json_error:None,
+          kind:ErrorKinds::Invalid,
+      }
+  }
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug)]
@@ -184,6 +309,17 @@ pub struct BitcodeContext<'a> {
 
 type HandlerFunction = fn(bcc: & mut BitcodeContext) -> CallResult;
 
+pub fn make_json_error<T:Error>(err:ElvError<T>) -> CallResult {
+  console_log(&format!("error={}", err));
+  let msg = json!(
+    {"error" :  err }
+  );
+  let vr = serde_json::to_vec(&msg).unwrap();
+  console_log(&format!("returning a test {}", str::from_utf8(&vr).unwrap()));
+  return Ok(vr);
+}
+
+
 impl<'a> BitcodeContext<'a> {
   fn new(request: &'a Request) -> BitcodeContext<'a> {
     BitcodeContext {
@@ -249,21 +385,9 @@ impl<'a> BitcodeContext<'a> {
     return Ok(v);
   }
 
-  pub fn make_error(&'a self, msg:&str, id:&str) -> CallResult {
-    return Ok(ElvError::<serde_json::Error>::new(&format!("msg={} id={}", msg, id), KINDS.bad_http_params).to_string().as_bytes().to_vec());
+  pub fn make_error(&'a self, msg:&str, _id:&str) -> CallResult {
+    return make_json_error(ElvError::<NoSubError>::new(msg , ErrorKinds::Invalid));
   }
-
-  // pub fn make_utf8_error(&'a self, err:std::string::FromUtf8Error) -> CallResult {
-  //   return Ok(ElvError::new(&format!("error={}", err), KINDS.bad_http_params).to_string().as_bytes().to_vec());
-  // }
-
-  pub fn make_json_error(&'a self, err:serde_json::Error) -> CallResult {
-    return Err(Box::new(ElvError::new_json(&format!("error={}", err), KINDS.bad_http_params, err)));
-  }
-
-  // pub fn make_generic_error(&'a self, err:T) -> CallResult {
-  //   return Err(Box::new(ElvError::new_json(&format!("error={}", err), KINDS.bad_http_params, err)));
-  // }
 
   pub fn make_success_bytes(&'a self, msg:&[u8], id:&str) -> CallResult {
     let res:serde_json::Value = serde_json::from_slice(msg).unwrap();
@@ -397,11 +521,7 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   let json_params: Request = match serde_json::from_str(input_string){
     Ok(m) => {m},
     Err(err) => {
-      console_log(&format!("error={}", err.to_string()));
-      let msg = json!({"error" : err.to_string()});
-      let vr = serde_json::to_vec(&msg).unwrap();
-      console_log(&format!("returning a test {}", str::from_utf8(&vr).unwrap()));
-      return Ok(vr);
+      return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::Invalid, err));
     }
   };
   console_log(&"Request parsed");
@@ -417,15 +537,11 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
           return Ok(m)
         },
         Err(err) => {
-          console_log(&format!("error={}", err.to_string()));
-          let msg = json!({"error" : err.to_string()});
-          let vr = serde_json::to_vec(&msg).unwrap();
-          console_log(&format!("returning a test {}", str::from_utf8(&vr).unwrap()));
-          return Ok(vr);
+          return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::Invalid, &*err));
         }
       }
     }
-    None => {console_log("HERE!!!"); return Err(Box::new(ElvError::<serde_json::Error>::new("No valid path provided", KINDS.bad_http_params)));}
+    None => {console_log("HERE!!!"); return Err(Box::new(ElvError::<NoSubError>::new("No valid path provided",  ErrorKinds::BadHttpParams)));}
   };
 }
 
