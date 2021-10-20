@@ -186,14 +186,16 @@ impl<T:fmt::Display + Debug> Serialize for ElvError<T> {
   where T:fmt::Display + Debug, S:Serializer,
   {
     let mut state = serializer.serialize_struct("ElvError", 3)?;
-    state.serialize_field("description", &self.details)?;
+    state.serialize_field("message", &self.details)?;
     state.serialize_field("op", &self.kind)?;
     match &self.json_error{
       Some(e) => {
-        state.serialize_field("message", &format!("{:?}", &e))?;
+        let mut error_details = HashMap::<String,String>::new();
+        error_details.insert("rust_error".to_string(), format!("{:?}", &e));
+        state.serialize_field("data", &error_details)?;
       },
       None => {
-        state.serialize_field("message", "no extra error info")?;
+        state.serialize_field("data", "no extra error info")?;
       },
     };
     state.end()
