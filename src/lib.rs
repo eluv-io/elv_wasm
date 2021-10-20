@@ -333,6 +333,19 @@ impl<'a> BitcodeContext<'a> {
     return host_call(&id, &stream, &"Write".to_string(), src);
   }
 
+  pub fn write_part_to_stream(&'a self, stream_id:String, qihot:String, qphash:String, offset:i64, length:i64) -> CallResult{
+    let msg = json!(
+      {
+        "stream_id" :  stream_id,
+        "off":offset,
+        "len" : length,
+        "qihot":qihot,
+        "qphash":qphash,
+     }
+    );
+    return self.call_function("QWritePartToStream", msg, "core");
+  }
+
   pub fn callback(&'a self, status:usize, content_type:&str, size:usize) -> CallResult{
     let v = json!(
       {"http" : {
