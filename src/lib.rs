@@ -419,9 +419,9 @@ impl<'a> BitcodeContext<'a> {
       return sid;
     }
 
-    pub fn new_file_stream(&'a self) -> FileStream{
+    pub fn new_file_stream(&'a self) -> CallResult {
       let v = json!({});
-      return serde_json::from_slice(&self.call_function("NewFileStream", v, "ctx").unwrap()).unwrap();
+      self.call_function("NewFileStream", v, "ctx")
     }
 
     pub fn ffmpeg_run(&'a self, cmdline:Vec<&str>) -> CallResult {
@@ -453,7 +453,7 @@ impl<'a> BitcodeContext<'a> {
 
       let jtemp = v.to_string();
       console_log(&format!("json={}", jtemp));
-      let written = v["written"].as_u64().unwrap();
+      let written = v["written"].as_u64().unwrap_or_default();
 
       if written != 0 {
         return self.read_stream(sid, written as usize);
@@ -472,7 +472,7 @@ impl<'a> BitcodeContext<'a> {
       let ret:Vec<u8> = match self.call_function("FileStreamSize", json!({"file_name" : filename}), "ctx"){
          Ok(m) =>{ m }
          Err(_e) => {
-           let j:FileStreamSize = serde_json::from_value(json!({"file_size" : 0})).unwrap();
+           let j:FileStreamSize = serde_json::from_value(json!({"file_size" : 0})).unwrap_or(FileStreamSize{file_size:0});
            return j.file_size;
           }
       };
@@ -480,13 +480,13 @@ impl<'a> BitcodeContext<'a> {
       match serde_json::from_slice::<FileStreamSize>(&ret){
         Ok(msize) => {
           console_log(&format!("FileStream returned={}", msize.file_size));
-          return msize.file_size;
+          msize.file_size
         }
         Err(_e) => {
           console_log("Err from FileStreamSize");
-          return 0;
+          0
         }
-      };
+      }
     }
 
 }
@@ -512,7 +512,8 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   console_log(&"Parameters parsed");
   let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
   console_log(&format!("splitpath={:?}", split_path));
-  match CALLMAP.lock().unwrap().get(split_path[1]) {
+  let cm = CALLMAP.lock();
+  match cm.unwrap().get(split_path[1]) {
     Some(f) => {
       match f(& mut bcc){
         Ok(m) => {
