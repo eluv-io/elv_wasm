@@ -2,7 +2,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate wapc_guest as guest;
-extern crate scopeguard;
+#[macro_use(defer)] extern crate scopeguard;
+
 
 use serde::ser::{Serializer, SerializeStruct};
 use serde::{Deserialize, Serialize};
@@ -119,6 +120,14 @@ impl<T> ElvError<T>{
       kind:     kind,
       description: format!("{{ details : {}, kind : {} }}", msg, kind),
       json_error: None,
+    }
+  }
+  fn new_with_err(msg: &str, kind: ErrorKinds, err:T) -> ElvError<T>{
+    ElvError{
+      details:  msg.to_string(),
+      kind:     kind,
+      description: format!("{{ details : {}, kind : {} }}", msg, kind),
+      json_error: Some(err),
     }
   }
 
@@ -295,14 +304,14 @@ impl<'a> BitcodeContext<'a> {
     }
   }
 
-  pub fn write_stream(id:String, stream:String,  src:&'a [u8], len: usize) -> CallResult {
+  pub fn write_stream(&'a self, id:&str, stream:&str,  src:&'a [u8], len: usize) -> CallResult {
     let mut actual_len = src.len();
     if len != usize::MAX {
       actual_len = len
     }
     let v = serde_json::json!(src[..actual_len]);
     let jv = &serde_json::to_vec(&v)?;
-    return host_call(&id, &stream, &"Write".to_string(), jv);
+    return host_call(id, stream, &"Write".to_string(), jv);
   }
 
   pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
@@ -321,6 +330,20 @@ impl<'a> BitcodeContext<'a> {
     );
     return self.call_function("QWritePartToStream", msg, "core");
   }
+  pub fn read_stream(&'a mut self, stream_to_read:String, sz:usize) -> CallResult {
+        let input = serde_json::json![sz];
+        let input_json = serde_json::to_vec(&input)?;
+        return host_call(self.request.id.as_str(),stream_to_read.as_str(), &"Read", &input_json);
+  }
+
+  pub fn temp_dir(&'a mut self) -> CallResult {
+    let temp_dir_res = self.call("TempDir", &"{}", &"ctx".as_bytes())?;
+    return Ok(temp_dir_res);
+  }
+
+  pub fn close_stream(&'a self, sid : String) -> CallResult{
+    return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
+  }
 
   pub fn callback(&'a self, status:usize, content_type:&str, size:usize) -> CallResult{
     let v = json!(
@@ -337,20 +360,7 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function(method, v, "ctx");
   }
 
-  pub fn read_stream(&'a mut self, stream_to_read:String, sz:usize) -> CallResult {
-        let input = serde_json::json![sz];
-        let input_json = serde_json::to_vec(&input)?;
-        return host_call(self.request.id.as_str(),stream_to_read.as_str(), &"Read", &input_json);
-  }
 
-  pub fn temp_dir(&'a mut self) -> CallResult {
-    let temp_dir_res = self.call("TempDir", &"{}", &"ctx".as_bytes())?;
-    return Ok(temp_dir_res);
-  }
-
-  pub fn close_stream(&'a self, sid : String) -> CallResult{
-    return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
-  }
 
   pub fn make_success(&'a self, msg:&str, id:&str) -> CallResult {
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
@@ -371,6 +381,15 @@ impl<'a> BitcodeContext<'a> {
   pub fn make_error(&'a self, msg:&str) -> CallResult {
     return make_json_error(ElvError::<NoSubError>::new(msg , ErrorKinds::Invalid));
   }
+
+  pub fn make_error_with_kind(&'a self, msg:&str, kind:ErrorKinds) -> CallResult {
+    return make_json_error(ElvError::<NoSubError>::new(msg , kind));
+  }
+
+  pub fn make_error_with_error<T:Error>(&'a self, msg:&str, kind:ErrorKinds, err:T) -> CallResult {
+    return make_json_error(ElvError::<T>::new_with_err(msg , kind, err));
+  }
+
 
   pub fn make_success_bytes(&'a self, msg:&[u8], id:&str) -> CallResult {
     let res:serde_json::Value = serde_json::from_slice(msg)?;
@@ -462,9 +481,30 @@ impl<'a> BitcodeContext<'a> {
 
     }
 
+		pub fn q_upload_file(&'a mut self, qwt:&str, input_data:&[u8], path:&str, mime:&str) -> CallResult{
+			let sid = self.new_file_stream()?;
+      let new_stream:FileStream = serde_json::from_slice(&sid)?;
+			defer!{
+        let _ = self.close_stream(new_stream.stream_id.clone());
+      }
+			let ret_s = self.write_stream(qwt, &new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
+      let written_map:HashMap<String, String> = serde_json::from_slice(&ret_s)?;
+      let i: i32 = written_map["written"].parse().unwrap_or(0);
+      let j = json!({
+        "qwtoken" : qwt,
+        "stream_id": new_stream.stream_id,
+        "path":path,
+        "mime":mime,
+        "size": i,
+      });
+
+			let method = "QCreateFileFromStream";
+			self.call_function(method, j, "core")
+		}
+
     pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
       let param = json!({ "stream_id" : stream, "path" : filename});
-      return self.call_function("FileToStream", param, "core");
+      self.call_function("FileToStream", param, "core")
     }
 
     pub fn file_stream_size(&'a self,filename:&str) -> usize {
@@ -521,12 +561,15 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
           return Ok(m)
         },
         Err(err) => {
-          return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::Invalid, &*err));
+          return bcc.make_error_with_error("parse failed for http" , ErrorKinds::Invalid, &*err);
         }
       }
     }
-    None => {console_log("HERE!!!"); return Err(Box::new(ElvError::<NoSubError>::new("No valid path provided",  ErrorKinds::BadHttpParams)));}
-  };
+    None => {
+      console_log(&format!("Failed to find path {}", split_path[1]));
+      bcc.make_error_with_kind("No valid path provided", ErrorKinds::BadHttpParams)
+    }
+  }
 }
 
 
