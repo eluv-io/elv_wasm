@@ -24,76 +24,51 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
-macro_rules! define_error {
-  ($class_name:ident,$global_static:ident,$message:expr) => {
-    #[derive(Copy, Clone, Serialize)]
-    pub struct $class_name {
-    }
-    impl Debug for $class_name {
-      fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        return write!(f, "{}", $class_name::get_description());
+macro_rules! enum_str {
+  (enum $name:ident {
+      $($variant:ident = $val:expr),*,
+  }) => {
+      #[derive(Clone, Serialize, Copy)]
+      pub enum $name {
+          $($variant = $val),*
       }
-    }
-    impl $class_name{
-      fn get_description() -> &'static str{
-        return $global_static;
+
+      impl $name {
+          fn name(&self) -> &'static str {
+              match self {
+                  $($name::$variant => stringify!($variant)),*
+              }
+          }
       }
-    }
-    pub static $global_static: &str = stringify!($message);
   };
 }
 
-define_error!{OtherError, OTHER_ERROR_DESC, "other"}                                      // other operation for this type of item.
-define_error!{InvalidError, INVALID_ERROR_DESC, "invalid"}                                // invalid operation for this type of item.
-define_error!{PermissionError, PERMISSION_ERROR_DESC, "permission denied"}                // Permission denied.
-define_error!{NotImplemented, NOT_IMPLEMENTED_ERROR_DESC,"not implemented"}               // Function not implemented
-define_error!{IOError, IO_ERROR_DESC,"I/O error"}                                         // I/O error.
-define_error!{BadHttpParams, BAD_HHTP_PARAMS_ERROR_DESC,"invalid Http params specified"}  // Bitcode call with invalid HttpParams
-define_error!{ExistError, EXIST_ERROR_DESC, "item already exists"}                        // Item already exists.
-define_error!{NotExistError, NOT_EXIST_ERROR_DESC,"item does not exist"}                  // Item does not exist.
-define_error!{IsDirError, IS_DIR_ERROR_DESC,"item is a directory"}                        // Item is a directory.
-define_error!{NotDirError, NOT_DIR_ERROR_DESC,"item is not a directory"}                  // Item is not a directory.
-define_error!{FinalizedError, FINALIZED_ERROR_DESC, "item is already finalized"}          // Part or content is already finalized.
-define_error!{NotFinalizedError, NOT_FINALIZED_ERROR_DESC, "item is not finalized"}       // Part or content is not yet finalized.
-
-#[derive(Debug, Clone, Serialize, Copy)]
-pub enum ErrorKinds{
-  Other,
-  NotImplemented,
-  Invalid,
-  Permission,
-  IO,
-  Exist,
-  NotExist,
-  IsDir,
-  NotDir,
-  Finalized,
-  NotFinalized,
-  BadHttpParams,
+enum_str! {
+   enum ErrorKinds {
+    Other = 0x00,
+    NotImplemented = 0x01,
+    Invalid = 0x02,
+    Permission = 0x03,
+    IO = 0x04,
+    Exist = 0x05,
+    NotExist = 0x06,
+    IsDir = 0x07,
+    NotDir = 0x08,
+    Finalized = 0x09,
+    NotFinalized = 0x0a,
+    BadHttpParams = 0x0b,
+  }
 }
 
 impl fmt::Display for ErrorKinds {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    return write!(f, "{:?}", self);
+    write!(f, "{}", self.name())
   }
 }
 
 impl ErrorKinds{
   fn describe(&self) -> &str{
-    match &self {
-      ErrorKinds::Other => return OTHER_ERROR_DESC,
-      ErrorKinds::NotImplemented => return NOT_IMPLEMENTED_ERROR_DESC,
-      ErrorKinds::Invalid => return INVALID_ERROR_DESC,
-      ErrorKinds::Permission => return PERMISSION_ERROR_DESC,
-      ErrorKinds::IO => return IO_ERROR_DESC,
-      ErrorKinds::Exist => return EXIST_ERROR_DESC,
-      ErrorKinds::NotExist => return NOT_EXIST_ERROR_DESC,
-      ErrorKinds::IsDir => return IS_DIR_ERROR_DESC,
-      ErrorKinds::NotDir => return NOT_DIR_ERROR_DESC,
-      ErrorKinds::Finalized => return FINALIZED_ERROR_DESC,
-      ErrorKinds::NotFinalized => return NOT_FINALIZED_ERROR_DESC,
-      ErrorKinds::BadHttpParams => return BAD_HHTP_PARAMS_ERROR_DESC,
-    }
+    self.name()
   }
 }
 
