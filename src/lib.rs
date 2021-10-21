@@ -191,6 +191,7 @@ impl<T:fmt::Display + Debug> Serialize for ElvError<T> {
     match &self.json_error{
       Some(e) => {
         let mut error_details = HashMap::<String,String>::new();
+        error_details.insert("op".to_string(), format!("{}", self.kind));
         error_details.insert("rust_error".to_string(), format!("{:?}", &e));
         state.serialize_field("data", &error_details)?;
       },
@@ -392,7 +393,7 @@ impl<'a> BitcodeContext<'a> {
     return Ok(v);
   }
 
-  pub fn make_error(&'a self, msg:&str, _id:&str) -> CallResult {
+  pub fn make_error(&'a self, msg:&str) -> CallResult {
     return make_json_error(ElvError::<NoSubError>::new(msg , ErrorKinds::Invalid));
   }
 
@@ -460,7 +461,7 @@ impl<'a> BitcodeContext<'a> {
       console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
       let sid = self.new_stream();
       if sid == ""{
-        return self.make_error("Unable to find stream_id", "");
+        return self.make_error("Unable to find stream_id");
       }
       let j = json!({
         "stream_id" : sid,
@@ -482,7 +483,7 @@ impl<'a> BitcodeContext<'a> {
       if written != 0 {
         return self.read_stream(sid, written as usize);
       }
-      return self.make_error("failed to write data", "");
+      return self.make_error("failed to write data");
 
     }
 
