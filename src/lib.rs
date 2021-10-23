@@ -8,6 +8,7 @@ extern crate wapc_guest as guest;
 use serde::ser::{Serializer, SerializeStruct};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use guest::console_log;
 
 use std::error::Error;
 use std::fmt;
@@ -23,6 +24,86 @@ use std::sync::Mutex;
 
 lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    fn handler_for_test(bcc: & mut BitcodeContext) -> CallResult{
+      bcc.make_success("DONE")
+    }
+
+    #[test]
+    fn test_basic_http(){
+        register_handler("test_handler", handler_for_test);
+        let test_json = json!({
+          "id" : "dummydummy",
+          "jpc" : "1.0",
+          "method" : "GET",
+          "params" : {
+            "http" : {
+              "path" : "/testing",
+            },
+          },
+        });
+        match serde_json::to_vec(&test_json){
+          Ok(x) => {
+            let res = jpc(&x);
+            match res{
+              Ok(_) => { 
+              },
+              Err(err) => {
+                panic!("failed test_http err = {:?}", err);
+              }
+            }
+          },
+          Err(err) =>{
+            panic!("failed test_http err = {:?}", err);
+          }
+        };
+    }
+
+    #[test]
+    fn test_basic_http_failure(){
+      register_handler("test_handler", handler_for_test);
+      // path missing
+      let test_json = json!({
+        "id" : "dummydummy",
+        "jpc" : "1.0",
+        "method" : "GET",
+        "params" : {
+          "http" : {
+          },
+        },
+      });
+      match serde_json::to_vec(&test_json){
+        Ok(x) => {
+          let res = jpc(&x);
+          match res{
+            Ok(k) => {
+                let mut res_json:serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&k).unwrap();
+                let mut err_json:serde_json::Map<String, serde_json::Value> = serde_json::from_value(res_json["error"].take()).unwrap();
+                assert_eq!(err_json["op"], "BadHttpParams");
+                let err_json_data:serde_json::Map<String, serde_json::Value> = serde_json::from_value(err_json["data"].take()).unwrap();
+                assert_eq!(err_json_data["op"], "BadHttpParams");
+            },
+            Err(err) => {
+            }
+          }
+        },
+        Err(err) =>{
+        }
+      };
+  }
+
+    #[test]
+    fn test_bad_add() {
+        // This assert would fire and test will fail.
+        // Please note, that private functions can be tested too!
+        //assert_eq!(bad_add(1, 2), 3);
+    }
 }
 
 macro_rules! enum_str {
@@ -285,13 +366,13 @@ pub struct BitcodeContext<'a> {
 type HandlerFunction = fn(bcc: & mut BitcodeContext) -> CallResult;
 
 pub fn make_json_error<T:Error>(err:ElvError<T>) -> CallResult {
-  console_log(&format!("error={}", err));
+  elv_console_log(&format!("error={}", err));
   let msg = json!(
     {"error" :  err }
   );
   let vr = serde_json::to_vec(&msg)?;
   let out = str::from_utf8(&vr)?;
-  console_log(&format!("returning a test {}", out));
+  elv_console_log(&format!("returning a test {}", out));
   return Ok(vr);
 }
 
@@ -362,11 +443,11 @@ impl<'a> BitcodeContext<'a> {
 
 
 
-  pub fn make_success(&'a self, msg:&str, id:&str) -> CallResult {
-    let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
+  pub fn make_success(&'a self, msg:&str) -> CallResult {
+    let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
-    console_log(&format!("returning : {}", out));
+    elv_console_log(&format!("returning : {}", out));
     return Ok(v);
   }
 
@@ -374,7 +455,7 @@ impl<'a> BitcodeContext<'a> {
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
-    console_log(&format!("returning : {}", out));
+    elv_console_log(&format!("returning : {}", out));
     return Ok(v);
   }
 
@@ -426,7 +507,7 @@ impl<'a> BitcodeContext<'a> {
     let call_val = serde_json::to_vec(response)?;
     let call_str = serde_json::to_string(response)?;
 
-    console_log(&format!("CALL STRING = {}", call_str));
+    elv_console_log(&format!("CALL STRING = {}", call_str));
     return host_call(self.request.id.as_str(),module, fn_name, &call_val);
   }
     // NewStream creates a new stream and returns its ID.
@@ -452,7 +533,7 @@ impl<'a> BitcodeContext<'a> {
 
 
     pub fn q_download_file(&'a mut self, path:&str, hash_or_token:&str) -> CallResult{
-      console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
+      elv_console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
       let sid = self.new_stream();
       if sid == ""{
         return self.make_error("Unable to find stream_id");
@@ -471,7 +552,7 @@ impl<'a> BitcodeContext<'a> {
       }
 
       let jtemp = v.to_string();
-      console_log(&format!("json={}", jtemp));
+      elv_console_log(&format!("json={}", jtemp));
       let written = v["written"].as_u64().unwrap_or_default();
 
       if written != 0 {
@@ -508,7 +589,7 @@ impl<'a> BitcodeContext<'a> {
     }
 
     pub fn file_stream_size(&'a self,filename:&str) -> usize {
-      console_log("file_stream_size");
+      elv_console_log("file_stream_size");
       let ret:Vec<u8> = match self.call_function("FileStreamSize", json!({"file_name" : filename}), "ctx"){
          Ok(m) =>{ m }
          Err(_e) => {
@@ -519,11 +600,11 @@ impl<'a> BitcodeContext<'a> {
 
       match serde_json::from_slice::<FileStreamSize>(&ret){
         Ok(msize) => {
-          console_log(&format!("FileStream returned={}", msize.file_size));
+          elv_console_log(&format!("FileStream returned={}", msize.file_size));
           msize.file_size
         }
         Err(_e) => {
-          console_log("Err from FileStreamSize");
+          elv_console_log("Err from FileStreamSize");
           0
         }
       }
@@ -536,28 +617,38 @@ pub fn register_handler(name: &str, h: HandlerFunction) {
   CALLMAP.lock().unwrap().insert(name.to_string(), h);
 }
 
+#[cfg(not(test))]
+fn elv_console_log(s:&str){
+  console_log(s)
+}
+
+#[cfg(test)]
+fn elv_console_log(s:&str){
+  println!("{}", s)
+}
+
 #[no_mangle]
 pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
-  console_log(&"In jpc");
+  elv_console_log(&"In jpc");
   let input_string = str::from_utf8(_msg)?;
-  console_log(&format!("parameters = {}", input_string));
+  elv_console_log(&format!("parameters = {}", input_string));
   let json_params: Request = match serde_json::from_str(input_string){
     Ok(m) => {m},
     Err(err) => {
-      return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::Invalid, err));
+      return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::BadHttpParams, err));
     }
   };
-  console_log(&"Request parsed");
+  elv_console_log(&"Request parsed");
   let mut bcc = BitcodeContext::new(&json_params);
-  console_log(&"Parameters parsed");
+  elv_console_log(&"Parameters parsed");
   let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
-  console_log(&format!("splitpath={:?}", split_path));
+  elv_console_log(&format!("splitpath={:?}", split_path));
   let cm = CALLMAP.lock();
   match cm.unwrap().get(split_path[1]) {
     Some(f) => {
       match f(& mut bcc){
         Ok(m) => {
-          console_log(&format!("here and m={:?}", m));
+          elv_console_log(&format!("here and m={:?}", m));
           return Ok(m)
         },
         Err(err) => {
@@ -566,7 +657,7 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
       }
     }
     None => {
-      console_log(&format!("Failed to find path {}", split_path[1]));
+      elv_console_log(&format!("Failed to find path {}", split_path[1]));
       bcc.make_error_with_kind("No valid path provided", ErrorKinds::BadHttpParams)
     }
   }
