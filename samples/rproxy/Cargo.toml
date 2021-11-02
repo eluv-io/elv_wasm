@@ -1,24 +1,28 @@
 [package]
-name = "elvwasm"
+name = "rproxy"
 version = "0.1.0"
-edition = "2021"
+authors = ["janfalkin <jan.falkin@eluv.io>"]
+edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# [lib]
+# crate-type = ["cdylib", "rlib"]
+
+# default = ["console_error_panic_hook"]
 
 [lib]
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
+elvwasm = { git = "https://github.com/eluv-io/elv_wasm", branch = "main", package = "elvwasm"}
+#elvwasm = { path = "/home/ubuntu/elv_wasm" }
 wapc = "0.10.1"
 wapc-guest = "0.4.0"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"
 lazy_static = "1.4.0"
-scopeguard = "1.1.0"
+snailquote = "0.3.0"
 
-[dependencies.samples]
-path = "samples/"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires

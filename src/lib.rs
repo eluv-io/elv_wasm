@@ -52,7 +52,7 @@ mod tests {
           Ok(x) => {
             let res = jpc(&x);
             match res{
-              Ok(_) => { 
+              Ok(_) => {
               },
               Err(err) => {
                 panic!("failed test_http err = {:?}", err);
@@ -90,10 +90,12 @@ mod tests {
                 assert_eq!(err_json_data["op"], "BadHttpParams");
             },
             Err(err) => {
+              panic!("failed test_http err = {:?}", err);
             }
           }
         },
         Err(err) =>{
+          panic!("failed test_http err = {:?}", err);
         }
       };
   }

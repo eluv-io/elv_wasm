@@ -1,0 +1,18 @@
+
+[package]
+name = "samples"
+version = "0.1.0"
+authors = ["Jan Falkin <jan.falkin@eluv.io>"]
+license = "MIT"
+
+[workspace]
+
+[dependencies.image]
+path = "image/"
+
+[dependencies.rproxy]
+path = "rproxy/"
+
+[profile.release]
+lto = true
+
