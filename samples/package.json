@@ -1,0 +1,28 @@
+{
+  "name": "wasm",
+  "version": "1.0.0",
+  "description": "wasm inhouse bitcode",
+  "main": "index.js",
+  "scripts": {
+    "clean": "find . -name \"*.wa*\" -exec rm {} \\;",
+    "install": "npm install --save @assemblyscript/loader && npm install --save-dev assemblyscript && npm install --save assemblyscript-json",
+    "asbuild-proxy:untouched": "asc proxy/proxy -b proxy/proxy.wasm -t proxy/proxy.wat",
+    "asbuild-proxy:optimized": "asc proxy/proxy -b -O > proxy/proxy-optimized.wasm",
+    "asbuild-library:untouched": "asc library/library -b library/library.wasm -t library/library.wat",
+    "asbuild-library:optimized": "asc library/library -b -O > library/library-optimized.wasm",
+    "asbuild-unopt": "npm run asbuild-proxy:untouched  && npm run asbuild-library:untouched",
+    "asbuild-all": "npm run asbuild-proxy:untouched && npm run asbuild-proxy:optimized && npm run asbuild-library:untouched && npm run asbuild-library:optimized",
+    "asbuild-all-untouched": "npm run asbuild-proxy:untouched && npm run asbuild-library:untouched",
+    "asbuild": "npm run asbuild-all-untouched"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@assemblyscript/loader": "^0.18.32"
+  },
+  "devDependencies": {
+    "@as-pect/cli": "^6.1.1",
+    "assemblyscript": "^0.18.32",
+    "assemblyscript-json": "github:eluv-io/assemblyscript-json"
+  }
+}

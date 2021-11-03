@@ -13,6 +13,10 @@ path = "image/"
 [dependencies.rproxy]
 path = "rproxy/"
 
+[package.metadata.scripts]
+install = "npm install && npm run asbuild"
+build = "npm run asbuild"
+
 [profile.release]
 lto = true
 
