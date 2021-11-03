@@ -34,3 +34,6 @@ cargo build --target wasm32-unknown-unknown --release
 cargo run-script install
 ```
 
+## Programming interface
+
+[API](API.md)
