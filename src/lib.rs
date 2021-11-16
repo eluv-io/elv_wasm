@@ -8,7 +8,7 @@ extern crate wapc_guest as guest;
 use serde::ser::{Serializer, SerializeStruct};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use guest::console_log;
+//use guest::console_log;
 
 use std::error::Error;
 use std::fmt;
@@ -444,6 +444,57 @@ impl<'a> BitcodeContext<'a> {
   }
 
 
+  // CheckSumPart calculates a checksum of a given content part.
+  // - sum_method:    checksum method ("MD5" or "SHA256")
+  // - qphash:        hash of the content part to checksum
+  //  Returns the checksum as hex-encoded string
+  pub fn checksum_part(&'a self, sum_method:&str, qphash:&str) -> CallResult{
+
+    let j = json!(
+      {
+        "method" : sum_method,
+        "qphash" : qphash
+      }
+    );
+
+    return self.call_function("QCheckSumPart", j, "core");
+  }
+  // CheckSumFile calculates a checksum of a file in a file bundle
+  // - sum_method:    checksum method ("MD5" or "SHA256")
+  // - file_path:     the path of the file in the bundle
+  //  Returns the checksum as hex-encoded string
+  pub fn checksum_file(&'a self, sum_method:&str, file_path:&str) -> CallResult{
+
+    let j = json!(
+      {
+        "method" : sum_method,
+        "file_path" : file_path,
+      }
+    );
+    return self.call_function("QCheckSumFile", j, "core");
+  }
+
+  pub fn q_list_content_for(&'a self, qlibid:&str) -> CallResult {
+
+    let j = json!(
+      {
+        "external_lib" : qlibid,
+      }
+    );
+
+    return self.call_function("QListContentFor", j, "core");
+  }
+
+  pub fn q_part_info(&'a self, part_hash_or_token:&str) -> CallResult{
+
+    let j = json!(
+      {
+        "qphash_or_token" : part_hash_or_token,
+      }
+    );
+    return self.call_function("QPartInfo", j, "core");
+  }
+
 
   pub fn make_success(&'a self, msg:&str) -> CallResult {
     let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
@@ -481,10 +532,73 @@ impl<'a> BitcodeContext<'a> {
     return Ok(v);
   }
 
-  pub fn sqmd_get_json(&'a self, s:&'a str) -> CallResult {
-    let sqmd_get = json!({"path": s});
-    let method = "SQMDGet";
-    return self.call_function(&method, sqmd_get, &"core");
+  pub fn sqmd_get_json(&'a self, path:&'a str) -> CallResult {
+    let sqmd_get = json!
+    (
+      {
+        "path": path
+      }
+    );
+    return self.call_function("SQMDGet", sqmd_get, "core");
+  }
+
+  pub fn sqmd_get_json_external(&'a self, qlibid:&str, qhash:&str, path:&str) -> CallResult {
+    let sqmd_get = json!
+    (
+      {
+        "path": path,
+        "qlibid":qlibid,
+        "qhash":qhash,
+      }
+    );
+    return self.call_function("SQMDGetExternal", sqmd_get, "core");
+  }
+
+  pub fn sqmd_clear_json(&'a self, path:&'a str) -> CallResult {
+
+    let sqmd_clear = json!
+    (
+      {
+        "path": path,
+      }
+    );
+    return self.call_function("SQMDClear", sqmd_clear, "core");
+  }
+
+  pub fn sqmd_delete_json(&'a self, token:&'a str, path:&'a str) -> CallResult {
+
+    let sqmd_delete = json!
+    (
+      {
+        "token":token,
+        "path": path,
+      }
+    );
+    return self.call_function("SQMDDelete", sqmd_delete, "core");
+  }
+
+  pub fn sqmd_set_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
+
+    let sqmd_set = json!
+    (
+      {
+        "meta":json_str,
+        "path": path,
+      }
+    );
+    return self.call_function("SQMDSet", sqmd_set, "core");
+  }
+
+  pub fn sqmd_merge_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
+
+    let sqmd_merge = json!
+    (
+      {
+        "meta":json_str,
+        "path": path,
+      }
+    );
+    return self.call_function("SQMDMerge", sqmd_merge, "core");
   }
 
   pub fn proxy_http(&'a self, v:serde_json::Value) -> CallResult {
