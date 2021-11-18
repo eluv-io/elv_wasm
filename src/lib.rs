@@ -27,6 +27,7 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
+#[macro_export]
 macro_rules! output_raw_pointers {
   // This macro takes an argument of designator `ident` and
   // creates a function named `$func_name`.
