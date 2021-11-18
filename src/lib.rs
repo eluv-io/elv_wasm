@@ -21,19 +21,103 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 use std::sync::Mutex;
+use std::slice;
 
 lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
+macro_rules! output_raw_pointers {
+  // This macro takes an argument of designator `ident` and
+  // creates a function named `$func_name`.
+  // The `ident` designator is used for variable/function names.
+  ($raw_ptr:ident, $raw_len:ident) => {
+        unsafe { std::str::from_utf8(slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+  }
+}
+
+#[macro_export]
+macro_rules! implement_fake_fabric {
+  () => {
+    #[no_mangle]
+    pub extern "C" fn __console_log(ptr: *const u8, len: usize){
+      // let output = unsafe { slice::from_raw_parts(ptr, len) };
+      // let out_str = std::str::from_utf8(output).unwrap_or("unable to convert");
+      let out_str = output_raw_pointers!(ptr,len);
+      println!("console output : {}", out_str);
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_call(
+      bd_ptr: *const u8,
+      bd_len: usize,
+      ns_ptr: *const u8,
+      ns_len: usize,
+      op_ptr: *const u8,
+      op_len: usize,
+      ptr: *const u8,
+      len: usize,
+      ) -> usize {
+        let out_bd = output_raw_pointers!(bd_ptr, bd_len);
+        let out_ns = output_raw_pointers!(ns_ptr, ns_len);
+        let out_op = output_raw_pointers!(op_ptr, op_len);
+        let out_ptr = output_raw_pointers!(ptr, len);
+        println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
+        0
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_response(ptr: *const u8){
+      println!("host __host_response ptr = {:?}", ptr);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_response_len() -> usize{
+      println!("host __host_response_len");
+      0
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_error_len() -> usize{
+      println!("host __host_error_len");
+      0
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_error(ptr: *const u8){
+      println!("host __host_error ptr = {:?}", ptr);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_response(ptr: *const u8, len: usize){
+      let out_resp = output_raw_pointers!(ptr,len);
+      println!("host  __guest_response ptr = {}", out_resp);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_error(ptr: *const u8, len: usize){
+      let out_error = output_raw_pointers!(ptr,len);
+      println!("host  __guest_error ptr = {}", out_error);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8){
+      println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
+
+    }
+  };
+}
+
+
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
+    implement_fake_fabric!();
 
     fn handler_for_test(bcc: & mut BitcodeContext) -> CallResult{
       bcc.make_success("DONE")
     }
+
 
     #[test]
     fn test_basic_http(){
@@ -99,13 +183,6 @@ mod tests {
         }
       };
   }
-
-    #[test]
-    fn test_bad_add() {
-        // This assert would fire and test will fail.
-        // Please note, that private functions can be tested too!
-        //assert_eq!(bad_add(1, 2), 3);
-    }
 }
 
 macro_rules! enum_str {
@@ -424,10 +501,12 @@ impl<'a> BitcodeContext<'a> {
     return Ok(temp_dir_res);
   }
 
-  pub fn close_stream(&'a self, sid : String) -> CallResult{
-    return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
-  }
-
+  // callback issues a Callback on the fabric setting up an expectation that the output stream
+  // contains a specified sized buffer
+  // - status:    the http status of the call
+  // - content-type:     output buffer contents
+  // - size:  size of the output contents
+  //  Returns the checksum as hex-encoded string
   pub fn callback(&'a self, status:usize, content_type:&str, size:usize) -> CallResult{
     let v = json!(
       {"http" : {
@@ -444,7 +523,7 @@ impl<'a> BitcodeContext<'a> {
   }
 
 
-  // CheckSumPart calculates a checksum of a given content part.
+  // checksum_part calculates a checksum of a given content part.
   // - sum_method:    checksum method ("MD5" or "SHA256")
   // - qphash:        hash of the content part to checksum
   //  Returns the checksum as hex-encoded string
@@ -459,7 +538,9 @@ impl<'a> BitcodeContext<'a> {
 
     return self.call_function("QCheckSumPart", j, "core");
   }
-  // CheckSumFile calculates a checksum of a file in a file bundle
+
+
+  // checksum_file calculates a checksum of a file in a file bundle
   // - sum_method:    checksum method ("MD5" or "SHA256")
   // - file_path:     the path of the file in the bundle
   //  Returns the checksum as hex-encoded string
@@ -471,6 +552,7 @@ impl<'a> BitcodeContext<'a> {
         "file_path" : file_path,
       }
     );
+
     return self.call_function("QCheckSumFile", j, "core");
   }
 
@@ -612,7 +694,7 @@ impl<'a> BitcodeContext<'a> {
     return host_call(self.request.id.as_str(),ns,op,msg);
   }
 
-  pub fn call_function(&'a self, fn_name:&str , params:serde_json::Value, module:&str) -> CallResult {
+  fn call_function(&'a self, fn_name:&str , params:serde_json::Value, module:&str) -> CallResult {
     let response = &Response{
       jpc:"1.0".to_string(),
       id:self.request.id.clone(),
@@ -626,83 +708,102 @@ impl<'a> BitcodeContext<'a> {
     elv_console_log(&format!("CALL STRING = {}", call_str));
     return host_call(self.request.id.as_str(),module, fn_name, &call_val);
   }
-    // NewStream creates a new stream and returns its ID.
-    pub fn new_stream(&'a self) -> String {
-      let v = json!({});
-      let strm = self.call_function("NewStream", v, "ctx").unwrap_or_default();
-      let strm_json:serde_json::Value = serde_json::from_slice(&strm).unwrap_or_default();
-      let sid:String = strm_json["stream_id"].to_string();
-      return sid;
+
+  // close_stream closes the fabric stream
+  // - sid:    the sream id (returned from one of the new_file_stream or new_stream)
+  //  Returns the checksum as hex-encoded string
+  pub fn close_stream(&'a self, sid : String) -> CallResult{
+    return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
+  }
+
+  // new_stream creates a new fabric bitcode stream.
+  // output [u8] of format
+  // {"stream_id" : id} where id is a string
+  pub fn new_stream(&'a self) -> CallResult {
+    let v = json!({});
+    return self.call_function("NewStream", v, "ctx");
+  }
+
+  // new_file_stream creates a new fabric file
+  // output [u8] of format where id and path are strings
+  // {
+  //   "stream_id": id,
+  //   "file_name": path
+  // }
+  pub fn new_file_stream(&'a self) -> CallResult {
+    let v = json!({});
+    self.call_function("NewFileStream", v, "ctx")
+  }
+
+  // ffmpeg_run - runs ffmpeg server side
+  // cmdline - a string array with ffmpeg command line arguments
+  // - note the ffmpeg command line may reference files opened using
+  //   new_file_stream. See the image sample
+  pub fn ffmpeg_run(&'a self, cmdline:Vec<&str>) -> CallResult {
+    let params = json!({
+      "stream_params" : cmdline
+    });
+    return self.call_function( "FFMPEGRun", params, "ext");
+  }
+
+
+  pub fn q_download_file(&'a mut self, path:&str, hash_or_token:&str) -> CallResult{
+    elv_console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
+    let strm = self.new_stream()?;
+    let strm_json:serde_json::Value = serde_json::from_slice(&strm)?;
+    let sid = strm_json["stream_id"].to_string();
+    if sid == ""{
+      return self.make_error("Unable to find stream_id");
+    }
+    let j = json!({
+      "stream_id" : sid,
+      "path" : path,
+      "hash_or_token": hash_or_token,
+    });
+
+    let ret = self.call_function("QFileToStream", j, "core");
+    let v:serde_json::Value;
+    match ret{
+      Err(e) => return Err(e),
+      Ok(e) => v = serde_json::from_slice(&e).unwrap_or_default()
     }
 
-    pub fn new_file_stream(&'a self) -> CallResult {
-      let v = json!({});
-      self.call_function("NewFileStream", v, "ctx")
+    let jtemp = v.to_string();
+    elv_console_log(&format!("json={}", jtemp));
+    let written = v["written"].as_u64().unwrap_or_default();
+
+    if written != 0 {
+      return self.read_stream(sid, written as usize);
     }
+    return self.make_error("failed to write data");
 
-    pub fn ffmpeg_run(&'a self, cmdline:Vec<&str>) -> CallResult {
-      let params = json!({
-        "stream_params" : cmdline
-      });
-      return self.call_function( "FFMPEGRun", params, "ext");
+  }
+
+  pub fn q_upload_file(&'a mut self, qwt:&str, input_data:&[u8], path:&str, mime:&str) -> CallResult{
+    let sid = self.new_file_stream()?;
+    let new_stream:FileStream = serde_json::from_slice(&sid)?;
+    defer!{
+      let _ = self.close_stream(new_stream.stream_id.clone());
     }
+    let ret_s = self.write_stream(qwt, &new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
+    let written_map:HashMap<String, String> = serde_json::from_slice(&ret_s)?;
+    let i: i32 = written_map["written"].parse().unwrap_or(0);
+    let j = json!({
+      "qwtoken" : qwt,
+      "stream_id": new_stream.stream_id,
+      "path":path,
+      "mime":mime,
+      "size": i,
+    });
 
+    let method = "QCreateFileFromStream";
+    self.call_function(method, j, "core")
+  }
 
-    pub fn q_download_file(&'a mut self, path:&str, hash_or_token:&str) -> CallResult{
-      elv_console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
-      let sid = self.new_stream();
-      if sid == ""{
-        return self.make_error("Unable to find stream_id");
-      }
-      let j = json!({
-        "stream_id" : sid,
-        "path" : path,
-        "hash_or_token": hash_or_token,
-      });
-
-      let ret = self.call_function("QFileToStream", j, "core");
-      let v:serde_json::Value;
-      match ret{
-        Err(e) => return Err(e),
-        Ok(e) => v = serde_json::from_slice(&e).unwrap_or_default()
-      }
-
-      let jtemp = v.to_string();
-      elv_console_log(&format!("json={}", jtemp));
-      let written = v["written"].as_u64().unwrap_or_default();
-
-      if written != 0 {
-        return self.read_stream(sid, written as usize);
-      }
-      return self.make_error("failed to write data");
-
-    }
-
-		pub fn q_upload_file(&'a mut self, qwt:&str, input_data:&[u8], path:&str, mime:&str) -> CallResult{
-			let sid = self.new_file_stream()?;
-      let new_stream:FileStream = serde_json::from_slice(&sid)?;
-			defer!{
-        let _ = self.close_stream(new_stream.stream_id.clone());
-      }
-			let ret_s = self.write_stream(qwt, &new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
-      let written_map:HashMap<String, String> = serde_json::from_slice(&ret_s)?;
-      let i: i32 = written_map["written"].parse().unwrap_or(0);
-      let j = json!({
-        "qwtoken" : qwt,
-        "stream_id": new_stream.stream_id,
-        "path":path,
-        "mime":mime,
-        "size": i,
-      });
-
-			let method = "QCreateFileFromStream";
-			self.call_function(method, j, "core")
-		}
-
-    pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
-      let param = json!({ "stream_id" : stream, "path" : filename});
-      self.call_function("FileToStream", param, "core")
-    }
+  pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
+    let param = json!({ "stream_id" : stream, "path" : filename});
+    self.call_function("FileToStream", param, "core")
+  }
 
     pub fn file_stream_size(&'a self,filename:&str) -> usize {
       elv_console_log("file_stream_size");
