@@ -21,7 +21,6 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 use std::sync::Mutex;
-use std::slice;
 
 lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
@@ -33,7 +32,7 @@ macro_rules! output_raw_pointers {
   // creates a function named `$func_name`.
   // The `ident` designator is used for variable/function names.
   ($raw_ptr:ident, $raw_len:ident) => {
-        unsafe { std::str::from_utf8(slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+        unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
   }
 }
 
@@ -275,7 +274,7 @@ impl<T> ElvError<T>{
 }
 
 impl<T> ElvError<T>{
-  fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
+  pub fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
     ElvError{
       details:  msg.to_string(),
       kind:     kind,

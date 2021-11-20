@@ -1,0 +1,20 @@
+{
+    "library" : {
+        "id" : "libid1234",
+        "objects" : [
+            {
+                "hash" : "h3242333333",
+                "meta" : {
+                    "request_parameters" : {
+                        "url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",
+                        "method": "GET",
+                        "headers": {
+                         "Accept": "application/json",
+                         "Content-Type": "application/json"
+                       }
+                    }
+                }
+            }
+        ]
+    }
+}
