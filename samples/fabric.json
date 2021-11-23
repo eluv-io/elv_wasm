@@ -4,6 +4,10 @@
         "objects" : [
             {
                 "hash" : "h3242333333",
+                "id"   : "id123",
+                "qlib_id" : "libid1234",
+                "type"   : "hq_55556666",
+                "write_token" : "tqw_23354544",
                 "meta" : {
                     "request_parameters" : {
                         "url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",

@@ -3,18 +3,50 @@ extern crate base64;
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
+extern crate snailquote;
 use wasmtime_provider::WasmtimeEngineProvider;
 use elvwasm::ElvError;
 use elvwasm::ErrorKinds;
 use std::fs::File;
 use std::io::BufReader;
+use serde_json::json;
 
+use serde::{Deserialize, Serialize};
 static mut QFAB: MockFabric = MockFabric{
-    json_rep : None
+    fab : None
 };
 
+#[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct RootMockFabric {
+  pub library:Library
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Object {
+  pub hash: String,
+  pub id: String,
+  pub qlib_id: String,
+  #[serde(rename = "type")]
+  pub qtype: String,
+  pub write_token: String,
+  pub meta : serde_json::Map<String, serde_json::Value>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Library {
+  pub id: String,
+  pub objects: std::vec::Vec<Object>,
+}
+
+#[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct MockFabric{
-    json_rep : Option<serde_json::Value>
+    fab : Option<RootMockFabric>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct JPCRequest {
+  pub jpc: String,
+  pub params: serde_json::Map<String, serde_json::Value>
 }
 
 impl MockFabric{
@@ -23,18 +55,34 @@ impl MockFabric{
         let reader = BufReader::new(file);
 
         // Read the JSON contents of the file as an instance of `User`.
-        self.json_rep = serde_json::from_reader(reader)?;
+        let json_rep:RootMockFabric = serde_json::from_reader(reader)?;
+        self.fab = Some(json_rep);
         return Ok("DONE".as_bytes().to_vec())
     }
-    pub fn sqmd_get(&self) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
-        return Ok(r#"{"request_parameters" : {
-            "url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",
-            "method": "GET",
-            "headers": {
-             "Accept": "application/json",
-             "Content-Type": "application/json"
-           }
-         }}"#.as_bytes().to_vec());
+    pub fn sqmd_get(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        println!("in SQMD get");
+        let j:JPCRequest = serde_json::from_str(json_rep)?;
+        let path = j.params["path"].to_string();
+        if  path != ""{
+            let fab = self.fab.clone().unwrap();
+            let p = &snailquote::unescape(&path).unwrap();
+            let mut j_cur = json!(null);
+            for k in p.split("/"){
+                println!("item k == {}", k);
+                if k == ""{
+                    continue;
+                }
+                if j_cur == json!(null) {
+                    j_cur = fab.library.objects[0].meta[k].clone();
+                }else{
+                    j_cur = j_cur[k].clone();
+                }
+            }
+            return Ok(j_cur.to_string().as_bytes().to_vec());
+        }else{
+            println!("WOOPS 2");
+        }
+        return Ok("FAILED".as_bytes().to_vec())
     }
     pub fn proxy_http(&self) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
@@ -47,7 +95,7 @@ impl MockFabric{
         println!("In host callback, values i_cb = {} id = {} method = {} context = {}, pkg = {}", i_cb, id,method,context, s_pkg);
         match method {
             "SQMDGet" =>{
-               unsafe{ QFAB.sqmd_get() }
+               unsafe{ QFAB.sqmd_get(s_pkg) }
             }
             "ProxyHttp" => {
                 unsafe{ QFAB.proxy_http() }
