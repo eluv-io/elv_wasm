@@ -6,18 +6,17 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate json_dotpath;
 extern crate snailquote;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 use wasmtime_provider::WasmtimeEngineProvider;
 use elvwasm::ElvError;
 use elvwasm::ErrorKinds;
 use std::fs::File;
 use std::io::BufReader;
 use json_dotpath::DotPaths;
-use wapc::{WasiParams};
 use std::path::PathBuf;
 use structopt::StructOpt;
 use wasmer::imports;
-use serde_json::json;
+//use serde_json::json;
 
 use serde::{Deserialize, Serialize};
 static mut QFAB: MockFabric = MockFabric{
@@ -66,6 +65,10 @@ impl MockFabric{
         let json_rep:RootMockFabric = serde_json::from_reader(reader)?;
         self.fab = Some(json_rep);
         return Ok("DONE".as_bytes().to_vec())
+    }
+    pub fn write_stream(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        println!("in WriteStream");
+        Ok("Not Implemented".as_bytes().to_vec())
     }
     pub fn sqmd_delete(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         println!("in SQMD delete");
@@ -125,12 +128,18 @@ impl MockFabric{
         }
         return Ok("FAILED".as_bytes().to_vec())
     }
-    pub fn proxy_http(&self) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+    pub fn proxy_http(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        println!("in ProxyHttp");
         let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
         let enc = base64::encode(to_encode);
         return Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
     }
-
+    pub fn callback(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        println!("in callback");
+        let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
+        let enc = base64::encode(to_encode);
+        return Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
+    }
     pub fn host_callback(i_cb:u64, id:&str, context:&str, method:&str, pkg:&[u8])-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         let s_pkg = std::str::from_utf8(pkg)?;
         println!("In host callback, values i_cb = {} id = {} method = {} context = {}, pkg = {}", i_cb, id,method,context, s_pkg);
@@ -144,9 +153,15 @@ impl MockFabric{
             "SQMDDelete" =>{
                 unsafe{ QFAB.sqmd_delete(s_pkg) }
              }
+            "Write" => {
+                unsafe{ QFAB.write_stream(s_pkg) }
+            }
+            "Callback" => {
+                unsafe{ QFAB.callback(s_pkg) }
+            }
             "ProxyHttp" => {
-                unsafe{ QFAB.proxy_http() }
-                }
+                unsafe{ QFAB.proxy_http(s_pkg) }
+            }
             _ => {
                 Err(ElvError::<String>::new("Method not handled", ErrorKinds::NotExist).into())
             }
@@ -155,18 +170,18 @@ impl MockFabric{
 }
 
 struct WasmerHolder{
-    instance:wasmer::Instance
+    _instance:wasmer::Instance
 }
 
 impl wapc::WebAssemblyEngineProvider for WasmerHolder{
-    fn init(&mut self, host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error>>{
+    fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error>>{
         Ok(())
     }
-    fn call(&mut self, op_length: i32, msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error>>{
+    fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error>>{
         //.instance.store().engine.
         Ok(0)
     }
-    fn replace(&mut self, bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error>>{
+    fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error>>{
         Ok(())
     }
 }
@@ -195,13 +210,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let opt = Opt::from_args();
     unsafe{QFAB.init(&opt.fabric.into_os_string().into_string().unwrap())?;}
     let module_wat = std::fs::read(&opt.input.into_os_string().into_string().unwrap())?;
-    let mut h:std::option::Option::<wapc::WapcHost> = None;
+    let h;
     if opt.wasmer {
         let store = wasmer::Store::default();
         let wasmer_mod = wasmer::Module::new(&store, &module_wat)?;
         let import_object = imports! {};
         let instance = wasmer::Instance::new(&wasmer_mod, &import_object)?;
-        let wasm_holder = WasmerHolder{instance:instance};
+        let wasm_holder = WasmerHolder{_instance:instance};
         let host = wapc::WapcHost::new(Box::new(wasm_holder), MockFabric::host_callback)?;
         h = Some(host);
     }else{
