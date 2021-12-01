@@ -23,9 +23,10 @@ static mut QFAB: MockFabric = MockFabric{
     fab : None
 };
 
-#[derive(Serialize, Deserialize,  Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RootMockFabric {
-  pub library:Library
+  pub library:Library,
+  pub call:serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -199,7 +200,7 @@ struct Opt {
     input: PathBuf,
 
 
-    /// Input wasm
+    /// Input fabric/call
     #[structopt(parse(from_os_str))]
     fabric: PathBuf,
 
@@ -240,31 +241,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Metadata   types.MetaData `json:"meta,omitempty"`
 		"params", params,
     */
-    h.unwrap().call("_jpc", r#"{
-      "jpc" : "1.0",
-      "id" : "id45678933",
-      "method" : "proxy",
-      "qinfo" : {
-          "id" : "id45678934",
-          "hash" : "hash44445555",
-          "write_token" : "tqw555555",
-          "type" : "hash2222222",
-          "qlib_id" : "libid6666666"
-      },
-      "params" : {
-        "http": {
-          "verb": "unused",
-          "path": "/proxy",
-          "headers": {
-              "Content-type": [ "application/json" ]
-            },
-            "query": {
-                "QUERY": ["fabric"],
-                "API_KEY":["AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE"],
-                "CONTEXT":["012842113009817296384:qjezbmwk0cx"]
-            }
-          }
-        }
-      }"#.as_bytes())?;
+    h.unwrap().call("_jpc", &serde_json::to_vec(unsafe{&QFAB.fab.clone().unwrap().call}).unwrap())?;
     Ok(())
 }
+

@@ -20,5 +20,31 @@
                 }
             }
         ]
+    },
+    "call" : {
+        "jpc" : "1.0",
+        "id" : "id45678933",
+        "method" : "proxy",
+        "qinfo" : {
+            "id" : "id45678934",
+            "hash" : "hash44445555",
+            "write_token" : "tqw555555",
+            "type" : "hash2222222",
+            "qlib_id" : "libid6666666"
+        },
+        "params" : {
+          "http": {
+            "verb": "unused",
+            "path": "/proxy",
+            "headers": {
+                "Content-type": [ "application/json" ]
+              },
+              "query": {
+                  "QUERY": ["fabric"],
+                  "API_KEY":["AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE"],
+                  "CONTEXT":["012842113009817296384:qjezbmwk0cx"]
+              }
+            }
+          }
     }
 }
