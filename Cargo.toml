@@ -20,6 +20,8 @@ wasmer = "2.0.0"
 wasmtime-provider = "0.0.7"
 base64 = "0.13.0"
 snailquote = "0.3.1"
+json_dotpath = "1.1.0"
+structopt = "0.3.25"
 
 [dependencies.samples]
 path = "samples/"

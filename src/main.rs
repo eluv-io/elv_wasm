@@ -1,14 +1,22 @@
 extern crate wapc;
+extern crate wasmer;
 extern crate base64;
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
+extern crate json_dotpath;
 extern crate snailquote;
+use std::sync::{Arc, RwLock};
 use wasmtime_provider::WasmtimeEngineProvider;
 use elvwasm::ElvError;
 use elvwasm::ErrorKinds;
 use std::fs::File;
 use std::io::BufReader;
+use json_dotpath::DotPaths;
+use wapc::{WasiParams};
+use std::path::PathBuf;
+use structopt::StructOpt;
+use wasmer::imports;
 use serde_json::json;
 
 use serde::{Deserialize, Serialize};
@@ -59,6 +67,44 @@ impl MockFabric{
         self.fab = Some(json_rep);
         return Ok("DONE".as_bytes().to_vec())
     }
+    pub fn sqmd_delete(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        println!("in SQMD delete");
+        let j:JPCRequest = serde_json::from_str(json_rep)?;
+        let path = j.params["path"].to_string();
+        if  path != ""{
+            let mut fab = self.fab.clone().unwrap();
+            let p = &snailquote::unescape(&path).unwrap();
+            let pp:String = p.chars().map(|x| match x {
+                '/' => '.',
+                _ => x
+            }).collect();
+            fab.library.objects[0].meta.dot_remove(&pp[1..])?;//{
+            return Ok("DONE".as_bytes().to_vec())
+        }else{
+            println!("failed to find path argument");
+        }
+        return Ok("FAILED".as_bytes().to_vec())
+    }
+    pub fn sqmd_set(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        println!("in SQMD set");
+        let j:JPCRequest = serde_json::from_str(json_rep)?;
+        let path = j.params["path"].to_string();
+        let meta = j.params["meta"].to_string();
+        if  path != ""{
+            let mut fab = self.fab.clone().unwrap();
+            let p = &snailquote::unescape(&path).unwrap();
+            let pp:String = p.chars().map(|x| match x {
+                '/' => '.',
+                _ => x
+            }).collect();
+            fab.library.objects[0].meta.dot_set(&pp[1..], meta)?;
+            return Ok("DONE".as_bytes().to_vec())
+
+        }else{
+            println!("failed to find path argument");
+        }
+        return Ok("FAILED".as_bytes().to_vec())
+    }
     pub fn sqmd_get(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         println!("in SQMD get");
         let j:JPCRequest = serde_json::from_str(json_rep)?;
@@ -66,21 +112,16 @@ impl MockFabric{
         if  path != ""{
             let fab = self.fab.clone().unwrap();
             let p = &snailquote::unescape(&path).unwrap();
-            let mut j_cur = json!(null);
-            for k in p.split("/"){
-                println!("item k == {}", k);
-                if k == ""{
-                    continue;
-                }
-                if j_cur == json!(null) {
-                    j_cur = fab.library.objects[0].meta[k].clone();
-                }else{
-                    j_cur = j_cur[k].clone();
-                }
-            }
-            return Ok(j_cur.to_string().as_bytes().to_vec());
+            let pp:String = p.chars().map(|x| match x {
+                '/' => '.',
+                _ => x
+            }).collect();
+            let gotten:Option<serde_json::Value> = fab.library.objects[0].meta.dot_get(&pp[1..])?;
+            let ret = gotten.unwrap();
+            println!("sqmd_get returning = {}", ret);
+            return Ok(ret.to_string().as_bytes().to_vec())
         }else{
-            println!("WOOPS 2");
+            println!("failed to find path argument");
         }
         return Ok("FAILED".as_bytes().to_vec())
     }
@@ -97,6 +138,12 @@ impl MockFabric{
             "SQMDGet" =>{
                unsafe{ QFAB.sqmd_get(s_pkg) }
             }
+            "SQMDSet" =>{
+                unsafe{ QFAB.sqmd_set(s_pkg) }
+             }
+            "SQMDDelete" =>{
+                unsafe{ QFAB.sqmd_delete(s_pkg) }
+             }
             "ProxyHttp" => {
                 unsafe{ QFAB.proxy_http() }
                 }
@@ -107,18 +154,63 @@ impl MockFabric{
     }
 }
 
+struct WasmerHolder{
+    instance:wasmer::Instance
+}
 
+impl wapc::WebAssemblyEngineProvider for WasmerHolder{
+    fn init(&mut self, host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error>>{
+        Ok(())
+    }
+    fn call(&mut self, op_length: i32, msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error>>{
+        //.instance.store().engine.
+        Ok(0)
+    }
+    fn replace(&mut self, bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error>>{
+        Ok(())
+    }
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "example", about = "An example of StructOpt usage.")]
+struct Opt {
+    /// Activate debug mode
+    // short and long flags (-w, --wasmer) will be deduced from the field's name
+    #[structopt(short, long)]
+    wasmer: bool,
+
+    /// Input wasm
+    #[structopt(parse(from_os_str))]
+    input: PathBuf,
+
+
+    /// Input wasm
+    #[structopt(parse(from_os_str))]
+    fabric: PathBuf,
+
+}
 
 pub fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!("In main");
-    if std::env::args().len() < 3 {
-        return Err(ElvError::<String>::new("Usage: elvwasm path-to-wasm path-to-fab-json", ErrorKinds::NotExist).into());
+    let opt = Opt::from_args();
+    unsafe{QFAB.init(&opt.fabric.into_os_string().into_string().unwrap())?;}
+    let module_wat = std::fs::read(&opt.input.into_os_string().into_string().unwrap())?;
+    let mut h:std::option::Option::<wapc::WapcHost> = None;
+    if opt.wasmer {
+        let store = wasmer::Store::default();
+        let wasmer_mod = wasmer::Module::new(&store, &module_wat)?;
+        let import_object = imports! {};
+        let instance = wasmer::Instance::new(&wasmer_mod, &import_object)?;
+        let wasm_holder = WasmerHolder{instance:instance};
+        let host = wapc::WapcHost::new(Box::new(wasm_holder), MockFabric::host_callback)?;
+        h = Some(host);
+    }else{
+        let engine = WasmtimeEngineProvider::new(&module_wat, None);
+        println!("HERE");
+        //engine.
+        let host = wapc::WapcHost::new(Box::new(engine), MockFabric::host_callback)?;
+        h = Some(host);
     }
-    let args: Vec<String> = std::env::args().collect();
-    unsafe{QFAB.init(&args[2])?;}
-    let module_wat = std::fs::read(&args[1])?;
-    let engine = WasmtimeEngineProvider::new(&module_wat, None);
-    let host = wapc::WapcHost::new(Box::new(engine), MockFabric::host_callback)?;
 
     /*
     	"jpc", "1.0",
@@ -133,7 +225,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Metadata   types.MetaData `json:"meta,omitempty"`
 		"params", params,
     */
-    host.call("_jpc", r#"{
+    h.unwrap().call("_jpc", r#"{
       "jpc" : "1.0",
       "id" : "id45678933",
       "method" : "proxy",
