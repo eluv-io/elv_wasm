@@ -107,7 +107,8 @@ macro_rules! implement_fake_fabric {
   };
 }
 
-
+// The following are mearly intended to verify internal consistency.  There are no actual calls made
+// but the tests verify that the json parsing of the http message is correct
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -204,6 +205,8 @@ macro_rules! enum_str {
   };
 }
 
+// Errorkinds define the category of content fabric errors that exist.  These errors define categories that can be searched in the
+// content fabric logs (qfab.log)
 enum_str! {
    enum ErrorKinds {
     Other = 0x00,
@@ -254,6 +257,8 @@ impl std::fmt::Debug for NoSubError {
   }
 }
 
+// Defines the structure of an error in WASM bitcode.  The structure mimics the content fabric error structure and these errors
+// will be returned to the fabric calling code and translated to real content-fabric errors
 #[derive(Clone)]
 pub struct ElvError<T> {
     details: String,
@@ -436,6 +441,11 @@ pub struct Response {
   pub method:String,
 }
 
+/// This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext
+/// is automatically created during the processing of the http request.  During initialization, all context
+/// data is acquired from the http request.  The BitcodeContext provides 2 way communication to the content fabric.
+/// There is convenience impl method call_function that allows the fabric to be accessed via a known set of APIs.
+/// [See some pointer to the fabric dispatch methods].
 #[derive(Debug, Clone)]
 pub struct BitcodeContext<'a> {
   pub request: &'a Request,
@@ -464,6 +474,7 @@ impl<'a> BitcodeContext<'a> {
     }
   }
 
+  //
   pub fn write_stream(&'a self, id:&str, stream:&str,  src:&'a [u8], len: usize) -> CallResult {
     let mut actual_len = src.len();
     if len != usize::MAX {
@@ -690,11 +701,15 @@ impl<'a> BitcodeContext<'a> {
     return self.make_success_bytes(&proxy_result, &id);
   }
 
-  fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
+  pub fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
     return host_call(self.request.id.as_str(),ns,op,msg);
   }
-
-  fn call_function(&'a self, fn_name:&str , params:serde_json::Value, module:&str) -> CallResult {
+  /// call_function - enables the calling of fabric api's
+  /// # Arguments
+  /// * `fn_name` - the fabric api to call e.g. QCreateFileFromStream
+  /// * `params` - a json block to pass as parameters to the function being called
+  /// * `module` - one of {"core", "ctx", "ext"} see [fabric API]
+  pub fn call_function(&'a self, fn_name:&str , params:serde_json::Value, module:&str) -> CallResult {
     let response = &Response{
       jpc:"1.0".to_string(),
       id:self.request.id.clone(),
@@ -709,36 +724,50 @@ impl<'a> BitcodeContext<'a> {
     return host_call(self.request.id.as_str(),module, fn_name, &call_val);
   }
 
-  // close_stream closes the fabric stream
-  // - sid:    the sream id (returned from one of the new_file_stream or new_stream)
-  //  Returns the checksum as hex-encoded string
+  /// close_stream closes the fabric stream
+  /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
+  ///  Returns the checksum as hex-encoded string
   pub fn close_stream(&'a self, sid : String) -> CallResult{
     return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
   }
 
-  // new_stream creates a new fabric bitcode stream.
-  // output [u8] of format
-  // {"stream_id" : id} where id is a string
+  /// new_stream creates a new fabric bitcode stream.
+  /// # Returns
+  /// * output [u8] of format {"stream_id" : id} where id is a string
   pub fn new_stream(&'a self) -> CallResult {
     let v = json!({});
     return self.call_function("NewStream", v, "ctx");
   }
 
-  // new_file_stream creates a new fabric file
-  // output [u8] of format where id and path are strings
-  // {
-  //   "stream_id": id,
-  //   "file_name": path
-  // }
+  /// new_file_stream creates a new fabric file
+  /// output [u8] of format where id and path are strings
+  /// {
+  ///   "stream_id": id,
+  ///   "file_name": path
+  /// }
   pub fn new_file_stream(&'a self) -> CallResult {
     let v = json!({});
     self.call_function("NewFileStream", v, "ctx")
   }
 
-  // ffmpeg_run - runs ffmpeg server side
-  // cmdline - a string array with ffmpeg command line arguments
-  // - note the ffmpeg command line may reference files opened using
-  //   new_file_stream. See the image sample
+  /// ffmpeg_run - runs ffmpeg server side
+  ///
+  /// cmdline - a string array with ffmpeg command line arguments
+  /// - note the ffmpeg command line may reference files opened using
+  ///   new_file_stream.
+  /// eg
+  /// ```
+  ///  fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_file:&str, watermark_file:&str, overlay_x:&str, overlay_y:&str) -> CallResult{
+  ///     let base_placement = format!("{}:{}",overlay_x,overlay_y);
+  ///     let scale_factor = "[0:v]scale=%SCALE%:-1[bg];[bg][1:v]overlay=%OVERLAY%";
+  ///     let scale_factor = &scale_factor.replace("%SCALE%", height).to_string().replace("%OVERLAY%", &base_placement).to_string();
+  ///     if input_file == "" || watermark_file == "" || new_file == ""{
+  ///       let msg = "parameter validation failed, one file is empty or null";
+  ///       return bcc.make_error(msg);
+  ///     }
+  ///     bcc.ffmpeg_run(["-hide_banner","-nostats","-y","-i", input_file,"-i", watermark_file,"-filter_complex", scale_factor,"-f", "singlejpeg", new_file].to_vec())
+  ///  }
+  /// ```
   pub fn ffmpeg_run(&'a self, cmdline:Vec<&str>) -> CallResult {
     let params = json!({
       "stream_params" : cmdline
@@ -746,7 +775,11 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function( "FFMPEGRun", params, "ext");
   }
 
-
+  /// q_download_file : downloads the file stored  at the fabric file location path for some content
+  /// # Arguments
+  /// *  `path` : fabric file location in the content
+  /// *  `hash_or_token` : hash for the content containing the file
+  ///
   pub fn q_download_file(&'a mut self, path:&str, hash_or_token:&str) -> CallResult{
     elv_console_log(&format!("q_download_file path={} token={}",path,hash_or_token));
     let strm = self.new_stream()?;
@@ -779,6 +812,13 @@ impl<'a> BitcodeContext<'a> {
 
   }
 
+  /// q_upload_file : uploads the input data and stores it at the fabric file location as filetype mime
+  /// # Arguments
+  /// * `qwt` : a fabric write token
+  /// *  `input_data` : a slice of u8 data
+  /// *  `path` : fabric file location
+  /// *  `mime` : MIME type to store the data as (eg gif)
+  ///
   pub fn q_upload_file(&'a mut self, qwt:&str, input_data:&[u8], path:&str, mime:&str) -> CallResult{
     let sid = self.new_file_stream()?;
     let new_stream:FileStream = serde_json::from_slice(&sid)?;
@@ -800,35 +840,42 @@ impl<'a> BitcodeContext<'a> {
     self.call_function(method, j, "core")
   }
 
+  /// file_to_stream directs a fabric file (filename) to a fabric stream (stream)
+  /// filename - name of the fabric file (see new_file_stream)
+  /// stream - name of the stream that receives the file stream (see new_stream)
   pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
     let param = json!({ "stream_id" : stream, "path" : filename});
     self.call_function("FileToStream", param, "core")
   }
 
-    pub fn file_stream_size(&'a self,filename:&str) -> usize {
-      elv_console_log("file_stream_size");
-      let ret:Vec<u8> = match self.call_function("FileStreamSize", json!({"file_name" : filename}), "ctx"){
-         Ok(m) =>{ m }
-         Err(_e) => {
-           let j:FileStreamSize = serde_json::from_value(json!({"file_size" : 0})).unwrap_or(FileStreamSize{file_size:0});
-           return j.file_size;
-          }
-      };
-
-      match serde_json::from_slice::<FileStreamSize>(&ret){
-        Ok(msize) => {
-          elv_console_log(&format!("FileStream returned={}", msize.file_size));
-          msize.file_size
-        }
+  /// file_stream_size computes the current size of a fabric file stream given its stream name
+  ///     filename : the name of the file steam.  See new_file_stream.
+  pub fn file_stream_size(&'a self,filename:&str) -> usize {
+    elv_console_log("file_stream_size");
+    let ret:Vec<u8> = match self.call_function("FileStreamSize", json!({"file_name" : filename}), "ctx"){
+        Ok(m) =>{ m }
         Err(_e) => {
-          elv_console_log("Err from FileStreamSize");
-          0
+          let j:FileStreamSize = serde_json::from_value(json!({"file_size" : 0})).unwrap_or(FileStreamSize{file_size:0});
+          return j.file_size;
         }
+    };
+
+    match serde_json::from_slice::<FileStreamSize>(&ret){
+      Ok(msize) => {
+        elv_console_log(&format!("FileStream returned={}", msize.file_size));
+        msize.file_size
+      }
+      Err(_e) => {
+        elv_console_log("Err from FileStreamSize");
+        0
       }
     }
+  }
 
 }
 
+/// register_handler adjusts the global static call map to associate a bitcode module with a path
+/// this map is used by jpc to implement bitcode calls
 #[no_mangle]
 pub fn register_handler(name: &str, h: HandlerFunction) {
   CALLMAP.lock().unwrap().insert(name.to_string(), h);
@@ -844,6 +891,12 @@ fn elv_console_log(s:&str){
   println!("{}", s)
 }
 
+/// jpc is the main entry point into a wasm bitcode for the web assembly procedure calls
+/// this function will
+///   1- parse the input for the appropriately formatted json
+///   2- construct a BitcodeContext from the json
+///   3- attempt to call the method using the incomming path
+///   4- return results to the caller
 #[no_mangle]
 pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   elv_console_log(&"In jpc");
