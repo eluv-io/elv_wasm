@@ -474,7 +474,15 @@ impl<'a> BitcodeContext<'a> {
     }
   }
 
-  //
+  /// write_stream writes a u8 slice of specified length to a fabric stream
+  /// # Arguments
+  /// * `id`-    a unique identifier (can use BitcodeContext's request id)
+  /// * `stream`-  the fabric stream to write to [new_stream]
+  /// * `src`-  a u8 slice to write
+  /// * `len` -  length of the slice to write
+  /// # Returns
+  /// utf8 bytes stream containing json 
+  /// { "written" : bytes }
   pub fn write_stream(&'a self, id:&str, stream:&str,  src:&'a [u8], len: usize) -> CallResult {
     let mut actual_len = src.len();
     if len != usize::MAX {
@@ -485,6 +493,14 @@ impl<'a> BitcodeContext<'a> {
     return host_call(id, stream, &"Write".to_string(), jv);
   }
 
+  /// write_stream writes a u8 slice to a fabric stream
+  /// # Arguments
+  /// * `id`-    a unique identifier (can use BitcodeContext's request id)
+  /// * `stream`-  the fabric stream to write to [new_stream]
+  /// * `src`-  a u8 slice to write
+  /// # Returns
+  /// utf8 bytes stream containing json 
+  /// { "written" : bytes }
   pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
     return host_call(&id, &stream, &"Write".to_string(), src);
   }
@@ -512,12 +528,14 @@ impl<'a> BitcodeContext<'a> {
     return Ok(temp_dir_res);
   }
 
-  // callback issues a Callback on the fabric setting up an expectation that the output stream
-  // contains a specified sized buffer
-  // - status:    the http status of the call
-  // - content-type:     output buffer contents
-  // - size:  size of the output contents
-  //  Returns the checksum as hex-encoded string
+  /// callback issues a Callback on the fabric setting up an expectation that the output stream
+  /// contains a specified sized buffer
+  /// # Arguments
+  /// * `status`-    the http status of the call
+  /// * `content-type`-     output buffer contents
+  /// * `size`-  size of the output contents
+  /// # Returns
+  /// the checksum as hex-encoded string
   pub fn callback(&'a self, status:usize, content_type:&str, size:usize) -> CallResult{
     let v = json!(
       {"http" : {
@@ -534,10 +552,12 @@ impl<'a> BitcodeContext<'a> {
   }
 
 
-  // checksum_part calculates a checksum of a given content part.
-  // - sum_method:    checksum method ("MD5" or "SHA256")
-  // - qphash:        hash of the content part to checksum
-  //  Returns the checksum as hex-encoded string
+  /// checksum_part calculates a checksum of a given content part.
+  /// # Arguments
+  /// * `sum_method`-    checksum method ("MD5" or "SHA256")
+  /// * `qphash`-        hash of the content part to checksum
+  /// # Returns
+  /// the checksum as hex-encoded string
   pub fn checksum_part(&'a self, sum_method:&str, qphash:&str) -> CallResult{
 
     let j = json!(
@@ -625,6 +645,22 @@ impl<'a> BitcodeContext<'a> {
     return Ok(v);
   }
 
+  /// The following sqmd_* based functions all work on the premise that a bitcode context represents a single content
+  /// in the fabric.  As such, each content has meta data that is directly associated.  This meta forms a standard tree
+  /// at the `/` root level.
+
+  /// sqmd_get_json gets the metadata at path
+  /// # Arguments
+  /// * `path` : path to the meta data
+  /// # Returns
+  /// * UTF8 [u8] slice containing json
+  /// ```
+  /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+  ///   let res = bcc.sqmd_get_json("/some_key")?;
+  ///   let mut meta_str: String = match String::from_utf8(res)?;
+  ///   ...
+  /// }
+  /// ```
   pub fn sqmd_get_json(&'a self, path:&'a str) -> CallResult {
     let sqmd_get = json!
     (
@@ -635,6 +671,19 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function("SQMDGet", sqmd_get, "core");
   }
 
+  /// sqmd_get_json_external gets the metadata at path from another content
+  /// # Arguments
+  /// * `path` : path to the meta data
+  /// * `qhash`: hash of external content
+  /// # Returns
+  /// * UTF8 [u8] slice containing json
+  /// ```
+  /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+  ///   let res = bcc.sqmd_get_json_external("hq_bad2a1ac0a2923ad85e1489736701c06320242a9", "/some_key")?;
+  ///   let mut meta_str: String = match String::from_utf8(res)?;
+  ///   ...
+  /// }
+  /// ```
   pub fn sqmd_get_json_external(&'a self, qlibid:&str, qhash:&str, path:&str) -> CallResult {
     let sqmd_get = json!
     (
@@ -647,6 +696,17 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function("SQMDGetExternal", sqmd_get, "core");
   }
 
+  /// sqmd_clear_json clears the metadata at path
+  /// # Arguments
+  /// * `path` : path to the meta data
+  /// # Returns
+  /// * nothing only error on failure
+  /// ```
+  /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+  ///   let res = bcc.sqmd_clear_json("/some_key")?; // this will blast some_key and all its descendants
+  ///   ...
+  /// }
+  /// ```
   pub fn sqmd_clear_json(&'a self, path:&'a str) -> CallResult {
 
     let sqmd_clear = json!
@@ -682,6 +742,7 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function("SQMDSet", sqmd_set, "core");
   }
 
+  /// sqmd_merge_json
   pub fn sqmd_merge_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
 
     let sqmd_merge = json!
@@ -693,7 +754,26 @@ impl<'a> BitcodeContext<'a> {
     );
     return self.call_function("SQMDMerge", sqmd_merge, "core");
   }
-
+  /// proxy_http proxies an http request in case of CORS issues
+  /// # Arguments
+  /// * `v` : a JSON Value
+  ///
+  /// ```
+  ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> CallResult {
+  ///   let v = serde_json::from_str(r#"{
+  ///         "request_parameters" : {
+	///         "url": "https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&q=fabric&cx=012842113009817296384:qjezbmwk0cx",
+  ///         "method": "GET",
+  ///         "headers": {
+  ///         "Accept": "application/json",
+  ///         "Content-Type": "application/json"
+  ///       }
+  ///   }"#).unwrap();
+  ///   bcc.proxy_http(v)
+  /// }
+  /// ```
+  /// # Returns
+  /// * slice of [u8]
   pub fn proxy_http(&'a self, v:serde_json::Value) -> CallResult {
     let method = "ProxyHttp";
     let proxy_result = self.call_function(&method, v, &"ext")?;
@@ -709,6 +789,7 @@ impl<'a> BitcodeContext<'a> {
   /// * `fn_name` - the fabric api to call e.g. QCreateFileFromStream
   /// * `params` - a json block to pass as parameters to the function being called
   /// * `module` - one of {"core", "ctx", "ext"} see [fabric API]
+  ///
   pub fn call_function(&'a self, fn_name:&str , params:serde_json::Value, module:&str) -> CallResult {
     let response = &Response{
       jpc:"1.0".to_string(),
@@ -733,7 +814,7 @@ impl<'a> BitcodeContext<'a> {
 
   /// new_stream creates a new fabric bitcode stream.
   /// # Returns
-  /// * output [u8] of format {"stream_id" : id} where id is a string
+  /// * output [u8] of format `{"stream_id" : id}` where id is a string
   pub fn new_stream(&'a self) -> CallResult {
     let v = json!({});
     return self.call_function("NewStream", v, "ctx");
@@ -751,10 +832,9 @@ impl<'a> BitcodeContext<'a> {
   }
 
   /// ffmpeg_run - runs ffmpeg server side
-  ///
-  /// cmdline - a string array with ffmpeg command line arguments
-  /// - note the ffmpeg command line may reference files opened using
-  ///   new_file_stream.
+  /// # Arguments
+  /// * `cmdline` - a string array with ffmpeg command line arguments
+  /// - note the ffmpeg command line may reference files opened using new_file_stream.
   /// eg
   /// ```
   ///  fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_file:&str, watermark_file:&str, overlay_x:&str, overlay_y:&str) -> CallResult{
