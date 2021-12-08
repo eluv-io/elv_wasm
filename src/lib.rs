@@ -373,9 +373,51 @@ impl<T:Error> From<T> for ElvError<T> {
   }
 }
 
+/// Q is a bitcode representation of an individual piece of content from the fabric
+#[derive(Serialize, Deserialize,  Clone, Debug, Default)]
+pub struct Q{
+  pub id:String,
+  pub hash:String,
+  #[serde(default)]
+  pub write_token:String,
+  #[serde(rename = "type")]
+  pub q_type:String,
+  pub qlib_id:String,
+  #[serde(default)]
+  pub meta:serde_json::Value,
+}
+
+/// Bitcode representation of a fabric size error
+#[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct QError{
+  pub error:String,
+  #[serde(default)]
+  pub item:Q,
+}
+
+/// QRef is a bitcode representation of versioned content from the fabric
+#[derive(Serialize, Deserialize,  Clone, Debug, Default)]
+pub struct QRef{
+  pub id:String,
+  pub versions:Vec<Q>,
+}
+
+/// Bitcode representation of a full content listing given an optional filter
+#[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct QList{
+  #[serde(default)]
+  pub filter:String,
+  pub contents: Vec<QRef>,
+  #[serde(default)]
+  pub errors : Vec<QError>
+}
+
+/// Bitcode representation of a fabric FileStream
 #[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct FileStream {
+  /// bitcode stream handle
   pub stream_id:String,
+  /// fabric file path
   pub file_name:String,
 }
 
@@ -590,10 +632,12 @@ impl<'a> BitcodeContext<'a> {
   }
 
 
-  // checksum_file calculates a checksum of a file in a file bundle
-  // - sum_method:    checksum method ("MD5" or "SHA256")
-  // - file_path:     the path of the file in the bundle
-  //  Returns the checksum as hex-encoded string
+  /// checksum_file calculates a checksum of a file in a file bundle
+  /// # Arguments
+  /// * `sum_method`-    checksum method ("MD5" or "SHA256")
+  /// * `file_path`-     the path of the file in the bundle
+  /// # Returns
+  /// the checksum as hex-encoded string
   pub fn checksum_file(&'a self, sum_method:&str, file_path:&str) -> CallResult{
 
     let j = json!(
@@ -606,6 +650,19 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function("QCheckSumFile", j, "core");
   }
 
+  /// q_list_content_for calculates a content fabric QList for a given libid
+  /// # Arguments
+  /// * `qlibid`-    libid to be listed
+  /// # Returns
+  /// [Vec<u8>] parseable to [QList]
+  /// e.g.
+  /// ```
+  /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+  ///   let res = bcc.q_list_content_for(bcc.request.q_info.libid)?;
+  ///   let qlist:QList = serde_json::from_str(std::str::from_utf8(res))?;
+  ///   // do stuff with the qlist
+  /// }
+  /// ```
   pub fn q_list_content_for(&'a self, qlibid:&str) -> CallResult {
 
     let j = json!(
@@ -617,14 +674,21 @@ impl<'a> BitcodeContext<'a> {
     return self.call_function("QListContentFor", j, "core");
   }
 
-  pub fn q_part_info(&'a self, part_hash_or_token:&str) -> CallResult{
-
-    let j = json!(
-      {
-        "qphash_or_token" : part_hash_or_token,
-      }
-    );
-    return self.call_function("QPartInfo", j, "core");
+  /// q_list_content calculates a content fabric QList for the library assoictaed with this bitcode
+  /// # Arguments
+  /// # Returns
+  /// [Vec<u8>] parseable to [QList]
+  /// e.g.
+  /// ```
+  /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+  ///   let res = bcc.q_list_content()?;
+  ///   let qlist:QList = serde_json::from_str(std::str::from_utf8(res))?;
+  ///   // do stuff with the qlist
+  /// }
+  /// ```
+  pub fn q_list_content(&'a self) -> CallResult{
+    let j = json!({});
+    return self.call_function("QListContent", j, "core");
   }
 
 
