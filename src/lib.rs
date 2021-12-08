@@ -477,11 +477,11 @@ impl<'a> BitcodeContext<'a> {
   /// write_stream writes a u8 slice of specified length to a fabric stream
   /// # Arguments
   /// * `id`-    a unique identifier (can use BitcodeContext's request id)
-  /// * `stream`-  the fabric stream to write to [new_stream]
+  /// * `stream`-  the fabric stream to write to [BitcodeContext::new_stream]
   /// * `src`-  a u8 slice to write
   /// * `len` -  length of the slice to write
   /// # Returns
-  /// utf8 bytes stream containing json 
+  /// utf8 bytes stream containing json
   /// { "written" : bytes }
   pub fn write_stream(&'a self, id:&str, stream:&str,  src:&'a [u8], len: usize) -> CallResult {
     let mut actual_len = src.len();
@@ -496,27 +496,46 @@ impl<'a> BitcodeContext<'a> {
   /// write_stream writes a u8 slice to a fabric stream
   /// # Arguments
   /// * `id`-    a unique identifier (can use BitcodeContext's request id)
-  /// * `stream`-  the fabric stream to write to [new_stream]
+  /// * `stream`-  the fabric stream to write to [BitcodeContext::new_stream]
   /// * `src`-  a u8 slice to write
   /// # Returns
-  /// utf8 bytes stream containing json 
+  /// utf8 bytes stream containing json
   /// { "written" : bytes }
   pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
     return host_call(&id, &stream, &"Write".to_string(), src);
   }
 
-  pub fn write_part_to_stream(&'a self, stream_id:String, qihot:String, qphash:String, offset:i64, length:i64) -> CallResult{
+  /// write_part_to_stream writes the content of a part to to a fabric stream
+  /// # Arguments
+  /// * `stream_id`-    stream identifier from new_stream or the like
+  /// * `off`-  offset into the file (0 based)
+  /// * `len`-  length of part to write
+  /// * `qphash` - part hash to write
+  /// # Returns
+  /// utf8 bytes stream containing json
+  /// { "written" : count-of-bytes-written }
+  pub fn write_part_to_stream(&'a self, stream_id:String, qphash:String, offset:i64, length:i64) -> CallResult{
     let msg = json!(
       {
         "stream_id" :  stream_id,
         "off":offset,
         "len" : length,
-        "qihot":qihot,
         "qphash":qphash,
      }
     );
     return self.call_function("QWritePartToStream", msg, "core");
   }
+
+  /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
+  /// # Arguments
+  /// * `stream_to_read`-  the fabric stream to read from
+  /// * `sz`-  usize size of bytes
+  /// # Returns
+  /// utf8 bytes stream containing json
+  /// {
+  ///   "return" : { "read" : byte-count-read },
+  ///   "result" : "base64 encoded string"
+  ///  }
   pub fn read_stream(&'a mut self, stream_to_read:String, sz:usize) -> CallResult {
         let input = serde_json::json![sz];
         let input_json = serde_json::to_vec(&input)?;
@@ -973,10 +992,11 @@ fn elv_console_log(s:&str){
 
 /// jpc is the main entry point into a wasm bitcode for the web assembly procedure calls
 /// this function will
-///   1- parse the input for the appropriately formatted json
-///   2- construct a BitcodeContext from the json
-///   3- attempt to call the method using the incomming path
-///   4- return results to the caller
+/// # Steps
+///   * parse the input for the appropriately formatted json
+///   * construct a BitcodeContext from the json
+///   * attempt to call the method using the incomming path
+///   * return results to the caller
 #[no_mangle]
 pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
   elv_console_log(&"In jpc");
