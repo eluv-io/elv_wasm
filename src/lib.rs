@@ -257,8 +257,8 @@ impl std::fmt::Debug for NoSubError {
   }
 }
 
-// Defines the structure of an error in WASM bitcode.  The structure mimics the content fabric error structure and these errors
-// will be returned to the fabric calling code and translated to real content-fabric errors
+/// Defines the structure of an error in WASM bitcode.  The structure mimics the content fabric error structure and these errors
+/// will be returned to the fabric calling code and translated to real content-fabric errors
 #[derive(Clone)]
 pub struct ElvError<T> {
     details: String,
@@ -421,15 +421,19 @@ pub struct FileStream {
   pub file_name:String,
 }
 
+/// Bitcode representation of the size of a fabric stream
 #[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct FileStreamSize {
   pub file_size:usize,
 }
+
+/// Bitcode representation of the JPC (JSON Procedure Call) parameters from a client request
 #[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct JpcParams {
   pub http: HttpParams
 }
 
+/// Bitcode representation of the http parameters from a client request
 #[derive(Serialize, Deserialize,  Clone, Debug)]
 pub struct HttpParams {
   #[serde(default)]
@@ -452,6 +456,7 @@ pub struct HttpParams {
   pub host : String,
 }
 
+/// Bitcode representation of a content sans meta data
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QInfo {
   pub hash: String,
@@ -462,6 +467,7 @@ pub struct QInfo {
   pub write_token: String,
 }
 
+/// Bitcode representation of a incomming client request
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Request {
   pub id: String,
@@ -472,7 +478,9 @@ pub struct Request {
   pub q_info: QInfo,
 }
 
-
+/// Bitcode representation of a request back to the fabric as a consequnce of processing the request
+/// In order for bitcode to respond to a primary request from a client, the bitcode must gather info
+/// from the fabric for processing.  This structure represents the data to such a call.
 #[derive(Serialize, Deserialize)]
 pub struct Response {
   pub jpc: String,
@@ -496,6 +504,9 @@ pub struct BitcodeContext<'a> {
 
 type HandlerFunction = fn(bcc: & mut BitcodeContext) -> CallResult;
 
+/// make_json_error translates the bitcode [ElvError<T>] to an error response to the client
+/// # Arguments
+/// * `err`- the error to be translated to a response
 pub fn make_json_error<T:Error>(err:ElvError<T>) -> CallResult {
   elv_console_log(&format!("error={}", err));
   let msg = json!(
