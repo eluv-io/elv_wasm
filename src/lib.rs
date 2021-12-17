@@ -241,7 +241,7 @@ struct NoSubError{
 
 impl Error for NoSubError {
   fn description(&self) -> &str {
-      &"No Sub Error"
+      "No Sub Error"
   }
 }
 
@@ -271,7 +271,7 @@ impl<T> ElvError<T>{
       pub fn new_json(msg: &str, kind: ErrorKinds, sub_err : T) -> ElvError<T> {
       ElvError{
         details:  msg.to_string(),
-        kind:     kind,
+        kind,
         description: format!("{{ details : {}, kind : {} }}", msg, kind),
         json_error : Some(sub_err),
       }
@@ -282,7 +282,7 @@ impl<T> ElvError<T>{
   pub fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
     ElvError{
       details:  msg.to_string(),
-      kind:     kind,
+      kind,
       description: format!("{{ details : {}, kind : {} }}", msg, kind),
       json_error: None,
     }
@@ -290,7 +290,7 @@ impl<T> ElvError<T>{
   fn new_with_err(msg: &str, kind: ErrorKinds, err:T) -> ElvError<T>{
     ElvError{
       details:  msg.to_string(),
-      kind:     kind,
+      kind,
       description: format!("{{ details : {}, kind : {} }}", msg, kind),
       json_error: Some(err),
     }
@@ -305,10 +305,10 @@ trait Kind {
 
 impl<T:Error> Kind for ElvError<T>{
   fn kind(&self) -> ErrorKinds{
-    return self.kind;
+    self.kind
   }
   fn desc(&self) -> String{
-    return self.description.clone();
+    self.description.clone()
   }
 }
 
@@ -316,7 +316,7 @@ impl<T:Error> Kind for ElvError<T>{
 impl<T> std::error::Error for ElvError<T> where
 T: fmt::Display + Debug {
   fn description(&self) -> &str {
-      return self.kind.describe();
+      self.kind.describe()
   }
 }
 
@@ -515,14 +515,14 @@ pub fn make_json_error<T:Error>(err:ElvError<T>) -> CallResult {
   let vr = serde_json::to_vec(&msg)?;
   let out = str::from_utf8(&vr)?;
   elv_console_log(&format!("returning a test {}", out));
-  return Ok(vr);
+  Ok(vr)
 }
 
 
 impl<'a> BitcodeContext<'a> {
   fn new(request: &'a Request) -> BitcodeContext<'a> {
     BitcodeContext {
-      request: request,
+      request,
       return_buffer : vec![],
     }
   }
@@ -543,7 +543,7 @@ impl<'a> BitcodeContext<'a> {
     }
     let v = serde_json::json!(src[..actual_len]);
     let jv = &serde_json::to_vec(&v)?;
-    return host_call(id, stream, &"Write".to_string(), jv);
+    host_call(id, stream, &"Write".to_string(), jv)
   }
 
   /// write_stream writes a u8 slice to a fabric stream
@@ -555,7 +555,7 @@ impl<'a> BitcodeContext<'a> {
   /// utf8 bytes stream containing json
   /// { "written" : bytes }
   pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
-    return host_call(&id, &stream, &"Write".to_string(), src);
+    host_call(&id, &stream, &"Write".to_string(), src)
   }
 
   /// write_part_to_stream writes the content of a part to to a fabric stream
@@ -576,7 +576,7 @@ impl<'a> BitcodeContext<'a> {
         "qphash":qphash,
      }
     );
-    return self.call_function("QWritePartToStream", msg, "core");
+    self.call_function("QWritePartToStream", msg, "core")
   }
 
   /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
@@ -592,12 +592,12 @@ impl<'a> BitcodeContext<'a> {
   pub fn read_stream(&'a mut self, stream_to_read:String, sz:usize) -> CallResult {
         let input = serde_json::json![sz];
         let input_json = serde_json::to_vec(&input)?;
-        return host_call(self.request.id.as_str(),stream_to_read.as_str(), &"Read", &input_json);
+        host_call(self.request.id.as_str(),stream_to_read.as_str(), "Read", &input_json)
   }
 
   pub fn temp_dir(&'a mut self) -> CallResult {
-    let temp_dir_res = self.call("TempDir", &"{}", &"ctx".as_bytes())?;
-    return Ok(temp_dir_res);
+    let temp_dir_res = self.call("TempDir", "{}", "ctx".as_bytes())?;
+    Ok(temp_dir_res)
   }
 
   /// callback issues a Callback on the fabric setting up an expectation that the output stream
@@ -620,7 +620,7 @@ impl<'a> BitcodeContext<'a> {
       }
     );
     let method  = "Callback";
-    return self.call_function(method, v, "ctx");
+    self.call_function(method, v, "ctx")
   }
 
 
@@ -639,7 +639,7 @@ impl<'a> BitcodeContext<'a> {
       }
     );
 
-    return self.call_function("QCheckSumPart", j, "core");
+    self.call_function("QCheckSumPart", j, "core")
   }
 
 
@@ -658,7 +658,7 @@ impl<'a> BitcodeContext<'a> {
       }
     );
 
-    return self.call_function("QCheckSumFile", j, "core");
+    self.call_function("QCheckSumFile", j, "core")
   }
 
   /// q_list_content_for calculates a content fabric QList for a given libid
@@ -682,7 +682,7 @@ impl<'a> BitcodeContext<'a> {
       }
     );
 
-    return self.call_function("QListContentFor", j, "core");
+    self.call_function("QListContentFor", j, "core")
   }
 
   /// q_list_content calculates a content fabric QList for the library assoictaed with this bitcode
@@ -699,7 +699,7 @@ impl<'a> BitcodeContext<'a> {
   /// ```
   pub fn q_list_content(&'a self) -> CallResult{
     let j = json!({});
-    return self.call_function("QListContent", j, "core");
+    self.call_function("QListContent", j, "core")
   }
 
 
@@ -708,7 +708,7 @@ impl<'a> BitcodeContext<'a> {
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
     elv_console_log(&format!("returning : {}", out));
-    return Ok(v);
+    Ok(v)
   }
 
   pub fn make_success_json(&'a self, msg:&serde_json::Value, id:&str) -> CallResult {
@@ -716,19 +716,19 @@ impl<'a> BitcodeContext<'a> {
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
     elv_console_log(&format!("returning : {}", out));
-    return Ok(v);
+    Ok(v)
   }
 
   pub fn make_error(&'a self, msg:&str) -> CallResult {
-    return make_json_error(ElvError::<NoSubError>::new(msg , ErrorKinds::Invalid));
+    make_json_error(ElvError::<NoSubError>::new(msg , ErrorKinds::Invalid))
   }
 
   pub fn make_error_with_kind(&'a self, msg:&str, kind:ErrorKinds) -> CallResult {
-    return make_json_error(ElvError::<NoSubError>::new(msg , kind));
+    make_json_error(ElvError::<NoSubError>::new(msg , kind))
   }
 
   pub fn make_error_with_error<T:Error>(&'a self, msg:&str, kind:ErrorKinds, err:T) -> CallResult {
-    return make_json_error(ElvError::<T>::new_with_err(msg , kind, err));
+    make_json_error(ElvError::<T>::new_with_err(msg , kind, err))
   }
 
 
@@ -736,7 +736,7 @@ impl<'a> BitcodeContext<'a> {
     let res:serde_json::Value = serde_json::from_slice(msg)?;
     let js_ret = json!({"jpc":"1.0", "id": id, "result" : res});
     let v = serde_json::to_vec(&js_ret)?;
-    return Ok(v);
+    Ok(v)
   }
 
   /// The following sqmd_* based functions all work on the premise that a bitcode context represents a single content
@@ -762,7 +762,7 @@ impl<'a> BitcodeContext<'a> {
         "path": path
       }
     );
-    return self.call_function("SQMDGet", sqmd_get, "core");
+    self.call_function("SQMDGet", sqmd_get, "core")
   }
 
   /// sqmd_get_json_external gets the metadata at path from another content
@@ -787,7 +787,7 @@ impl<'a> BitcodeContext<'a> {
         "qhash":qhash,
       }
     );
-    return self.call_function("SQMDGetExternal", sqmd_get, "core");
+    self.call_function("SQMDGetExternal", sqmd_get, "core")
   }
 
   /// sqmd_clear_json clears the metadata at path
@@ -809,7 +809,7 @@ impl<'a> BitcodeContext<'a> {
         "path": path,
       }
     );
-    return self.call_function("SQMDClear", sqmd_clear, "core");
+    self.call_function("SQMDClear", sqmd_clear, "core")
   }
 
   pub fn sqmd_delete_json(&'a self, token:&'a str, path:&'a str) -> CallResult {
@@ -821,7 +821,7 @@ impl<'a> BitcodeContext<'a> {
         "path": path,
       }
     );
-    return self.call_function("SQMDDelete", sqmd_delete, "core");
+    self.call_function("SQMDDelete", sqmd_delete, "core")
   }
 
   pub fn sqmd_set_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
@@ -833,7 +833,7 @@ impl<'a> BitcodeContext<'a> {
         "path": path,
       }
     );
-    return self.call_function("SQMDSet", sqmd_set, "core");
+    self.call_function("SQMDSet", sqmd_set, "core")
   }
 
   /// sqmd_merge_json
@@ -846,7 +846,7 @@ impl<'a> BitcodeContext<'a> {
         "path": path,
       }
     );
-    return self.call_function("SQMDMerge", sqmd_merge, "core");
+    self.call_function("SQMDMerge", sqmd_merge, "core")
   }
   /// proxy_http proxies an http request in case of CORS issues
   /// # Arguments
@@ -870,13 +870,13 @@ impl<'a> BitcodeContext<'a> {
   /// * slice of [u8]
   pub fn proxy_http(&'a self, v:serde_json::Value) -> CallResult {
     let method = "ProxyHttp";
-    let proxy_result = self.call_function(&method, v, &"ext")?;
+    let proxy_result = self.call_function(method, v, "ext")?;
     let id = self.request.id.clone();
-    return self.make_success_bytes(&proxy_result, &id);
+    self.make_success_bytes(&proxy_result, &id)
   }
 
   pub fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
-    return host_call(self.request.id.as_str(),ns,op,msg);
+    host_call(self.request.id.as_str(),ns,op,msg)
   }
   /// call_function - enables the calling of fabric api's
   /// # Arguments
@@ -890,20 +890,20 @@ impl<'a> BitcodeContext<'a> {
       id:self.request.id.clone(),
       module:module.to_string(),
       method : fn_name.to_string(),
-      params:params,
+      params,
     };
     let call_val = serde_json::to_vec(response)?;
     let call_str = serde_json::to_string(response)?;
 
     elv_console_log(&format!("CALL STRING = {}", call_str));
-    return host_call(self.request.id.as_str(),module, fn_name, &call_val);
+    host_call(self.request.id.as_str(),module, fn_name, &call_val)
   }
 
   /// close_stream closes the fabric stream
   /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
   ///  Returns the checksum as hex-encoded string
   pub fn close_stream(&'a self, sid : String) -> CallResult{
-    return self.call_function(&"CloseStream", serde_json::Value::String(sid), &"ctx");
+    self.call_function("CloseStream", serde_json::Value::String(sid), "ctx")
   }
 
   /// new_stream creates a new fabric bitcode stream.
@@ -911,7 +911,7 @@ impl<'a> BitcodeContext<'a> {
   /// * output [u8] of format `{"stream_id" : id}` where id is a string
   pub fn new_stream(&'a self) -> CallResult {
     let v = json!({});
-    return self.call_function("NewStream", v, "ctx");
+    self.call_function("NewStream", v, "ctx")
   }
 
   /// new_file_stream creates a new fabric file
@@ -946,7 +946,7 @@ impl<'a> BitcodeContext<'a> {
     let params = json!({
       "stream_params" : cmdline
     });
-    return self.call_function( "FFMPEGRun", params, "ext");
+    self.call_function( "FFMPEGRun", params, "ext")
   }
 
   /// q_download_file : downloads the file stored  at the fabric file location path for some content
@@ -959,7 +959,7 @@ impl<'a> BitcodeContext<'a> {
     let strm = self.new_stream()?;
     let strm_json:serde_json::Value = serde_json::from_slice(&strm)?;
     let sid = strm_json["stream_id"].to_string();
-    if sid == ""{
+    if sid.is_empty(){
       return self.make_error("Unable to find stream_id");
     }
     let j = json!({
@@ -982,7 +982,7 @@ impl<'a> BitcodeContext<'a> {
     if written != 0 {
       return self.read_stream(sid, written as usize);
     }
-    return self.make_error("failed to write data");
+    self.make_error("failed to write data")
 
   }
 
@@ -999,7 +999,7 @@ impl<'a> BitcodeContext<'a> {
     defer!{
       let _ = self.close_stream(new_stream.stream_id.clone());
     }
-    let ret_s = self.write_stream(qwt, &new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
+    let ret_s = self.write_stream(qwt, new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
     let written_map:HashMap<String, String> = serde_json::from_slice(&ret_s)?;
     let i: i32 = written_map["written"].parse().unwrap_or(0);
     let j = json!({
@@ -1073,8 +1073,8 @@ fn elv_console_log(s:&str){
 ///   * attempt to call the method using the incomming path
 ///   * return results to the caller
 #[no_mangle]
-pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
-  elv_console_log(&"In jpc");
+pub fn jpc(_msg: &[u8]) -> CallResult {
+  elv_console_log("In jpc");
   let input_string = str::from_utf8(_msg)?;
   elv_console_log(&format!("parameters = {}", input_string));
   let json_params: Request = match serde_json::from_str(input_string){
@@ -1083,9 +1083,9 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
       return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::BadHttpParams, err));
     }
   };
-  elv_console_log(&"Request parsed");
+  elv_console_log("Request parsed");
   let mut bcc = BitcodeContext::new(&json_params);
-  elv_console_log(&"Parameters parsed");
+  elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
   elv_console_log(&format!("splitpath={:?}", split_path));
   let cm = CALLMAP.lock();
@@ -1094,10 +1094,10 @@ pub fn jpc<'a>(_msg: &'a [u8]) -> CallResult {
       match f(& mut bcc){
         Ok(m) => {
           elv_console_log(&format!("here and m={:?}", m));
-          return Ok(m)
+          Ok(m)
         },
         Err(err) => {
-          return bcc.make_error_with_error("parse failed for http" , ErrorKinds::Invalid, &*err);
+          bcc.make_error_with_error("parse failed for http" , ErrorKinds::Invalid, &*err)
         }
       }
     }

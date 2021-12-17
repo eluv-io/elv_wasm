@@ -75,7 +75,7 @@ impl MockFabric{
         println!("in SQMD delete");
         let j:JPCRequest = serde_json::from_str(json_rep)?;
         let path = j.params["path"].to_string();
-        if  path != ""{
+        if  !path.is_empty(){
             let mut fab = self.fab.clone().unwrap();
             let p = &snailquote::unescape(&path).unwrap();
             let pp:String = p.chars().map(|x| match x {
@@ -94,7 +94,7 @@ impl MockFabric{
         let j:JPCRequest = serde_json::from_str(json_rep)?;
         let path = j.params["path"].to_string();
         let meta = j.params["meta"].to_string();
-        if  path != ""{
+        if !path.is_empty(){
             let mut fab = self.fab.clone().unwrap();
             let p = &snailquote::unescape(&path).unwrap();
             let pp:String = p.chars().map(|x| match x {
@@ -113,7 +113,7 @@ impl MockFabric{
         println!("in SQMD get");
         let j:JPCRequest = serde_json::from_str(json_rep)?;
         let path = j.params["path"].to_string();
-        if  path != ""{
+        if !path.is_empty(){
             let fab = self.fab.clone().unwrap();
             let p = &snailquote::unescape(&path).unwrap();
             let pp:String = p.chars().map(|x| match x {

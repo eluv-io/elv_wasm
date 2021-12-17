@@ -23,8 +23,17 @@ snailquote = "0.3.1"
 json_dotpath = "1.1.0"
 structopt = "0.3.25"
 
-[dependencies.samples]
-path = "samples/"
+[[bin]]
+name = "mock"
+path = "./mock/src/main.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "samples"
+path = "./samples/src/main.rs"
+test = false
+bench = false
 
 # # The `console_error_panic_hook` crate provides better debugging of panics by
 # # logging them with `console.error`. This is great for development, but requires
