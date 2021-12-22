@@ -87,7 +87,7 @@ impl MockFabric{
         }else{
             println!("failed to find path argument");
         }
-        return Ok("FAILED".as_bytes().to_vec())
+        Ok("FAILED".as_bytes().to_vec())
     }
     pub fn sqmd_set(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         println!("in SQMD set");
@@ -107,7 +107,7 @@ impl MockFabric{
         }else{
             println!("failed to find path argument");
         }
-        return Ok("FAILED".as_bytes().to_vec())
+        Ok("FAILED".as_bytes().to_vec())
     }
     pub fn sqmd_get(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         println!("in SQMD get");
@@ -127,19 +127,19 @@ impl MockFabric{
         }else{
             println!("failed to find path argument");
         }
-        return Ok("FAILED".as_bytes().to_vec())
+        Ok("FAILED".as_bytes().to_vec())
     }
     pub fn proxy_http(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         println!("in ProxyHttp");
         let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
         let enc = base64::encode(to_encode);
-        return Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
+        Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
     }
     pub fn callback(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         println!("in callback");
         let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
         let enc = base64::encode(to_encode);
-        return Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
+        Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
     }
     pub fn host_callback(i_cb:u64, id:&str, context:&str, method:&str, pkg:&[u8])-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
         let s_pkg = std::str::from_utf8(pkg)?;

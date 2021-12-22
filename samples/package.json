@@ -18,7 +18,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@assemblyscript/loader": "^0.18.32"
+    "@assemblyscript/loader": "^0.18.32",
+    "asc": "^2.0.2"
   },
   "devDependencies": {
     "@as-pect/cli": "^6.1.1",

@@ -5,7 +5,11 @@ version = "0.1.0"
 authors = ["Jan Falkin <jan.falkin@eluv.io>"]
 license = "MIT"
 
+
 [workspace]
+
+[dependencies]
+npm_rs = "0.2.1"
 
 [dependencies.image]
 path = "image/"
