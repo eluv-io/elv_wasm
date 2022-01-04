@@ -10,11 +10,7 @@ use serde::{Deserialize, Serialize};
 use guest::{console_log, register_function, CallResult};
 use elvwasm::*;
 
-#[no_mangle]
-pub extern "C" fn wapc_init() {
-  register_handler("image", do_image);
-  register_function("_jpc", jpc);
-}
+implement_bitcode_module!("image", do_image);
 
 fn parse_asset(path:&str)-> String{
   let mut pos:Vec<&str> = path.split('/').collect();

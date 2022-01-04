@@ -6,11 +6,7 @@ use serde_json::json;
 use guest::{console_log, register_function, CallResult};
 use elvwasm::*;
 
-#[no_mangle]
-pub extern "C" fn wapc_init() {
-  register_handler("proxy", do_proxy);
-  register_function("_jpc", jpc);
-}
+implement_bitcode_module!("proxy", do_proxy);
 
 static SQMD_REQUEST: &'static str = "/request_parameters";
 static STANDARD_ERROR:&'static str = "no error, failed to acquire error context";

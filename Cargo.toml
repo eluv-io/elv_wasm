@@ -16,14 +16,18 @@ serde_json = "*"
 serde_derive = "*"
 lazy_static = "1.4.0"
 scopeguard = "1.1.0"
-wasmer = "2.0.0"
-wasmtime-provider = "0.0.7"
+wasmer = { version = "2.0.0", optional = true }
+wasmtime-provider = { version = "0.0.7", optional = true }
 base64 = "0.13.0"
 snailquote = "0.3.1"
 json_dotpath = "1.1.0"
 structopt = "0.3.25"
 
+[features]
+host-wasm = ["wasmer", "wasmtime-provider"]
+
 [[bin]]
+features = "host-wasm"
 name = "mock"
 path = "./mock/src/main.rs"
 test = false

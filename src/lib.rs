@@ -47,6 +47,15 @@
       return bcc.make_success("SUCCESS");
   }
   ```
+
+  To Build binaries </br>
+    *cargo build --all --features "host-wasm"* </br>
+  To Build samples </br>
+    *cd samples* </br>
+    *cargo build --target wasm32-unknown-unknown* </br>
+  </br>
+  test </br>
+    *target/debug/mock ./samples/target/wasm32-unknown-unknown/debug/deps/rproxy.wasm ./samples/fabric.json* 
 */
 
 extern crate serde;
@@ -73,16 +82,16 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! output_raw_pointers {
-  // This macro takes an argument of designator `ident` and
-  // creates a function named `$func_name`.
-  // The `ident` designator is used for variable/function names.
   ($raw_ptr:ident, $raw_len:ident) => {
         unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
   }
 }
 
+/// This macro creates the necessary exports for WAPC to satisfy the linker
+/// An example of its usage is in ./mock/src/main.rs but can be used in a custom mock as well
 #[macro_export]
 macro_rules! implement_mock_fabric {
   () => {
@@ -150,6 +159,17 @@ macro_rules! implement_mock_fabric {
 
     }
   };
+}
+
+#[macro_export]
+macro_rules! implement_bitcode_module {
+  ($handler_name:literal, $handler_func:ident) => {
+    #[no_mangle]
+    pub extern "C" fn wapc_init() {
+      register_handler($handler_name, $handler_func);
+      register_function("_jpc", jpc);
+    }
+  }
 }
 
 // The following are mearly intended to verify internal consistency.  There are no actual calls made

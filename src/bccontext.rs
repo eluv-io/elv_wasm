@@ -104,7 +104,7 @@ macro_rules! enum_str {
   }
 
   impl<T> ElvError<T>{
-        pub fn new_json(msg: &str, kind: ErrorKinds, sub_err : T) -> ElvError<T> {
+      pub fn new_json(msg: &str, kind: ErrorKinds, sub_err : T) -> ElvError<T> {
         ElvError{
           details:  msg.to_string(),
           kind,
@@ -112,16 +112,13 @@ macro_rules! enum_str {
           json_error : Some(sub_err),
         }
       }
-  }
-
-  impl<T> ElvError<T>{
-    pub fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
-      ElvError{
-        details:  msg.to_string(),
-        kind,
-        description: format!("{{ details : {}, kind : {} }}", msg, kind),
-        json_error: None,
-      }
+      pub fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
+        ElvError{
+          details:  msg.to_string(),
+          kind,
+          description: format!("{{ details : {}, kind : {} }}", msg, kind),
+          json_error: None,
+        }
     }
     pub fn new_with_err(msg: &str, kind: ErrorKinds, err:T) -> ElvError<T>{
       ElvError{
@@ -131,7 +128,6 @@ macro_rules! enum_str {
         json_error: Some(err),
       }
     }
-
   }
 
   trait Kind {

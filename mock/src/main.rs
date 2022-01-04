@@ -1,5 +1,8 @@
 extern crate wapc;
+
+#[cfg(feature = "host-wasm")]
 extern crate wasmer;
+
 extern crate base64;
 extern crate serde;
 extern crate serde_derive;
@@ -7,7 +10,10 @@ extern crate serde_json;
 extern crate json_dotpath;
 extern crate snailquote;
 use std::sync::{Arc};
+
+#[cfg(feature = "host-wasm")]
 use wasmtime_provider::WasmtimeEngineProvider;
+
 use elvwasm::ElvError;
 use elvwasm::ErrorKinds;
 use std::fs::File;
@@ -15,6 +21,8 @@ use std::io::BufReader;
 use json_dotpath::DotPaths;
 use std::path::PathBuf;
 use structopt::StructOpt;
+
+#[cfg(feature = "host-wasm")]
 use wasmer::imports;
 //use serde_json::json;
 
