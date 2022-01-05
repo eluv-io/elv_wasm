@@ -51,7 +51,7 @@
     *cargo build --target wasm32-unknown-unknown* </br>
   </br>
   test </br>
-    *target/debug/mock ./samples/target/wasm32-unknown-unknown/debug/deps/rproxy.wasm ./samples/fabric.json* 
+    *target/debug/mock ./samples/target/wasm32-unknown-unknown/debug/deps/rproxy.wasm ./samples/fabric.json*
 */
 
 extern crate serde;
@@ -78,19 +78,38 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
-#[doc(hidden)]
+/// This macro delivers the required initializtion of the eluvio wasm module 
+/// In addition the macro also registers a handler of the form
+/// ```ignore
+/// fn <'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult
+///
+/// implement_bitcode_module!("proxy", do_proxy);
+/// fn do_proxy<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+///   return bcc.make_success("SUCCESS");
+/// }
+/// ```
 #[macro_export]
-macro_rules! output_raw_pointers {
-  ($raw_ptr:ident, $raw_len:ident) => {
-        unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+macro_rules! implement_bitcode_module {
+  ($handler_name:literal, $handler_func:ident) => {
+    #[no_mangle]
+    pub extern "C" fn wapc_init() {
+      register_handler($handler_name, $handler_func);
+      register_function("_jpc", jpc);
+    }
   }
 }
 
-/// This macro creates the necessary exports for WAPC to satisfy the linker
-/// An example of its usage is in ./mock/src/main.rs but can be used in a custom mock as well
-#[macro_export]
-macro_rules! implement_mock_fabric {
-  () => {
+// The following are mearly intended to verify internal consistency.  There are no actual calls made
+// but the tests verify that the json parsing of the http message is correct
+#[cfg(test)]
+mod tests {
+
+    macro_rules! output_raw_pointers {
+      ($raw_ptr:ident, $raw_len:ident) => {
+            unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+      }
+    }
+
     #[no_mangle]
     pub extern "C" fn __console_log(ptr: *const u8, len: usize){
       let out_str = output_raw_pointers!(ptr,len);
@@ -114,7 +133,6 @@ macro_rules! implement_mock_fabric {
         println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
         0
     }
-
     #[no_mangle]
     pub extern "C" fn __host_response(ptr: *const u8){
       println!("host __host_response ptr = {:?}", ptr);
@@ -154,32 +172,12 @@ macro_rules! implement_mock_fabric {
       println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
 
     }
-  };
-}
 
-#[macro_export]
-macro_rules! implement_bitcode_module {
-  ($handler_name:literal, $handler_func:ident) => {
-    #[no_mangle]
-    pub extern "C" fn wapc_init() {
-      register_handler($handler_name, $handler_func);
-      register_function("_jpc", jpc);
-    }
-  }
-}
-
-// The following are mearly intended to verify internal consistency.  There are no actual calls made
-// but the tests verify that the json parsing of the http message is correct
-#[cfg(test)]
-mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use serde_json::*;
     pub use self::bccontext::*;
     pub use self::bccontext::{QList};
-    use wapc::*;
-    use wapc_guest::*;
-    implement_mock_fabric!();
 
     fn handler_for_test(bcc: & mut BitcodeContext) -> CallResult{
       bcc.make_success("DONE")
