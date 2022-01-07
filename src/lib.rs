@@ -302,7 +302,7 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
     Some(f) => {
       match f(& mut bcc){
         Ok(m) => {
-          elv_console_log(&format!("here and m={:?}", m));
+          elv_console_log(&format!("here and m={}", str::from_utf8(&m).unwrap()));
           Ok(m)
         },
         Err(err) => {

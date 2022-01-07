@@ -303,7 +303,7 @@ pub struct HttpParams {
   #[serde(default)]
   pub fragment: String,
   #[serde(default)]
-  pub content_length : String,
+  pub content_length : usize,
   #[serde(default)]
   pub client_ip : String,
   #[serde(default)]
@@ -317,12 +317,27 @@ pub struct HttpParams {
 /// Bitcode representation of a content sans meta data
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QInfo {
+  #[serde(default)]
   pub hash: String,
+  #[serde(default)]
   pub id: String,
   pub qlib_id: String,
   #[serde(rename = "type")]
   pub qtype: String,
+  #[serde(default)]
   pub write_token: String,
+}
+
+impl QInfo {
+  pub fn qhot(&self) -> String{
+    let s:String;
+    if self.write_token != "" {
+      s = self.write_token.to_string();
+    }else{
+      s = self.hash.to_string();
+    }
+    s
+  }
 }
 
 /// Bitcode representation of a incomming client request
@@ -454,8 +469,8 @@ impl<'a> BitcodeContext<'a> {
         {"http" : {
           "status": status,
           "headers": {
-            "Content-Type": content_type,
-            "Content-Length": size,
+            "Content-Type": [content_type],
+            "Content-Length": [size.to_string()],
           }
           }
         }
@@ -555,7 +570,11 @@ impl<'a> BitcodeContext<'a> {
     }
 
     pub fn make_success_json(&'a self, msg:&serde_json::Value, id:&str) -> CallResult {
-      let js_ret = json!({"jpc":"1.0", "id": id, "result" : msg});
+      let js_ret = json!({
+        "result" : msg,
+        "jpc" : "1.0",
+        "id"  : id,
+      });
       let v = serde_json::to_vec(&js_ret)?;
       let out = std::str::from_utf8(&v)?;
       elv_console_log(&format!("returning : {}", out));

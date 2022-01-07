@@ -31,8 +31,17 @@ fn do_proxy<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
   };
   let proxy_http = json!({"request": req});
   let proxy_resp =  bcc.proxy_http(proxy_http)?;
+  let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap()).unwrap();
+  let body_only = &proxy_resp_json["result"];
+  let client_response = serde_json::to_vec(&body_only).unwrap();
   let id = bcc.request.id.clone();
-  bcc.callback(200, "application/json", proxy_resp.len())?;
-  BitcodeContext::write_stream_auto(id.clone(), "fos".to_owned(), &proxy_resp)?;
-  return bcc.make_success("SUCCESS");
+  bcc.callback(200, "application/json", client_response.len())?;
+  BitcodeContext::write_stream_auto(id.clone(), "fos".to_owned(), &client_response)?;
+  let jret = json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : 0,
+    });
+  bcc.make_success_json(&jret, &bcc.request.id)
 }
