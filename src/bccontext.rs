@@ -331,7 +331,7 @@ pub struct QInfo {
 impl QInfo {
   pub fn qhot(&self) -> String{
     let s:String;
-    if self.write_token != "" {
+    if !self.write_token.is_empty() {
       s = self.write_token.to_string();
     }else{
       s = self.hash.to_string();
@@ -383,6 +383,10 @@ impl<'a> BitcodeContext<'a> {
       }
     }
 
+    pub fn log(s: &str) {
+      console_log(s);
+    }
+
     /// write_stream writes a u8 slice of specified length to a fabric stream
     /// # Arguments
     /// * `id`-    a unique identifier (can use BitcodeContext's request id)
@@ -410,8 +414,8 @@ impl<'a> BitcodeContext<'a> {
     /// # Returns
     /// utf8 bytes stream containing json
     /// { "written" : bytes }
-    pub fn write_stream_auto(id:String, stream:String,  src:&'a [u8]) -> CallResult {
-      host_call(&id, &stream, &"Write".to_string(), src)
+    pub fn write_stream_auto(id:String, stream:&'a str,  src:&'a [u8]) -> CallResult {
+      host_call(&id, stream, &"Write".to_string(), src)
     }
 
     /// write_part_to_stream writes the content of a part to to a fabric stream

@@ -1,5 +1,4 @@
 extern crate elvwasm;
-extern crate wapc_guest as guest;
 extern crate serde_json;
 #[macro_use(defer)] extern crate scopeguard;
 use serde_json::json;
@@ -7,7 +6,6 @@ use serde::{Deserialize, Serialize};
 
 
 
-use guest::{console_log, register_function, CallResult};
 use elvwasm::*;
 
 implement_bitcode_module!("image", do_image);
@@ -55,7 +53,7 @@ fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str)
   }
   let input = fabric_file.to_string();
   let output = temp_file;
-  console_log(&format!("input={}",input));
+  BitcodeContext::log(&format!("input={}",input));
   let j = json!({
     "stream_id":output,
     "path":input,
@@ -67,7 +65,7 @@ fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str)
 }
 
 fn ffmpeg_run_no_watermark(bcc:&BitcodeContext, height:&str,input_file:&str, new_file:&str) -> CallResult {
-  console_log("ffmpeg_run_no_watermark");
+  BitcodeContext::log("ffmpeg_run_no_watermark");
   let scale_factor = &format!("scale={}:-1", height);
   // need to run ffmpeg here input file is in input_file
   let mut ffmpeg_args_no_watermark = [
@@ -100,10 +98,10 @@ fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_f
 }
 
 fn do_image<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
-  console_log("HELLO FROM do image");
+  BitcodeContext::log("HELLO FROM do image");
   let http_p = &bcc.request.params.http;
   let qp = http_p.query.clone();
-  console_log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
+  BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
   let offering = get_offering(bcc, &http_p.path)?;
   let offering_json:ImageWatermark = serde_json::from_slice(&offering)?;
   let id = bcc.request.id.clone();
