@@ -401,7 +401,7 @@ export class BitcodeContext{
       }
 
       Callback(status:i32, content_type:string, sz:i32) : elv_return_type {
-        let jResponse = `{"http":{"status": $status, "headers":{"Content-Type":"$content", "Content-Length":$len}}}`.replace("$status", status.toString()).replace("$content", content_type).replace("$len", sz.toString());
+        let jResponse = `{"http":{"status": $status, "headers":{"Content-Type":["$content"], "Content-Length":["$len"]}}}`.replace("$status", status.toString()).replace("$content", content_type).replace("$len", sz.toString());
         consoleLog("jResponse="+jResponse);
         let resp = JSON.parse(jResponse);
         return this.Call("Callback", resp, "ctx");
