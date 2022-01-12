@@ -387,6 +387,195 @@ impl<'a> BitcodeContext<'a> {
       console_log(s);
     }
 
+    // CORE functions
+
+
+    /// q_create_content creates a new content object locally.  The content will have a write token but will
+    /// not be comitted to the fabric until a calls to Finalize and commit are made
+    /// # Arguments
+    /// * `qtype`-   a hash for the content type. Can also be "builtin" for built in bitcode
+    /// * `meta`-    a HashMap containing the initial meta data for the object to be set at '/'
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// { "qid" : "idObj", "qwtoken" : "writeToken"}
+    pub fn q_create_content (&'a self, qtype:&str, meta:&HashMap<&str, serde_json::Value>) -> CallResult {
+      let msg = json!({
+        "qtype" : qtype,
+        "meta"  : meta,
+      });
+      self.call_function("QCreateContent", msg, "core")
+    }
+
+
+    /// q_list_content calculates a content fabric QList for the context's libid
+    /// # Returns
+    /// [Vec<u8>] parseable to [QList]
+    /// e.g.
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_list_content()?;
+    ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
+    ///   // do stuff with the qlist
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn q_list_content(&'a self) -> CallResult {
+      self.call_function("QListContent", json!({}), "core")
+    }
+
+    /// q_list_content_for calculates a content fabric QList for a given libid
+    /// # Arguments
+    /// * `qlibid`-    libid to be listed
+    /// # Returns
+    /// [Vec<u8>] parseable to [QList]
+    /// e.g.
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_list_content_for(&bcc.request.q_info.qlib_id)?;
+    ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
+    ///   // do stuff with the qlist
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn q_list_content_for(&'a self, qlibid:&str) -> CallResult {
+
+      let j = json!(
+        {
+          "external_lib" : qlibid,
+        }
+      );
+
+      self.call_function("QListContentFor", j, "core")
+    }
+
+    /// q_finalize_content finalizes a given write token
+    /// # Arguments
+    /// * `qwtoken` - a write token to finalize
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// { "qid" : "idObj", "qhash" : "newHash"}
+    /// e.g.
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_list_content()?;
+    ///   let q:serde_json::Map = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
+    ///   let id:&str = q["qid"];
+    ///   let hash:&str = q["qhash"];
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn q_finalize_content(&'a self, qwtoken:&str) -> CallResult {
+      let msg = json!(
+        {
+          "qwtoken" : qwtoken,
+        }
+      );
+      self.call_function("QFinalizeContent", msg, "core")
+    }
+
+    /// q_commit_content finalizes a given write token
+    /// # Arguments
+    /// * `qhash` - a finalized hash
+    /// # Returns
+    /// nil
+    /// e.g.
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_commit_content("hq__jd7sd655fffg7HrF76mHDolzzwe")?;
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn q_commit_content(&'a self, qhash:&str) -> CallResult {
+      let msg = json!(
+        {
+          "qhash" : qhash,
+        }
+      );
+      self.call_function("QFinalizeContent", msg, "core")
+    }
+
+    /// q_modify_content enables edit on the implicit content of the context
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// { "qwtoken" : "writeTokenForEdit"}
+    /// e.g.
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_modify_content()?;
+    ///   let q:serde_json::Map = serde_json::from_str(std::str::from_utf8(&res).unwrap())?;
+    ///   let write_token:&str = q["qwtoken"];
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn q_modify_content(&'a self) -> CallResult {
+      self.call_function("QModifyContent", json!({}), "core")
+    }
+
+    /// write_part_to_stream writes the content of a part to to a fabric stream
+    /// # Arguments
+    /// * `stream_id`-    stream identifier from new_stream or the like
+    /// * `off`-  offset into the file (0 based)
+    /// * `len`-  length of part to write
+    /// * `qphash` - part hash to write
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// { "written" : count-of-bytes-written }
+    pub fn write_part_to_stream(&'a self, stream_id:String, qphash:String, offset:i64, length:i64) -> CallResult{
+      let msg = json!(
+        {
+          "stream_id" :  stream_id,
+          "off":offset,
+          "len" : length,
+          "qphash":qphash,
+       }
+      );
+      self.call_function("QWritePartToStream", msg, "core")
+    }
+
+    /// q_create_part_from_stream creates a new part in a writeable object from a context stream.
+    /// The content will be made locally but not published until finalized and committed
+    /// # Arguments
+    /// * `qwtoken`-   a write token to write the part
+    /// * `stream_id`- the stream to write [BitcodeContext::new_stream]
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// { "qphash" : "newPartHash", "size" : SizeOfPart}
+    pub fn q_create_part_from_stream (&'a self, qwtoken:&str, stream_id:&str) -> CallResult {
+      let msg = json!({
+        "qwtoken" : qwtoken,
+        "stream_id"  : stream_id,
+      });
+      self.call_function("QCreatePartFromStream", msg, "core")
+    }
+
+    /// q_file_to_stream writes the given qfile's content to the provided stream
+    /// # Arguments
+    /// * `stream_id`-  string identifier aquired from [BitcodeContext::new_stream]
+    /// * `path` - string conatining the QFile path
+    /// * `hash_or_token` - an optional string with a hash to operate on (defaults to the contexts content)
+    /// # Returns
+    /// [Vec<u8>] with undelying json
+    /// {"written", written}
+    pub fn q_file_to_stream(&'a self, stream_id:&str, path:&str, hash_or_token:&str) -> CallResult {
+      let j = json!(
+        {
+          "stream_id" : stream_id,
+          "path" : path,
+          "hash_or_token" : hash_or_token
+        }
+      );
+
+      self.call_function("QFileToStream", j, "core")
+    }
+
+    /// file_to_stream directs a fabric file (filename) to a fabric stream (stream)
+    /// filename - name of the fabric file (see new_file_stream)
+    /// stream - name of the stream that receives the file stream (see new_stream)
+    pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
+      let param = json!({ "stream_id" : stream, "path" : filename});
+      self.call_function("FileToStream", param, "core")
+    }
+
     /// write_stream writes a u8 slice of specified length to a fabric stream
     /// # Arguments
     /// * `id`-    a unique identifier (can use BitcodeContext's request id)
@@ -416,27 +605,6 @@ impl<'a> BitcodeContext<'a> {
     /// { "written" : bytes }
     pub fn write_stream_auto(id:String, stream:&'a str,  src:&'a [u8]) -> CallResult {
       host_call(&id, stream, &"Write".to_string(), src)
-    }
-
-    /// write_part_to_stream writes the content of a part to to a fabric stream
-    /// # Arguments
-    /// * `stream_id`-    stream identifier from new_stream or the like
-    /// * `off`-  offset into the file (0 based)
-    /// * `len`-  length of part to write
-    /// * `qphash` - part hash to write
-    /// # Returns
-    /// utf8 bytes stream containing json
-    /// { "written" : count-of-bytes-written }
-    pub fn write_part_to_stream(&'a self, stream_id:String, qphash:String, offset:i64, length:i64) -> CallResult{
-      let msg = json!(
-        {
-          "stream_id" :  stream_id,
-          "off":offset,
-          "len" : length,
-          "qphash":qphash,
-       }
-      );
-      self.call_function("QWritePartToStream", msg, "core")
     }
 
     /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
@@ -520,68 +688,6 @@ impl<'a> BitcodeContext<'a> {
 
       self.call_function("QCheckSumFile", j, "core")
     }
-
-    /// q_list_content_for calculates a content fabric QList for a given libid
-    /// # Arguments
-    /// * `qlibid`-    libid to be listed
-    /// # Returns
-    /// [Vec<u8>] parseable to [QList]
-    /// e.g.
-    /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let res = bcc.q_list_content_for(&bcc.request.q_info.qlib_id)?;
-    ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
-    ///   // do stuff with the qlist
-    ///   Ok(res)
-    /// }
-    /// ```
-    pub fn q_list_content_for(&'a self, qlibid:&str) -> CallResult {
-
-      let j = json!(
-        {
-          "external_lib" : qlibid,
-        }
-      );
-
-      self.call_function("QListContentFor", j, "core")
-    }
-
-    /// q_file_to_stream writes the given qfile's content to the provided stream
-    /// # Arguments
-    /// * `stream_id`-  string identifier aquired from [BitcodeContext::new_stream]
-    /// # Returns
-    /// [Vec<u8>] with undelying json
-    /// {"written", written}
-    pub fn q_file_to_stream(&'a self, stream_id:&str, path:&str, hash_or_token:&str) -> CallResult {
-      let j = json!(
-        {
-          "stream_id" : stream_id,
-          "path" : path,
-          "hash_or_token" : hash_or_token
-        }
-      );
-
-      self.call_function("QFileToStream", j, "core")
-    }
-
-    /// q_list_content calculates a content fabric QList for the library assoictaed with this bitcode
-    /// # Arguments
-    /// # Returns
-    /// [Vec<u8>] parseable to [QList]
-    /// e.g.
-    /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let res = bcc.q_list_content()?;
-    ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
-    ///   // do stuff with the qlist
-    ///   Ok(res)
-    /// }
-    /// ```
-    pub fn q_list_content(&'a self) -> CallResult{
-      let j = json!({});
-      self.call_function("QListContent", j, "core")
-    }
-
 
     pub fn make_success(&'a self, msg:&str) -> CallResult {
       let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
@@ -896,14 +1002,6 @@ impl<'a> BitcodeContext<'a> {
 
       let method = "QCreateFileFromStream";
       self.call_function(method, j, "core")
-    }
-
-    /// file_to_stream directs a fabric file (filename) to a fabric stream (stream)
-    /// filename - name of the fabric file (see new_file_stream)
-    /// stream - name of the stream that receives the file stream (see new_stream)
-    pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
-      let param = json!({ "stream_id" : stream, "path" : filename});
-      self.call_function("FileToStream", param, "core")
     }
 
     /// file_stream_size computes the current size of a fabric file stream given its stream name
