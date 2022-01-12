@@ -546,6 +546,24 @@ impl<'a> BitcodeContext<'a> {
       self.call_function("QListContentFor", j, "core")
     }
 
+    /// q_file_to_stream writes the given qfile's content to the provided stream
+    /// # Arguments
+    /// * `stream_id`-  string identifier aquired from [BitcodeContext::new_stream]
+    /// # Returns
+    /// [Vec<u8>] with undelying json
+    /// {"written", written}
+    pub fn q_file_to_stream(&'a self, stream_id:&str, path:&str, hash_or_token:&str) -> CallResult {
+      let j = json!(
+        {
+          "stream_id" : stream_id,
+          "path" : path,
+          "hash_or_token" : hash_or_token
+        }
+      );
+
+      self.call_function("QFileToStream", j, "core")
+    }
+
     /// q_list_content calculates a content fabric QList for the library assoictaed with this bitcode
     /// # Arguments
     /// # Returns
