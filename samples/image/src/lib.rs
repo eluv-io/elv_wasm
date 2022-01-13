@@ -16,19 +16,19 @@ fn parse_asset(path:&str)-> String{
     pos = pos[3..].to_owned();
     return pos.join("/");
   }
-  return "".to_owned();
+  "".to_owned()
 }
 
 
 fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
-  let v:Vec<&str> = input_path.split("/").collect();
+  let v:Vec<&str> = input_path.split('/').collect();
   let mut s = "";
   if v.len() > 1 {
     s = v[2];
   }
   let json_path = format!("/public/image/offerings/{}",s);
   // input_path should just be offering
-  return bcc.sqmd_get_json(&json_path);
+  bcc.sqmd_get_json(&json_path)
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug, Default)]
@@ -48,7 +48,7 @@ pub struct ImageWatermark{
 }
 
 fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str) -> CallResult {
-  if fabric_file == "" || temp_file == ""{
+  if fabric_file.is_empty() || temp_file.is_empty(){
     return bcc.make_error("parameters must not be empty strings");
   }
   let input = fabric_file.to_string();
@@ -61,7 +61,7 @@ fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str)
   });
   bcc.call_function("QFileToStream", j, "core")?;
   bcc.close_stream(output.to_string())?;
-  return bcc.make_success("DONE");
+  bcc.make_success("DONE")
 }
 
 fn ffmpeg_run_no_watermark(bcc:&BitcodeContext, height:&str,input_file:&str, new_file:&str) -> CallResult {
@@ -80,24 +80,24 @@ fn ffmpeg_run_no_watermark(bcc:&BitcodeContext, height:&str,input_file:&str, new
   ffmpeg_args_no_watermark[4] = input_file;
   ffmpeg_args_no_watermark[6] = scale_factor;
   ffmpeg_args_no_watermark[9] = new_file;
-  return bcc.ffmpeg_run(ffmpeg_args_no_watermark.to_vec());
+  bcc.ffmpeg_run(ffmpeg_args_no_watermark.to_vec())
 }
 
 fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_file:&str, watermark_file:&str, overlay_x:&str, overlay_y:&str) -> CallResult{
   let base_placement = format!("{}:{}",overlay_x,overlay_y);
   let scale_factor = "[0:v]scale=%SCALE%:-1[bg];[bg][1:v]overlay=%OVERLAY%";
-  let scale_factor = &scale_factor.replace("%SCALE%", height).to_string().replace("%OVERLAY%", &base_placement).to_string();
-  if input_file == "" || watermark_file == "" || new_file == ""{
+  let scale_factor = &scale_factor.replace("%SCALE%", height).replace("%OVERLAY%", &base_placement);
+  if input_file.is_empty() || watermark_file.is_empty() || new_file.is_empty(){
     let msg = "parameter validation failed, one file is empty or null";
     return bcc.make_error(msg);
   }
   // need to run ffmpeg here input file is in input_file
   let ffmpeg_args = ["-hide_banner","-nostats","-y","-i", input_file,"-i", watermark_file,"-filter_complex", scale_factor,"-f", "singlejpeg", new_file].to_vec();
 
-  return bcc.ffmpeg_run(ffmpeg_args);
+  bcc.ffmpeg_run(ffmpeg_args)
 }
 
-fn do_image<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+fn do_image<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   BitcodeContext::log("HELLO FROM do image");
   let http_p = &bcc.request.params.http;
   let qp = http_p.query.clone();
@@ -118,21 +118,21 @@ fn do_image<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
   }
   let asset_path = parse_asset(&http_p.path);
   fabric_file_to_tmp_file(bcc, &asset_path, &input_file_stream.stream_id)?;
-  if offering_json.image_watermark.image != "" {
-    if watermark_file_stream.stream_id == "" || watermark_file_stream.file_name == ""{
+  if !offering_json.image_watermark.image.is_empty() {
+    if watermark_file_stream.stream_id.is_empty() || watermark_file_stream.file_name.is_empty(){
       return bcc.make_error("failed to acquire watermark stream");
     }
     fabric_file_to_tmp_file(bcc, &offering_json.image_watermark.image, &watermark_file_stream.stream_id)?;
     ffmpeg_run_watermark(bcc, &qp["height"][0],
                                        &input_file_stream.file_name.clone(), &output_file_stream.file_name.clone(),
-                                       &watermark_file_stream.file_name.clone(), &offering_json.image_watermark.x.to_string(), &offering_json.image_watermark.y.to_string())?;
+                                       &watermark_file_stream.file_name.clone(), &offering_json.image_watermark.x, &offering_json.image_watermark.y)?;
   }else{
     ffmpeg_run_no_watermark(bcc, &qp["height"][0], &input_file_stream.file_name,&output_file_stream.file_name)?;
   }
   let sz_string = bcc.file_stream_size(&output_file_stream.file_name);
   bcc.callback(200, "image/jpeg", sz_string)?;
   bcc.file_to_stream(&output_file_stream.file_name, "fos")?;
-  return bcc.make_success_json(&json!({"body" : "SUCCESS"}), &id);
+  bcc.make_success_json(&json!({"body" : "SUCCESS"}), &id)
 }
 
 #[cfg(test)]

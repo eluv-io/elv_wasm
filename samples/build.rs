@@ -4,7 +4,7 @@ pub fn execute(exe: &str, args: &[&str]) {
     Command::new(exe)
         .args(args)
         .spawn()
-        .expect(&format!("failed to start external executable {}", exe));
+        .unwrap_or_else(|_| panic!("failed to start external executable {}", exe));
 }
 
 fn main() {

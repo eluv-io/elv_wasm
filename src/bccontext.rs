@@ -340,6 +340,22 @@ impl QInfo {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QPart {
+  #[serde(default)]
+	pub write_token:String,
+  #[serde(default)]
+	pub hash:String,
+  #[serde(default)]
+	pub size:i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QPartInfo {
+	pub content: Q,
+  pub part: QPart,
+}
+
 /// Bitcode representation of a incomming client request
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Request {
@@ -574,6 +590,29 @@ impl<'a> BitcodeContext<'a> {
     pub fn file_to_stream(&'a self, filename:&str, stream:&str) -> CallResult {
       let param = json!({ "stream_id" : stream, "path" : filename});
       self.call_function("FileToStream", param, "core")
+    }
+
+
+    /// q_create_file_from_stream creates a qfile from the cotents of a bitcode stream
+    /// # Arguments
+    /// * `stream_id`-    stream identifier from new_stream or the like
+    /// * `qwtoken`-  write token (will use context's if "" is provided)
+    /// * `path`-  qfile path
+    /// * `mime` - MIME type of the file
+    /// * `size` - size of the file in bytes
+    /// # Returns
+    /// [Vec<u8>] parseable to [QPartInfo]
+    pub fn q_create_file_from_stream(&'a self, stream_id:&str, qwtoken:&str, path:&str, mime:&str, size:i64) -> CallResult{
+      let msg = json!(
+        {
+          "stream_id" :  stream_id,
+          "qwtoken":qwtoken,
+          "path" : path,
+          "mime": mime,
+          "size": size,
+       }
+      );
+      self.call_function("QCreateFileFromStream", msg, "core")
     }
 
     /// write_stream writes a u8 slice of specified length to a fabric stream

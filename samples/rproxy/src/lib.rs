@@ -6,17 +6,17 @@ use elvwasm::{implement_bitcode_module, jpc, make_json_error, register_handler, 
 
 implement_bitcode_module!("proxy", do_proxy);
 
-static SQMD_REQUEST: &'static str = "/request_parameters";
-static STANDARD_ERROR:&'static str = "no error, failed to acquire error context";
+static SQMD_REQUEST: &str = "/request_parameters";
+static STANDARD_ERROR:&str = "no error, failed to acquire error context";
 
-fn do_proxy<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
   let res = bcc.sqmd_get_json(SQMD_REQUEST)?;
   let mut meta_str: String = match String::from_utf8(res){
     Ok(m) => m,
-    Err(e) => {return bcc.make_error(&String::from_utf8(e.as_bytes().to_vec()).unwrap_or(STANDARD_ERROR.to_string()));}
+    Err(e) => {return bcc.make_error(&String::from_utf8(e.as_bytes().to_vec()).unwrap_or_else(|_| STANDARD_ERROR.to_string()));}
   };
   meta_str = meta_str.replace("${API_KEY}", &qp["API_KEY"][0].to_string()).
     replace("${QUERY}", &qp["QUERY"][0].to_string()).
