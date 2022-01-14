@@ -57,10 +57,20 @@ function doProxy(bcc : BitcodeContext) : ArrayBuffer {
   if (tempRet.isError()){
     return bcc.ReturnErrorBuffer("Callback failure");
   }
-  tempRet = bcc.WriteStream("fos", retBuf, -1);
-  if (tempRet.isError()){
-    return bcc.ReturnErrorBuffer("WriteStream failure");
+  let dec = String.UTF8.decode(retBuf);
+  let j = <JSON.Obj>JSON.parse(dec);
+  let vRes : JSON.Value | null = j.get("result");
+  if (vRes != null){
+      tempRet = bcc.WriteStream("fos", String.UTF8.encode(vRes.toString()), -1);
+      if (tempRet.isError()){
+        return bcc.ReturnErrorBuffer("WriteStream failure");
+      }
+  }else{
+    tempRet = bcc.WriteStream("fos", retBuf, -1);
+    if (tempRet.isError()){
+      return bcc.ReturnErrorBuffer("WriteStream failure");
+    }
   }
-  return bcc.ReturnSuccessBuffer("{\"body\" : \"SUCCESS\"}");
+  return bcc.ReturnSuccessBuffer(`{"body" : "SUCCESS"}`);
 
 }

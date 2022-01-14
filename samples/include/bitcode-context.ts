@@ -241,7 +241,7 @@ export class BitcodeContext{
       consoleLog("Return Error Buf="+msg);
       let err = new Error(msg);
       let strInnerRet = `{ "headers" : "application/json", "body" : __ERR__, "result":0}`.replace("__ERR__", err.toJSON().toString());
-      let strRet = "{\"jpc\":\"1.0\", \"id\":\"$id\", \"result\" : $result}".replace("$id", idStr).replace("$result", strInnerRet);
+      let strRet = "{\"jpc\":\"1.0\", \"id\":\"$id\", \"error\" : $result}".replace("$id", idStr).replace("$result", strInnerRet);
       return String.UTF8.encode(strRet);
     }
 
@@ -373,7 +373,7 @@ export class BitcodeContext{
         if (ret.isError()){
           return this.make_error("failed to call proxy", ret._1);
         }
-        ret._0 = this.ReturnSuccessBuffer(String.UTF8.decode(ret.getBuffer()));
+        ret._0 = ret.getBuffer();
         return ret;
       }
 
@@ -417,7 +417,28 @@ export class BitcodeContext{
         jsonString = jsonString.replace("__METHOD__", QuoteString(fnName));
         consoleLog("JPC="+jsonString);
         let ab = this.call(this.id.toString(), module, fnName, String.UTF8.encode(jsonString));
-        return this.make_success(ab);
+        let dec = String.UTF8.decode(ab);
+        consoleLog("RETVAL="+dec);
+        let jval = JSON.parse(dec);
+        if (jval.isObj){
+          let j = <JSON.Obj>JSON.parse(dec);
+          let vRes : JSON.Value | null = j.get("result");
+          if (vRes != null){
+              consoleLog("FOUND RESULT");
+              return this.make_success(String.UTF8.encode(vRes.toString()));
+          }else{
+            consoleLog("NO FOUND RESULT");
+            let v : JSON.Value | null = j.get("error");
+            if (v != null){
+              return this.make_error(v.toString(), new Error(v.toString()));
+            }
+          }
+          consoleLog("RETURNING AB");
+          return this.make_success(ab);
+        }else{
+          consoleLog("RETURNING SUCCESS");
+          return this.make_success(String.UTF8.encode("SUCCESS"));
+        }
       }
 
       FFMPEGRun(cmdline:string[]):elv_return_type {

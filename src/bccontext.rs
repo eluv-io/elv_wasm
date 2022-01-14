@@ -615,6 +615,321 @@ impl<'a> BitcodeContext<'a> {
       self.call_function("QCreateFileFromStream", msg, "core")
     }
 
+    /// q_create_q_state_store creates a new state store in the fabric
+    /// # Returns
+    /// utf8 bytes stream containing a string with the state store id
+    /// e.g.
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_create_q_state_store()?;
+    ///   let ssID = std::str::from_utf8(&res)?;
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn q_create_q_state_store(&'a self) -> CallResult {
+      self.call_function("QCreateQStateStore", json!({}), "core")
+    }
+
+    /// q_checksum_part calculates a checksum of a given content part.
+    /// # Arguments
+    /// * `sum_method`-    checksum method ("MD5" or "SHA256")
+    /// * `qphash`-        hash of the content part to checksum
+    /// # Returns
+    /// the checksum as hex-encoded string
+    pub fn q_checksum_part(&'a self, sum_method:&str, qphash:&str) -> CallResult{
+
+      let j = json!(
+        {
+          "method" : sum_method,
+          "qphash" : qphash
+        }
+      );
+
+      self.call_function("QCheckSumPart", j, "core")
+    }
+
+
+    /// q_checksum_file calculates a checksum of a file in a file bundle
+    /// # Arguments
+    /// * `sum_method`-    checksum method ("MD5" or "SHA256")
+    /// * `file_path`-     the path of the file in the bundle
+    /// # Returns
+    /// the checksum as hex-encoded string
+    pub fn q_checksum_file(&'a self, sum_method:&str, file_path:&str) -> CallResult{
+
+      let j = json!(
+        {
+          "method" : sum_method,
+          "file_path" : file_path,
+        }
+      );
+
+      self.call_function("QCheckSumFile", j, "core")
+    }
+
+    /// The following sqmd_* based functions all work on the premise that a bitcode context represents a single content
+    /// in the fabric.  As such, each content has meta data that is directly associated.  This meta forms a standard tree
+    /// at the `/` root level.
+    ///
+
+    /// sqmd_set_json ets the metadata at path
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// * `val` : serde_json::Value to set
+    /// # Returns
+    /// * error only no success return
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   bcc.sqmd_set_json("/some_key", json!({"foo" : "bar"}))?;
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn sqmd_set_json(&'a self, path:&'a str, val:&serde_json::Value) -> CallResult {
+
+      let sqmd_set = json!
+      (
+        {
+          "meta": val,
+          "path": path,
+        }
+      );
+      self.call_function("SQMDSet", sqmd_set, "core")
+    }
+
+    /// sqmd_merge_json merges the metadata at path
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// * `val` : serde_json::Value to merge
+    /// # Returns
+    /// * error only no success return
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   bcc.sqmd_merge_json("/some_key", json!({"foo" : "bar"}))?;
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn sqmd_merge_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
+
+      let sqmd_merge = json!
+      (
+        {
+          "meta":json_str,
+          "path": path,
+        }
+      );
+      self.call_function("SQMDMerge", sqmd_merge, "core")
+    }
+
+    /// sqmd_delete_json deletes the metadata at path
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// # Returns
+    /// * error only no success return
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   bcc.sqmd_delete_json("/some_key")?;
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn sqmd_delete_json(&'a self, path:&'a str) -> CallResult {
+
+      let sqmd_delete = json!
+      (
+        {
+          "path": path,
+        }
+      );
+      self.call_function("SQMDDelete", sqmd_delete, "core")
+    }
+
+    /// sqmd_clear_json clears the metadata at path
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// # Returns
+    /// * nothing only error on failure
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   bcc.sqmd_clear_json("/some_key")?; // this will blast some_key and all its descendants
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn sqmd_clear_json(&'a self, path:&'a str) -> CallResult {
+
+      let sqmd_clear = json!
+      (
+        {
+          "path": path,
+        }
+      );
+      self.call_function("SQMDClear", sqmd_clear, "core")
+    }
+
+    /// sqmd_get_json gets the metadata at path
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// # Returns
+    /// * UTF8 [u8] slice containing json
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.sqmd_get_json("/some_key")?;
+    ///   let mut meta = serde_json::from_utf8(res.clone());
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn sqmd_get_json(&'a self, path:&'a str) -> CallResult {
+      let sqmd_get = json!
+      (
+        {
+          "path": path
+        }
+      );
+      self.call_function("SQMDGet", sqmd_get, "core")
+    }
+
+    /// sqmd_get_json_resolve gets the metadata at path resolving all links
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// # Returns
+    /// * UTF8 [u8] slice containing json
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.sqmd_get_json_resolve("/some_key")?;
+    ///   let mut meta = serde_json::from_utf8(res.clone());
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn sqmd_get_json_resolve(&'a self, path:&'a str) -> CallResult {
+      let sqmd_get = json!
+      (
+        {
+          "path": path
+        }
+      );
+      self.call_function("SQMDGetJSONResolve", sqmd_get, "core")
+    }
+
+    /// sqmd_get_json_external gets the metadata at path from another content
+    /// # Arguments
+    /// * `path` : path to the meta data
+    /// * `qhash`: hash of external content
+    /// # Returns
+    /// * UTF8 [u8] slice containing json
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.sqmd_get_json_external("libid4556", "hq_bad2a1ac0a2923ad85e1489736701c06320242a9", "/some_key")?;
+    ///   let mut meta_str: String = String::from_utf8(res.clone())?;
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn sqmd_get_json_external(&'a self, qlibid:&str, qhash:&str, path:&str) -> CallResult {
+      let sqmd_get = json!
+      (
+        {
+          "path": path,
+          "qlibid":qlibid,
+          "qhash":qhash,
+        }
+      );
+      self.call_function("SQMDGetExternal", sqmd_get, "core")
+    }
+
+    //
+    /// sqmd_query queries the meta-data with the given JSONPath query expression.
+    /// # Arguments
+    /// * `query` : JSONPath query expression
+    /// # Returns
+    /// * UTF8 [u8] slice containing json
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.sqmd_query("$['some'].value[0].description")?;
+    ///   let mut meta = serde_json::from_utf8(res.clone());
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn sqmd_query(&'a self, query:&'a str) -> CallResult {
+      let sqmd_query = json!
+      (
+        {
+          "query": query
+        }
+      );
+      self.call_function("SQMDQuery", sqmd_query, "core")
+    }
+
+    /// qss_set sets data into the Q state store
+    /// # Arguments
+    /// * `qssid`- string identifier aquired from [BitcodeContext::q_create_q_state_store]
+    /// * `key` - string
+    /// * `val` - string value to store
+    /// # Returns
+    /// Nothing error only
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.q_create_q_state_store()?;
+    ///   let ssID = std::str::from_utf8(&res)?;
+    ///   bcc.qss_set(ssID, "akey", "avalue")?;
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn qss_set(&'a self, qssid:&str, key:&str, val:&str) -> CallResult {
+      let j = json!(
+        {
+          "qssid" : qssid,
+          "key" : key,
+          "val" : val
+        }
+      );
+
+      self.call_function("QSSSet", j, "core")
+    }
+
+    /// qss_get gets data from the Q state store
+    /// # Arguments
+    /// * `qssid`- string identifier aquired from [BitcodeContext::q_create_q_state_store]
+    /// * `key` - string
+    /// # Returns
+    /// [Vec<u8>] containing string value
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   let res = bcc.qss_get("sid_648nfjfh5666nmjejh", "akey")?;
+    ///   let strVal = std::str::from_utf8(&res)?;
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn qss_get(&'a self, qssid:&str, key:&str) -> CallResult {
+      let j = json!(
+        {
+          "qssid" : qssid,
+          "key" : key,
+        }
+      );
+
+      self.call_function("QSSGet", j, "core")
+    }
+
+    /// qss_get deletes data from the Q state store
+    /// # Arguments
+    /// * `qssid`- string identifier aquired from [BitcodeContext::q_create_q_state_store]
+    /// * `key` - string
+    /// # Returns
+    /// Nothing error only
+    /// ```
+    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    ///   bcc.qss_delete("sid_648nfjfh5666nmjejh", "akey")?;
+    ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
+    /// }
+    /// ```
+    pub fn qss_delete(&'a self, qssid:&str, key:&str) -> CallResult {
+      let j = json!(
+        {
+          "qssid" : qssid,
+          "key" : key,
+        }
+      );
+
+      self.call_function("QSSDelete", j, "core")
+    }
+
     /// write_stream writes a u8 slice of specified length to a fabric stream
     /// # Arguments
     /// * `id`-    a unique identifier (can use BitcodeContext's request id)
@@ -691,42 +1006,6 @@ impl<'a> BitcodeContext<'a> {
     }
 
 
-    /// checksum_part calculates a checksum of a given content part.
-    /// # Arguments
-    /// * `sum_method`-    checksum method ("MD5" or "SHA256")
-    /// * `qphash`-        hash of the content part to checksum
-    /// # Returns
-    /// the checksum as hex-encoded string
-    pub fn checksum_part(&'a self, sum_method:&str, qphash:&str) -> CallResult{
-
-      let j = json!(
-        {
-          "method" : sum_method,
-          "qphash" : qphash
-        }
-      );
-
-      self.call_function("QCheckSumPart", j, "core")
-    }
-
-
-    /// checksum_file calculates a checksum of a file in a file bundle
-    /// # Arguments
-    /// * `sum_method`-    checksum method ("MD5" or "SHA256")
-    /// * `file_path`-     the path of the file in the bundle
-    /// # Returns
-    /// the checksum as hex-encoded string
-    pub fn checksum_file(&'a self, sum_method:&str, file_path:&str) -> CallResult{
-
-      let j = json!(
-        {
-          "method" : sum_method,
-          "file_path" : file_path,
-        }
-      );
-
-      self.call_function("QCheckSumFile", j, "core")
-    }
 
     pub fn make_success(&'a self, msg:&str) -> CallResult {
       let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
@@ -768,115 +1047,6 @@ impl<'a> BitcodeContext<'a> {
       Ok(v)
     }
 
-    /// The following sqmd_* based functions all work on the premise that a bitcode context represents a single content
-    /// in the fabric.  As such, each content has meta data that is directly associated.  This meta forms a standard tree
-    /// at the `/` root level.
-
-    /// sqmd_get_json gets the metadata at path
-    /// # Arguments
-    /// * `path` : path to the meta data
-    /// # Returns
-    /// * UTF8 [u8] slice containing json
-    /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let res = bcc.sqmd_get_json("/some_key")?;
-    ///   let mut meta_str = String::from_utf8(res.clone());
-    ///   Ok(res)
-    /// }
-    /// ```
-    pub fn sqmd_get_json(&'a self, path:&'a str) -> CallResult {
-      let sqmd_get = json!
-      (
-        {
-          "path": path
-        }
-      );
-      self.call_function("SQMDGet", sqmd_get, "core")
-    }
-
-    /// sqmd_get_json_external gets the metadata at path from another content
-    /// # Arguments
-    /// * `path` : path to the meta data
-    /// * `qhash`: hash of external content
-    /// # Returns
-    /// * UTF8 [u8] slice containing json
-    /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let res = bcc.sqmd_get_json_external("libid4556", "hq_bad2a1ac0a2923ad85e1489736701c06320242a9", "/some_key")?;
-    ///   let mut meta_str: String = String::from_utf8(res.clone())?;
-    ///   Ok(res)
-    /// }
-    /// ```
-    pub fn sqmd_get_json_external(&'a self, qlibid:&str, qhash:&str, path:&str) -> CallResult {
-      let sqmd_get = json!
-      (
-        {
-          "path": path,
-          "qlibid":qlibid,
-          "qhash":qhash,
-        }
-      );
-      self.call_function("SQMDGetExternal", sqmd_get, "core")
-    }
-
-    /// sqmd_clear_json clears the metadata at path
-    /// # Arguments
-    /// * `path` : path to the meta data
-    /// # Returns
-    /// * nothing only error on failure
-    /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let res = bcc.sqmd_clear_json("/some_key")?; // this will blast some_key and all its descendants
-    ///   Ok(res)
-    /// }
-    /// ```
-    pub fn sqmd_clear_json(&'a self, path:&'a str) -> CallResult {
-
-      let sqmd_clear = json!
-      (
-        {
-          "path": path,
-        }
-      );
-      self.call_function("SQMDClear", sqmd_clear, "core")
-    }
-
-    pub fn sqmd_delete_json(&'a self, token:&'a str, path:&'a str) -> CallResult {
-
-      let sqmd_delete = json!
-      (
-        {
-          "token":token,
-          "path": path,
-        }
-      );
-      self.call_function("SQMDDelete", sqmd_delete, "core")
-    }
-
-    pub fn sqmd_set_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
-
-      let sqmd_set = json!
-      (
-        {
-          "meta":json_str,
-          "path": path,
-        }
-      );
-      self.call_function("SQMDSet", sqmd_set, "core")
-    }
-
-    /// sqmd_merge_json
-    pub fn sqmd_merge_json(&'a self, path:&'a str, json_str:&'a str) -> CallResult {
-
-      let sqmd_merge = json!
-      (
-        {
-          "meta":json_str,
-          "path": path,
-        }
-      );
-      self.call_function("SQMDMerge", sqmd_merge, "core")
-    }
     /// proxy_http proxies an http request in case of CORS issues
     /// # Arguments
     /// * `v` : a JSON Value
@@ -925,7 +1095,31 @@ impl<'a> BitcodeContext<'a> {
       let call_str = serde_json::to_string(response)?;
 
       elv_console_log(&format!("CALL STRING = {}", call_str));
-      host_call(self.request.id.as_str(),module, fn_name, &call_val)
+      let call_ret_val = host_call(self.request.id.as_str(),module, fn_name, &call_val)?;
+      let j_res:serde_json::Value = serde_json::from_slice(&call_ret_val)?;
+      if !j_res.is_object(){
+        return Ok(call_ret_val);
+      }
+      return match j_res.get("result"){
+        Some(x) => {
+          BitcodeContext::log("here In result");
+          let r = serde_json::to_vec(&x)?;
+          Ok(r)
+        },
+        None => {
+          match j_res.get("error"){
+            Some(x) => {
+              BitcodeContext::log("here in error");
+              let r = serde_json::to_vec(&x)?;
+              return Ok(r);
+            },
+            None => {
+              BitcodeContext::log("here in neither");
+              return Ok(call_ret_val);
+            }
+          };
+        }
+      };
     }
 
     /// close_stream closes the fabric stream
