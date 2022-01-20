@@ -380,6 +380,35 @@ pub struct Response {
   pub method:String,
 }
 
+/// Bitcode representation of a result from new_stream
+/// ```
+/// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+///   let res = bcc.new_stream()?;
+///   let stream1:elvwasm::NewStreamResult = serde_json::from_slice(&res)?;
+///   // stream1.stream_id has new id
+///   Ok(res)
+/// }
+/// ```
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NewStreamResult {
+	pub stream_id: String,
+}
+
+/// Bitcode representation of a result from read_stream
+/// ```
+/// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+///   let res = bcc.new_stream()?;
+///   let stream1:elvwasm::NewStreamResult = serde_json::from_slice(&res)?;
+///   // stream1.stream_id has new id
+///   Ok(res)
+/// }
+/// ```
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ReadStreamResult {
+  #[serde(rename = "return")]
+  pub retval: String,
+  pub result: String
+}
 
 /// This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext
 /// is automatically created during the processing of the http request.  During initialization, all context
@@ -939,14 +968,14 @@ impl<'a> BitcodeContext<'a> {
     /// # Returns
     /// utf8 bytes stream containing json
     /// { "written" : bytes }
-    pub fn write_stream(&'a self, id:&str, stream:&str,  src:&'a [u8], len: usize) -> CallResult {
+    pub fn write_stream(&'a self, stream:&str,  src:&'a [u8], len: usize) -> CallResult {
       let mut actual_len = src.len();
       if len != usize::MAX {
         actual_len = len
       }
       let v = serde_json::json!(src[..actual_len]);
       let jv = &serde_json::to_vec(&v)?;
-      host_call(id, stream, &"Write".to_string(), jv)
+      host_call(&self.request.id, stream, &"Write".to_string(), jv)
     }
 
     /// write_stream writes a u8 slice to a fabric stream
@@ -971,10 +1000,9 @@ impl<'a> BitcodeContext<'a> {
     ///   "return" : { "read" : byte-count-read },
     ///   "result" : "base64 encoded string"
     ///  }
-    pub fn read_stream(&'a mut self, stream_to_read:String, sz:usize) -> CallResult {
-          let input = serde_json::json![sz];
-          let input_json = serde_json::to_vec(&input)?;
-          host_call(self.request.id.as_str(),stream_to_read.as_str(), "Read", &input_json)
+    pub fn read_stream(&'a self, stream_to_read:String, sz:usize) -> CallResult {
+          let input = vec![0; sz];
+          host_call(self.request.id.as_str(),stream_to_read.as_str(), "Read", &input)
     }
 
     pub fn temp_dir(&'a mut self) -> CallResult {
@@ -1222,7 +1250,7 @@ impl<'a> BitcodeContext<'a> {
       defer!{
         let _ = self.close_stream(new_stream.stream_id.clone());
       }
-      let ret_s = self.write_stream(qwt, new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
+      let ret_s = self.write_stream(new_stream.clone().stream_id.as_str(), input_data, input_data.len())?;
       let written_map:HashMap<String, String> = serde_json::from_slice(&ret_s)?;
       let i: i32 = written_map["written"].parse().unwrap_or(0);
       let j = json!({
