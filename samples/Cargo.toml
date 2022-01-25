@@ -9,13 +9,16 @@ license = "MIT"
 [workspace]
 
 [dependencies]
-npm_rs = "0.2.1"
 
 [dependencies.image]
 path = "image/"
 
 [dependencies.rproxy]
 path = "rproxy/"
+
+[dependencies.real-img]
+path = "real-img/"
+
 
 [package.metadata.scripts]
 install = "npm install && npm run asbuild"

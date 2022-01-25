@@ -330,12 +330,11 @@ pub struct QInfo {
 
 impl QInfo {
   pub fn qhot(&self) -> String{
-    let s:String;
-    if !self.write_token.is_empty() {
-      s = self.write_token.to_string();
+    let s:String = if !self.write_token.is_empty() {
+      self.write_token.to_string()
     }else{
-      s = self.hash.to_string();
-    }
+      self.hash.to_string()
+    };
     s
   }
 }
@@ -975,7 +974,7 @@ impl<'a> BitcodeContext<'a> {
       }
       let v = serde_json::json!(src[..actual_len]);
       let jv = &serde_json::to_vec(&v)?;
-      host_call(&self.request.id, stream, &"Write".to_string(), jv)
+      host_call(&self.request.id, stream, "Write", jv)
     }
 
     /// write_stream writes a u8 slice to a fabric stream
@@ -987,7 +986,7 @@ impl<'a> BitcodeContext<'a> {
     /// utf8 bytes stream containing json
     /// { "written" : bytes }
     pub fn write_stream_auto(id:String, stream:&'a str,  src:&'a [u8]) -> CallResult {
-      host_call(&id, stream, &"Write".to_string(), src)
+      host_call(&id, stream, "Write", src)
     }
 
     /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
@@ -1219,12 +1218,10 @@ impl<'a> BitcodeContext<'a> {
         "hash_or_token": hash_or_token,
       });
 
-      let ret = self.call_function("QFileToStream", j, "core");
-      let v:serde_json::Value;
-      match ret{
+      let v:serde_json::Value = match self.call_function("QFileToStream", j, "core"){
         Err(e) => return Err(e),
-        Ok(e) => v = serde_json::from_slice(&e).unwrap_or_default()
-      }
+        Ok(e) => serde_json::from_slice(&e).unwrap_or_default()
+      };
 
       let jtemp = v.to_string();
       elv_console_log(&format!("json={}", jtemp));

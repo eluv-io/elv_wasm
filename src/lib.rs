@@ -77,12 +77,11 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
-
 lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
-/// This macro delivers the required initializtion of the eluvio wasm module 
+/// This macro delivers the required initializtion of the eluvio wasm module
 /// In addition the macro also registers a handler of the form
 /// ```ignore
 /// fn fn_name<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult
@@ -97,12 +96,18 @@ macro_rules! implement_bitcode_module {
   ($handler_name:literal, $handler_func:ident) => {
     extern crate wapc_guest as guest;
 
-    use guest::{register_function, CallResult};
+    use guest::{register_function, CallResult, console_log};
+    use std::panic;
+    use std::io;
 
+    fn hook_impl(info: &std::panic::PanicInfo) {
+      let _ = console_log(&format!("Panic is WASM!! {}", info));
+    }
     #[no_mangle]
     pub extern "C" fn wapc_init() {
       register_handler($handler_name, $handler_func);
       register_function("_jpc", jpc);
+      panic::set_hook(Box::new(hook_impl));
     }
   }
 }
