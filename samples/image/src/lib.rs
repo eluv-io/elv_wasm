@@ -39,6 +39,10 @@ pub struct WatermarkJson {
   pub y: String,
   #[serde(default)]
   pub image: String,
+  #[serde(default)]
+	pub height:String,
+  #[serde(default)]
+	pub opacity:String,
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug)]
@@ -101,9 +105,9 @@ fn do_image<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   BitcodeContext::log("HELLO FROM do image");
   let http_p = &bcc.request.params.http;
   let qp = http_p.query.clone();
-  BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
+  BitcodeContext::log(&format!("In do_image hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
   let offering = get_offering(bcc, &http_p.path)?;
-  let offering_json:ImageWatermark = serde_json::from_slice(&offering)?;
+  let offering_json:WatermarkJson = serde_json::from_slice(&offering)?;
   let id = bcc.request.id.clone();
   let ifs = bcc.new_file_stream()?;
   let wfs = bcc.new_file_stream()?;
@@ -118,14 +122,14 @@ fn do_image<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   }
   let asset_path = parse_asset(&http_p.path);
   fabric_file_to_tmp_file(bcc, &asset_path, &input_file_stream.stream_id)?;
-  if !offering_json.image_watermark.image.is_empty() {
+  if !offering_json.image.is_empty() {
     if watermark_file_stream.stream_id.is_empty() || watermark_file_stream.file_name.is_empty(){
       return bcc.make_error("failed to acquire watermark stream");
     }
-    fabric_file_to_tmp_file(bcc, &offering_json.image_watermark.image, &watermark_file_stream.stream_id)?;
-    ffmpeg_run_watermark(bcc, &qp["height"][0],
+    fabric_file_to_tmp_file(bcc, &offering_json.image, &watermark_file_stream.stream_id)?;
+    ffmpeg_run_watermark(bcc, &offering_json.height,
                                        &input_file_stream.file_name.clone(), &output_file_stream.file_name.clone(),
-                                       &watermark_file_stream.file_name.clone(), &offering_json.image_watermark.x, &offering_json.image_watermark.y)?;
+                                       &watermark_file_stream.file_name.clone(), &offering_json.x, &offering_json.y)?;
   }else{
     ffmpeg_run_no_watermark(bcc, &qp["height"][0], &input_file_stream.file_name,&output_file_stream.file_name)?;
   }
