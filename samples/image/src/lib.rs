@@ -28,7 +28,7 @@ fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
   }
   let json_path = format!("/public/image/offerings/{}",s);
   // input_path should just be offering
-  bcc.sqmd_get_json(&json_path)
+  bcc.sqmd_get_json_resolve(&json_path)
 }
 
 #[derive(Serialize, Deserialize,  Clone, Debug, Default)]
