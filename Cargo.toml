@@ -20,11 +20,15 @@ base64 = "0.13.0"
 snailquote = "0.3.1"
 json_dotpath = "1.1.0"
 structopt = "0.3.25"
+thiserror = "1.0.30"
+
+[workspace]
+members = ["samples/rproxy", "samples/image", "samples/real-img"]
 
 
-[[bin]]
-name = "samples"
-path = "./samples/src/main.rs"
-test = false
-bench = false
+[package.metadata.scripts]
+install = "npm install && npm run asbuild"
+build = "npm run asbuild"
 
+[profile.release]
+lto = true

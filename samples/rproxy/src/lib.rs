@@ -2,21 +2,18 @@ extern crate elvwasm;
 extern crate serde_json;
 use serde_json::json;
 
-use elvwasm::{implement_bitcode_module, jpc, make_json_error, register_handler, BitcodeContext, ElvError, ErrorKinds};
+use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, ErrorKinds};
 
 implement_bitcode_module!("proxy", do_proxy);
-
-static SQMD_REQUEST: &str = "/request_parameters";
-static STANDARD_ERROR:&str = "no error, failed to acquire error context";
 
 fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
-  let res = bcc.sqmd_get_json(SQMD_REQUEST)?;
+  let res = bcc.sqmd_get_json("/request_parameters")?;
   let mut meta_str: String = match String::from_utf8(res){
     Ok(m) => m,
-    Err(e) => {return bcc.make_error(&String::from_utf8(e.as_bytes().to_vec()).unwrap_or_else(|_| STANDARD_ERROR.to_string()));}
+    Err(_e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid("failed to parse request params"));}
   };
   meta_str = meta_str.replace("${API_KEY}", &qp["API_KEY"][0].to_string()).
     replace("${QUERY}", &qp["QUERY"][0].to_string()).
@@ -24,7 +21,7 @@ fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   BitcodeContext::log(&format!("MetaData = {}", &meta_str));
   let req:serde_json::Map<String,serde_json::Value> = match serde_json::from_str::<serde_json::Map<String,serde_json::Value>>(&meta_str){
     Ok(m) => m,
-    Err(e) => return make_json_error(ElvError::new_json("serde_json::from_str failed", ErrorKinds::Invalid, e))
+    Err(_e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed")),
   };
   let proxy_resp =  bcc.proxy_http(json!({"request": req}))?;
   let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;

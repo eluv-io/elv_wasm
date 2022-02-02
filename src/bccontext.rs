@@ -1,17 +1,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-//use guest::console_log;
 
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate wapc_guest as guest;
+extern crate thiserror;
 
-
-use serde::ser::{Serializer, SerializeStruct};
-
-use std::error::Error;
-use std::fmt;
+use thiserror::Error;
 use std::fmt::Debug;
 
 use std::str;
@@ -21,190 +17,33 @@ use std::collections::HashMap;
 use guest::prelude::*;
 use guest::CallResult;
 
-
-macro_rules! enum_str {
-    (enum $name:ident {
-        $($variant:ident = $val:expr),*,
-    }) => {
-        #[derive(Clone, Serialize, Copy)]
-        pub enum $name {
-            $($variant = $val),*
-        }
-
-        impl $name {
-            fn name(&self) -> &'static str {
-                match self {
-                    $($name::$variant => stringify!($variant)),*
-                }
-            }
-        }
-    };
-  }
-
-  // Errorkinds define the category of content fabric errors that exist.  These errors define categories that can be searched in the
-  // content fabric logs (qfab.log)
-  enum_str! {
-     enum ErrorKinds {
-      Other = 0x00,
-      NotImplemented = 0x01,
-      Invalid = 0x02,
-      Permission = 0x03,
-      IO = 0x04,
-      Exist = 0x05,
-      NotExist = 0x06,
-      IsDir = 0x07,
-      NotDir = 0x08,
-      Finalized = 0x09,
-      NotFinalized = 0x0a,
-      BadHttpParams = 0x0b,
-    }
-  }
-
-  impl fmt::Display for ErrorKinds {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      write!(f, "{}", self.name())
-    }
-  }
-
-  impl ErrorKinds{
-    fn describe(&self) -> &str{
-      self.name()
-    }
-  }
-
-  pub struct NoSubError{
-  }
-
-  impl Error for NoSubError {
-    fn description(&self) -> &str {
-        "No Sub Error"
-    }
-  }
-
-  impl std::fmt::Display for NoSubError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        return write!(f,"No Sub Error");
-    }
-  }
-
-  impl std::fmt::Debug for NoSubError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      return write!(f,"No Sub Error");
-    }
-  }
-
-  /// Defines the structure of an error in WASM bitcode.  The structure mimics the content fabric error structure and these errors
-  /// will be returned to the fabric calling code and translated to real content-fabric errors
-  #[derive(Clone)]
-  pub struct ElvError<T> {
-      details: String,
-      kind: ErrorKinds,
-      description : String,
-      json_error : Option<T>,
-  }
-
-  impl<T> ElvError<T>{
-      pub fn new_json(msg: &str, kind: ErrorKinds, sub_err : T) -> ElvError<T> {
-        ElvError{
-          details:  msg.to_string(),
-          kind,
-          description: format!("{{ details : {}, kind : {} }}", msg, kind),
-          json_error : Some(sub_err),
-        }
-      }
-      pub fn new(msg: &str, kind: ErrorKinds) -> ElvError<T>{
-        ElvError{
-          details:  msg.to_string(),
-          kind,
-          description: format!("{{ details : {}, kind : {} }}", msg, kind),
-          json_error: None,
-        }
-    }
-    pub fn new_with_err(msg: &str, kind: ErrorKinds, err:T) -> ElvError<T>{
-      ElvError{
-        details:  msg.to_string(),
-        kind,
-        description: format!("{{ details : {}, kind : {} }}", msg, kind),
-        json_error: Some(err),
-      }
-    }
-  }
-
-  trait Kind {
-    fn kind(&self) -> ErrorKinds;
-    fn desc(&self) -> String;
-  }
-
-  impl<T:Error> Kind for ElvError<T>{
-    fn kind(&self) -> ErrorKinds{
-      self.kind
-    }
-    fn desc(&self) -> String{
-      self.description.clone()
-    }
-  }
-
-
-  impl<T> std::error::Error for ElvError<T> where
-  T: fmt::Display + Debug {
-    fn description(&self) -> &str {
-        self.kind.describe()
-    }
-  }
-
-  impl<T> fmt::Display for ElvError<T> where
-  T: fmt::Display + Debug {
-      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self.json_error{
-         Some(e) => {return write!(f,"{{ details : {}, kind : {}, sub_error : {:?} }}", self.details, self.kind, e)},
-         None => {return write!(f,"{{ details : {}, kind : {}, sub_error : {{}} }}", self.details, self.kind)}
-        };
-      }
-  }
-
-  impl<T:fmt::Display + Debug> Serialize for ElvError<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where T:fmt::Display + Debug, S:Serializer,
-    {
-      let mut state = serializer.serialize_struct("ElvError", 3)?;
-      state.serialize_field("message", &self.details)?;
-      state.serialize_field("op", &self.kind)?;
-      match &self.json_error{
-        Some(e) => {
-          let mut error_details = HashMap::<String,String>::new();
-          error_details.insert("op".to_string(), format!("{}", self.kind));
-          error_details.insert("rust_error".to_string(), format!("{:?}", &e));
-          state.serialize_field("data", &error_details)?;
-        },
-        None => {
-          state.serialize_field("data", "no extra error info")?;
-        },
-      };
-      state.end()
-    }
-  }
-
-  impl<T>  Debug for ElvError<T>  where
-  T: fmt::Display + Debug {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      match &self.json_error{
-       Some(e) => {return write!(f,"{{ details : {}, kind : {}, sub_error : {:?} }}", self.details, self.kind, e)},
-       None => {return write!(f,"{{ details : {}, kind : {}, sub_error : {{}} }}", self.details, self.kind)}
-      };
-    }
-  }
-
-  impl<T:Error> From<T> for ElvError<T> {
-    fn from(err: T) -> ElvError<T> {
-      ElvError::<T> {
-            details: err.to_string(),
-            description:"".to_string(),
-            json_error:None,
-            kind:ErrorKinds::Invalid,
-        }
-    }
-  }
-
+#[derive(Error, Debug, Clone, Serialize, Copy)]
+pub enum ErrorKinds {
+  #[error("Other Error : `{0}`")]
+  Other(&'static str),
+  #[error("NotImplemented : `{0}`")]
+  NotImplemented(&'static str),
+  #[error("Invalid : `{0}`")]
+  Invalid(&'static str),
+  #[error("Permission : `{0}`")]
+  Permission(&'static str),
+  #[error("IO : `{0}`")]
+  IO(&'static str),
+  #[error("Exist : `{0}`")]
+  Exist(&'static str),
+  #[error("NotExist : `{0}`")]
+  NotExist(&'static str),
+  #[error("IsDir : `{0}`")]
+  IsDir(&'static str),
+  #[error("NotDir : `{0}`")]
+  NotDir(&'static str),
+  #[error("Finalized : `{0}`")]
+  Finalized(&'static str),
+  #[error("NotFinalized : `{0}`")]
+  NotFinalized(&'static str),
+  #[error("BadHttpParams : `{0}`")]
+  BadHttpParams(&'static str),
+}
 
 #[cfg(not(test))]
 fn elv_console_log(s:&str){
@@ -219,10 +58,14 @@ fn elv_console_log(s:&str){
 /// make_json_error translates the bitcode [ElvError<T>] to an error response to the client
 /// # Arguments
 /// * `err`- the error to be translated to a response
-pub fn make_json_error<T:Error>(err:ElvError<T>) -> CallResult {
+pub fn make_json_error(err:ErrorKinds, id:&str) -> CallResult {
     elv_console_log(&format!("error={}", err));
     let msg = json!(
-      {"error" :  err }
+      {
+        "error" :  err,
+        "jpc" : "1.0",
+        "id"  : id,
+      }
     );
     let vr = serde_json::to_vec(&msg)?;
     let out = str::from_utf8(&vr)?;
@@ -1054,16 +897,16 @@ impl<'a> BitcodeContext<'a> {
       Ok(v)
     }
 
-    pub fn make_error(&'a self, msg:&str) -> CallResult {
-      make_json_error(ElvError::<NoSubError>::new(msg , ErrorKinds::Invalid))
+    pub fn make_error(&'a self, msg:&'static str) -> CallResult {
+      make_json_error(ErrorKinds::Invalid(msg), &self.request.id)
     }
 
-    pub fn make_error_with_kind(&'a self, msg:&str, kind:ErrorKinds) -> CallResult {
-      make_json_error(ElvError::<NoSubError>::new(msg , kind))
+    pub fn make_error_with_kind(&'a self, kind:ErrorKinds) -> CallResult {
+      make_json_error(kind, &self.request.id)
     }
 
-    pub fn make_error_with_error<T:Error>(&'a self, msg:&str, kind:ErrorKinds, err:T) -> CallResult {
-      make_json_error(ElvError::<T>::new_with_err(msg , kind, err))
+    pub fn make_error_with_error<T:>(&'a self, kind:ErrorKinds, _err:T) -> CallResult {
+      make_json_error(kind, &self.request.id)
     }
 
 
@@ -1210,7 +1053,7 @@ impl<'a> BitcodeContext<'a> {
       let strm_json:serde_json::Value = serde_json::from_slice(&strm)?;
       let sid = strm_json["stream_id"].to_string();
       if sid.is_empty(){
-        return self.make_error("Unable to find stream_id");
+        return self.make_error_with_kind(ErrorKinds::IO("Unable to find stream_id"));
       }
       let j = json!({
         "stream_id" : sid,
@@ -1230,7 +1073,7 @@ impl<'a> BitcodeContext<'a> {
       if written != 0 {
         return self.read_stream(sid, written as usize);
       }
-      self.make_error("failed to write data")
+      self.make_error_with_kind(ErrorKinds::NotExist("failed to write data"))
 
     }
 

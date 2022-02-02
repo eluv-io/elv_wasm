@@ -301,8 +301,8 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
   elv_console_log(&format!("parameters = {}", input_string));
   let json_params: Request = match serde_json::from_str(input_string){
     Ok(m) => {m},
-    Err(err) => {
-      return make_json_error(ElvError::new_json("parse failed for http" , ErrorKinds::BadHttpParams, err));
+    Err(_err) => {
+      return make_json_error(ErrorKinds::BadHttpParams("parse failed for http"), "ID not found");
     }
   };
   elv_console_log("Request parsed");
@@ -319,13 +319,13 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
           Ok(m)
         },
         Err(err) => {
-          bcc.make_error_with_error("parse failed for http" , ErrorKinds::Invalid, &*err)
+          bcc.make_error_with_error(ErrorKinds::Invalid("parse failed for http"), &*err)
         }
       }
     }
     None => {
       elv_console_log(&format!("Failed to find path {}", split_path[1]));
-      bcc.make_error_with_kind("No valid path provided", ErrorKinds::BadHttpParams)
+      bcc.make_error_with_kind(ErrorKinds::BadHttpParams("No valid path provided"))
     }
   }
 }

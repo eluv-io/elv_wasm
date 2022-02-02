@@ -3,6 +3,8 @@ name = "rproxy"
 version = "0.1.0"
 authors = ["janfalkin <jan.falkin@eluv.io>"]
 edition = "2018"
+workspace = "../.."
+
 
 [lib]
 crate-type = ["rlib", "cdylib"]
@@ -16,3 +18,4 @@ serde_json = "*"
 serde_derive = "*"
 lazy_static = "1.4.0"
 snailquote = "0.3.0"
+thiserror = "1.0.30"
