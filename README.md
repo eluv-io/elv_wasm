@@ -24,14 +24,8 @@ rustup target add wasm32-unknown-unknown
 
 ### Rust
 ```
-cd samples
+cargo build --target wasm32-unknown-unknown --release --workspace
 
-cargo build --target wasm32-unknown-unknown --release
-
-```
-### assemblyscript
-```
-cargo run-script install
 ```
 
 ## Programming interface
