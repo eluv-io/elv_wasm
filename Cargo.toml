@@ -23,7 +23,7 @@ structopt = "0.3.25"
 thiserror = "1.0.30"
 
 [workspace]
-members = ["samples/rproxy", "samples/image", "samples/real-img"]
+members = ["samples", "samples/rproxy", "samples/image", "samples/real-img"]
 
 
 [package.metadata.scripts]
