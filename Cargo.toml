@@ -7,6 +7,7 @@ edition = "2021"
 
 [lib]
 crate-type = ["rlib", "cdylib"]
+path = "src/lib.rs"
 
 [dependencies]
 wapc = "0.10.1"
@@ -25,10 +26,3 @@ thiserror = "1.0.30"
 [workspace]
 members = ["samples", "samples/rproxy", "samples/image", "samples/real-img"]
 
-
-[package.metadata.scripts]
-install = "npm install && npm run asbuild"
-build = "npm run asbuild"
-
-[profile.release]
-lto = true
