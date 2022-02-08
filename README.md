@@ -14,7 +14,7 @@ nvm install 14.7.0
 ### Install Rust and add nightly toolchain and wasm32 targets
 
 ```
-curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
+curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown
 ```
