@@ -17,6 +17,22 @@ use std::collections::HashMap;
 use guest::prelude::*;
 use guest::CallResult;
 
+macro_rules! implement_ext_func {
+  (
+    $(#[$meta:meta])*
+    $handler_name:ident,
+    $fabric_name:literal
+  ) => {
+    $(#[$meta])*
+    pub fn $handler_name(&'a self, v:serde_json::Value) -> CallResult {
+      let method = $fabric_name;
+      let impl_result = self.call_function(method, v, "ext")?;
+      let id = self.request.id.clone();
+      self.make_success_bytes(&impl_result, &id)
+    }
+  }
+}
+
 #[derive(Error, Debug, Clone, Serialize, Copy)]
 pub enum ErrorKinds {
   #[error("Other Error : `{0}`")]
@@ -55,7 +71,7 @@ fn elv_console_log(s:&str){
   println!("{}", s)
 }
 
-/// make_json_error translates the bitcode [ElvError<T>] to an error response to the client
+/// make_json_error translates the bitcode [ErrorKinds] to an error response to the client
 /// # Arguments
 /// * `err`- the error to be translated to a response
 pub fn make_json_error(err:ErrorKinds, id:&str) -> CallResult {
@@ -917,6 +933,8 @@ impl<'a> BitcodeContext<'a> {
       Ok(v)
     }
 
+
+    implement_ext_func!(
     /// proxy_http proxies an http request in case of CORS issues
     /// # Arguments
     /// * `v` : a JSON Value
@@ -925,7 +943,7 @@ impl<'a> BitcodeContext<'a> {
     ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let v = serde_json::from_str(r#"{
     ///         "request_parameters" : {
-      ///         "url": "https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&q=fabric&cx=012842113009817296384:qjezbmwk0cx",
+    ///         "url": "https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&q=fabric&cx=012842113009817296384:qjezbmwk0cx",
     ///         "method": "GET",
     ///         "headers": {
     ///         "Accept": "application/json",
@@ -937,12 +955,91 @@ impl<'a> BitcodeContext<'a> {
     /// ```
     /// # Returns
     /// * slice of [u8]
-    pub fn proxy_http(&'a self, v:serde_json::Value) -> CallResult {
-      let method = "ProxyHttp";
-      let proxy_result = self.call_function(method, v, "ext")?;
-      let id = self.request.id.clone();
-      self.make_success_bytes(&proxy_result, &id)
-    }
+      proxy_http, "ProxyHttp"
+    );
+
+
+    implement_ext_func!(
+      /// new_index_builder create a new Tantivy index builder
+      new_index_builder, "NewIndexBuilder"
+    );
+
+    implement_ext_func!(
+      /// builder_add_text_field adds a new text field to a Tantivy index
+      builder_add_text_field, "BuilderAddTextField"
+    );
+    implement_ext_func!(
+      /// builder_build builds the new Index
+      builder_build, "BuilderBuild"
+    );
+
+    implement_ext_func!(
+      /// document_create create a new document for a given Index
+      document_create, "DocumentCreate"
+    );
+
+    implement_ext_func!(
+      /// document_add_text add text to a given document
+      document_add_text, "DocumentAddText"
+    );
+
+    implement_ext_func!(
+      /// document_create_index creates an index given a set of documents
+      document_create_index, "DocumentCreateIndex"
+    );
+
+    implement_ext_func!(
+      /// index_create_writer creates an index writer
+      index_create_writer, "IndexCreateWriter"
+    );
+
+    implement_ext_func!(
+      /// index_add_document adds a document to the writer
+      index_add_document, "IndexWriterAddDocument"
+    );
+
+    implement_ext_func!(
+      /// index_writer_commit commits the index
+      index_writer_commit, "IndexWriterCommit"
+    );
+
+    implement_ext_func!(
+      /// index_reader_builder_create creates a new reader builder on an index
+      index_reader_builder_create, "IndexReaderBuilderCreate"
+    );
+
+    implement_ext_func!(
+      /// reader_builder_query_parser_create creates a ReaderBuilder from a QueryParser
+      reader_builder_query_parser_create, "ReaderBuilderQueryParserCreate"
+    );
+
+    implement_ext_func!(
+      /// query_parser_for_index executes ForIndex on the QueryParser
+      /// # Arguments
+      /// * `v` : a JSON Value
+      /// ```
+      /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+      ///   let v = serde_json::from_str(r#"{
+      ///         "fields" : ["field1", "field2"]
+      ///       }
+      ///   }"#).unwrap();
+      ///   bcc.query_parser_for_index(v)
+      /// }
+      /// ```
+      /// # Returns
+      /// * slice of [u8]
+    query_parser_for_index, "QueryParserForIndex"
+    );
+
+    implement_ext_func!(
+      /// query_parser_parse_query parses a given query into the QueryParser to search on
+      query_parser_parse_query, "QueryParserParseQuery"
+    );
+
+    implement_ext_func!(
+      /// query_parser_search searches the given QueryParser for the term
+      query_parser_search, "QueryParserSearch"
+    );
 
     pub fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
       host_call(self.request.id.as_str(),ns,op,msg)
