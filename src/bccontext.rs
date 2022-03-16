@@ -941,7 +941,7 @@ impl<'a> BitcodeContext<'a> {
     ///
     /// ```
     ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let v = serde_json::from_str(r#"{
+    ///   let v = json!({
     ///         "request_parameters" : {
     ///         "url": "https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&q=fabric&cx=012842113009817296384:qjezbmwk0cx",
     ///         "method": "GET",
@@ -949,7 +949,7 @@ impl<'a> BitcodeContext<'a> {
     ///         "Accept": "application/json",
     ///         "Content-Type": "application/json"
     ///       }
-    ///   }"#).unwrap();
+    ///   });
     ///   bcc.proxy_http(v)
     /// }
     /// ```
@@ -961,11 +961,28 @@ impl<'a> BitcodeContext<'a> {
 
     implement_ext_func!(
       /// new_index_builder create a new Tantivy index builder
+      /// # Arguments None
+      /// ```
+      ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+      ///   let v = json!({});
+      ///   bcc.new_index_builder(v)
+      /// }
+      /// ```
       new_index_builder, "NewIndexBuilder"
     );
 
     implement_ext_func!(
       /// builder_add_text_field adds a new text field to a Tantivy index
+      /// ```
+      ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+      ///   let v = json!({
+      ///     "name":   "title",
+		  ///     "type":   1,
+		  ///     "stored": true,
+      ///   });
+      ///   bcc.builder_add_text_field(v)
+      /// }
+      /// ```
       builder_add_text_field, "BuilderAddTextField"
     );
     implement_ext_func!(
