@@ -34,30 +34,31 @@ macro_rules! implement_ext_func {
 }
 
 #[derive(Error, Debug, Clone, Serialize, Copy)]
+#[repr(u8)]
 pub enum ErrorKinds {
-  #[error("Other Error : `{0}`")]
-  Other(&'static str),
-  #[error("NotImplemented : `{0}`")]
+  #[error("Other Error : {0}")]
+  Other(&'static str) = 0,
+  #[error("NotImplemented : {0}")]
   NotImplemented(&'static str),
-  #[error("Invalid : `{0}`")]
+  #[error("Invalid : {0}")]
   Invalid(&'static str),
-  #[error("Permission : `{0}`")]
+  #[error("Permission : {0}")]
   Permission(&'static str),
-  #[error("IO : `{0}`")]
+  #[error("IO : {0}")]
   IO(&'static str),
-  #[error("Exist : `{0}`")]
+  #[error("Exist : {0}")]
   Exist(&'static str),
-  #[error("NotExist : `{0}`")]
+  #[error("NotExist : {0}")]
   NotExist(&'static str),
-  #[error("IsDir : `{0}`")]
+  #[error("IsDir : {0}")]
   IsDir(&'static str),
-  #[error("NotDir : `{0}`")]
+  #[error("NotDir : {0}")]
   NotDir(&'static str),
-  #[error("Finalized : `{0}`")]
+  #[error("Finalized : {0}")]
   Finalized(&'static str),
-  #[error("NotFinalized : `{0}`")]
+  #[error("NotFinalized : {0}")]
   NotFinalized(&'static str),
-  #[error("BadHttpParams : `{0}`")]
+  #[error("BadHttpParams : {0}")]
   BadHttpParams(&'static str),
 }
 
@@ -71,6 +72,9 @@ fn elv_console_log(s:&str){
   println!("{}", s)
 }
 
+fn discriminant(v : &ErrorKinds) -> u8 {
+  unsafe { *(v as *const ErrorKinds as *const u8) }
+}
 /// make_json_error translates the bitcode [ErrorKinds] to an error response to the client
 /// # Arguments
 /// * `err`- the error to be translated to a response
@@ -78,7 +82,14 @@ pub fn make_json_error(err:ErrorKinds, id:&str) -> CallResult {
     elv_console_log(&format!("error={}", err));
     let msg = json!(
       {
-        "error" :  err,
+        "error" :  {
+          "op" : discriminant(&err),
+          "desc" : err,
+          "data" : {
+            "op" : discriminant(&err),
+            "desc" : err,
+          },
+        },
         "jpc" : "1.0",
         "id"  : id,
       }
@@ -361,9 +372,10 @@ impl<'a> BitcodeContext<'a> {
     /// ```
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let res = bcc.q_list_content()?;
-    ///   let q:serde_json::Map = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
-    ///   let id:&str = q["qid"];
-    ///   let hash:&str = q["qhash"];
+    ///   let q:serde_json::Value = serde_json::from_slice(&res).unwrap();
+    ///   let m = q.as_object().unwrap();
+    ///   let id = m["qid"].as_str().unwrap();
+    ///   let hash = m["qhash"].as_str().unwrap();
     ///   Ok(res)
     /// }
     /// ```
@@ -405,8 +417,9 @@ impl<'a> BitcodeContext<'a> {
     /// ```
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let res = bcc.q_modify_content()?;
-    ///   let q:serde_json::Map = serde_json::from_str(std::str::from_utf8(&res).unwrap())?;
-    ///   let write_token:&str = q["qwtoken"];
+    ///   let q:serde_json::Value = serde_json::from_slice(&res).unwrap();
+    ///   let m = q.as_object().unwrap();
+    ///   let write_token = m["qwtoken"].as_str().unwrap();
     ///   Ok(res)
     /// }
     /// ```
@@ -566,8 +579,9 @@ impl<'a> BitcodeContext<'a> {
     /// # Returns
     /// * error only no success return
     /// ```
+    /// use serde_json::json;
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   bcc.sqmd_set_json("/some_key", json!({"foo" : "bar"}))?;
+    ///   bcc.sqmd_set_json("/some_key", &json!({"foo" : "bar"}))?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
     /// ```
@@ -590,8 +604,10 @@ impl<'a> BitcodeContext<'a> {
     /// # Returns
     /// * error only no success return
     /// ```
+    /// use serde_json::json;
+    ///
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   bcc.sqmd_merge_json("/some_key", json!({"foo" : "bar"}))?;
+    ///   bcc.sqmd_merge_json("/some_key", r#"{{"foo" : "bar"}}"#)?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
     /// ```
@@ -659,7 +675,8 @@ impl<'a> BitcodeContext<'a> {
     /// ```
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json("/some_key")?;
-    ///   let mut meta = serde_json::from_utf8(res.clone());
+    ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
+    ///   let mut meta = v.as_object().unwrap();
     ///   Ok(res)
     /// }
     /// ```
@@ -681,7 +698,8 @@ impl<'a> BitcodeContext<'a> {
     /// ```
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json_resolve("/some_key")?;
-    ///   let mut meta = serde_json::from_utf8(res.clone());
+    ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
+    ///   let mut meta = v.as_object().unwrap();
     ///   Ok(res)
     /// }
     /// ```
@@ -729,7 +747,8 @@ impl<'a> BitcodeContext<'a> {
     /// ```
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_query("$['some'].value[0].description")?;
-    ///   let mut meta = serde_json::from_utf8(res.clone());
+    ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
+    ///   let mut meta = v.as_object().unwrap();
     ///   Ok(res)
     /// }
     /// ```
@@ -940,15 +959,18 @@ impl<'a> BitcodeContext<'a> {
     /// * `v` : a JSON Value
     ///
     /// ```
-    ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// use serde_json::json;
+    ///
+    /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
     ///   let v = json!({
     ///         "request_parameters" : {
     ///         "url": "https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&q=fabric&cx=012842113009817296384:qjezbmwk0cx",
     ///         "method": "GET",
     ///         "headers": {
-    ///         "Accept": "application/json",
-    ///         "Content-Type": "application/json"
-    ///       }
+    ///           "Accept": "application/json",
+    ///           "Content-Type": "application/json"
+    ///         }
+    ///      }
     ///   });
     ///   bcc.proxy_http(v)
     /// }
@@ -961,9 +983,11 @@ impl<'a> BitcodeContext<'a> {
 
     implement_ext_func!(
       /// new_index_builder create a new Tantivy index builder
-      /// # Arguments None
+      /// Arguments None
       /// ```
-      ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+      /// use serde_json::json;
+      ///
+      /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
       ///   let v = json!({});
       ///   bcc.new_index_builder(v)
       /// }
@@ -973,7 +997,11 @@ impl<'a> BitcodeContext<'a> {
 
     implement_ext_func!(
       /// builder_add_text_field adds a new text field to a Tantivy index
+      /// # Arguments
+      /// * `v` : a JSON Value
       /// ```
+      /// use serde_json::json;
+      ///
       ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
       ///   let v = json!({
       ///     "name":   "title",
@@ -987,6 +1015,16 @@ impl<'a> BitcodeContext<'a> {
     );
     implement_ext_func!(
       /// builder_build builds the new Index
+      /// Arguments None
+      /// ```
+      /// use serde_json::json;
+      ///
+      ///
+      ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+      ///   let v = json!({});
+      ///   bcc.builder_build(v)
+      /// }
+      /// ```
       builder_build, "BuilderBuild"
     );
 

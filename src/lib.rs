@@ -1,3 +1,5 @@
+#![feature(arbitrary_enum_discriminant)]
+
 //! elvwasm contains and collects the bitcode extension API for the Eluvio content fabric. </br>
 //! The library is intended to be built as wasm and the resultant part uploaded to the content fabric.
 //! The main entry point for each client module is implemented by [jpc] which automatically creates and dispatches
@@ -9,7 +11,7 @@
   extern crate serde_json;
   use serde_json::json;
 
-  use elvwasm::{implement_bitcode_module, jpc, make_json_error, register_handler, BitcodeContext, ElvError, ErrorKinds};
+  use elvwasm::{implement_bitcode_module, jpc, make_json_error, register_handler, BitcodeContext, ErrorKinds};
 
   implement_bitcode_module!("proxy", do_proxy);
 
@@ -23,7 +25,7 @@
     let res = bcc.sqmd_get_json(SQMD_REQUEST)?;
     let mut meta_str: String = match String::from_utf8(res){
       Ok(m) => m,
-      Err(e) => {return bcc.make_error(&String::from_utf8(e.as_bytes().to_vec()).unwrap_or_else(|_| STANDARD_ERROR.to_string()));}
+      Err(e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid("unable to parse utf input"));}
     };
     meta_str = meta_str.replace("${API_KEY}", &qp["API_KEY"][0].to_string()).
       replace("${QUERY}", &qp["QUERY"][0].to_string()).
@@ -31,7 +33,7 @@
     BitcodeContext::log(&format!("MetaData = {}", &meta_str));
     let req:serde_json::Map<String,serde_json::Value> = match serde_json::from_str::<serde_json::Map<String,serde_json::Value>>(&meta_str){
       Ok(m) => m,
-      Err(e) => return make_json_error(ElvError::new_json("serde_json::from_str failed", ErrorKinds::Invalid, e))
+      Err(e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed"))
     };
     let proxy_resp =  bcc.proxy_http(json!({"request": req}))?;
     let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
@@ -247,9 +249,10 @@ mod tests {
             Ok(k) => {
                 let mut res_json:serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&k).unwrap();
                 let mut err_json:serde_json::Map<String, serde_json::Value> = serde_json::from_value(res_json["error"].take()).unwrap();
-                assert_eq!(err_json["op"], "BadHttpParams");
+                println!("{:?}", err_json);
+                assert_eq!(err_json["op"], 11);
                 let err_json_data:serde_json::Map<String, serde_json::Value> = serde_json::from_value(err_json["data"].take()).unwrap();
-                assert_eq!(err_json_data["op"], "BadHttpParams");
+                assert_eq!(err_json_data["op"], 11);
             },
             Err(err) => {
               panic!("failed test_http err = {:?}", err);
@@ -319,7 +322,7 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
           Ok(m)
         },
         Err(err) => {
-          bcc.make_error_with_error(ErrorKinds::Invalid("parse failed for http"), &*err)
+          bcc.make_error_with_error(ErrorKinds::BadHttpParams("parse failed for http"), &*err)
         }
       }
     }
