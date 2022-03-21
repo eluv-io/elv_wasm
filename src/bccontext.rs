@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_json::json;
 
 extern crate serde;
@@ -882,8 +883,8 @@ impl<'a> BitcodeContext<'a> {
           host_call(self.request.id.as_str(),stream_to_read.as_str(), "Read", &input)
     }
 
-    pub fn temp_dir(&'a mut self) -> CallResult {
-      let temp_dir_res = self.call("TempDir", "{}", "ctx".as_bytes())?;
+    pub fn temp_dir(&'a self) -> CallResult {
+      let temp_dir_res = self.call_function("TempDir", json!({}), "ctx")?;
       Ok(temp_dir_res)
     }
 
@@ -980,20 +981,64 @@ impl<'a> BitcodeContext<'a> {
       proxy_http, "ProxyHttp"
     );
 
+    pub fn new_index_builder(&'a self, v:serde_json::Value) -> CallResult {
+      let mut new_map:serde_json::Map::<String, Value>;
+      let mut entry:Value;
+      let method = "NewIndexBuilder";
+      console_log("HERE MY AM 1");
+      let vp = match v{
+        Value::Object(o) => {
+          console_log("HERE MY AM 4");
+          new_map = o;
+          console_log("HERE MY AM 5");
+          let td = self.temp_dir()?;
+          let dir = std::str::from_utf8(&td)?;
+          entry= match new_map.get("directory"){
+            Some(d) => d.clone(),
+            None =>{
+              console_log("HERE MY AM 2");
+              new_map.insert("directory".to_string(), json!(dir));
+              new_map.get("directory").unwrap().clone()
+            }
+          };
+          entry
+        },
+        Value::Null => {
+          console_log("HERE MY AM 3");
+          new_map = serde_json::Map::<String, Value>::new();
+          let td = self.temp_dir()?;
+          console_log("HERE MY AM");
+          new_map["directory"] = serde_json::from_slice(&td)?;
+          serde_json::Value::Object(new_map)
+        },
+        _ => {
+          return make_json_error(ErrorKinds::Invalid(""), &self.request.id);
+        },
+      };
+      console_log("HERE MY AM 6");
+      let impl_result = self.call_function(method, vp.clone(), "ext")?;
+      let id = self.request.id.clone();
+      self.make_success_bytes(&impl_result, &id)
+    }
 
-    implement_ext_func!(
-      /// new_index_builder create a new Tantivy index builder
-      /// Arguments None
-      /// ```
-      /// use serde_json::json;
-      ///
-      /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-      ///   let v = json!({});
-      ///   bcc.new_index_builder(v)
-      /// }
-      /// ```
-      new_index_builder, "NewIndexBuilder"
-    );
+    pub fn archive_index_to_part(&'a self) -> CallResult{
+      self.call_function("ArchiveIndexToPart", json!({}), "ext")
+    }
+
+    // implement_ext_func!(
+    //   /// new_index_builder create a new Tantivy index builder
+    //   /// Arguments None
+    //   /// ```
+    //   /// use serde_json::json;
+    //   ///
+    //   /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    //   ///   let v = json!({});
+    //   ///   bcc.new_index_builder(v)
+    //   /// }
+    //   /// ```
+    //   new_index_builder, "NewIndexBuilder"
+    // );
+
 
     implement_ext_func!(
       /// builder_add_text_field adds a new text field to a Tantivy index
@@ -1096,7 +1141,7 @@ impl<'a> BitcodeContext<'a> {
       query_parser_search, "QueryParserSearch"
     );
 
-    pub fn call(&'a mut self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
+    pub fn call(&'a self, ns: &str, op: &str, msg: &[u8]) -> CallResult{
       host_call(self.request.id.as_str(),ns,op,msg)
     }
     /// call_function - enables the calling of fabric api's
