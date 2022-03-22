@@ -986,7 +986,7 @@ impl<'a> BitcodeContext<'a> {
       let mut entry:Value;
       let method = "NewIndexBuilder";
       console_log("HERE MY AM 1");
-      let vp = match v{
+      match v{
         Value::Object(o) => {
           console_log("HERE MY AM 4");
           new_map = o;
@@ -997,7 +997,7 @@ impl<'a> BitcodeContext<'a> {
             Some(d) => d.clone(),
             None =>{
               console_log("HERE MY AM 2");
-              new_map.insert("directory".to_string(), json!(dir));
+              new_map.insert("directory".to_string(), serde_json::from_str(dir).unwrap());
               new_map.get("directory").unwrap().clone()
             }
           };
@@ -1009,14 +1009,15 @@ impl<'a> BitcodeContext<'a> {
           let td = self.temp_dir()?;
           console_log("HERE MY AM");
           new_map["directory"] = serde_json::from_slice(&td)?;
-          serde_json::Value::Object(new_map)
+          serde_json::Value::Object(new_map.clone())
         },
         _ => {
           return make_json_error(ErrorKinds::Invalid(""), &self.request.id);
         },
       };
-      console_log("HERE MY AM 6");
-      let impl_result = self.call_function(method, vp.clone(), "ext")?;
+      let vp = json!(new_map);
+      console_log(&format!("HERE MY AM 6 val = {} {:?}", vp.clone(), new_map));
+      let impl_result = self.call_function(method, vp, "ext")?;
       let id = self.request.id.clone();
       self.make_success_bytes(&impl_result, &id)
     }
