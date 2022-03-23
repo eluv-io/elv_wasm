@@ -15,20 +15,31 @@ fn extract_body(v:Value) -> Option<Value>{
         Some(v) => v,
         None => return None,
     };
+    let mut full_result = true;
     let res = match obj.get("result"){
         Some(m) => m,
-        None => return None,
+        None => match obj.get("http"){
+            Some(h) => {
+                full_result = false;
+                h
+            },
+            None => return None,
+        },
     };
-    let http = match res.get("http"){
-        Some(h) => h,
-        None => return None
-    };
-    return match http.get("body"){
+    if full_result{
+        let http = match res.get("http"){
+            Some(h) => h,
+            None => return None
+        };
+        return match http.get("body"){
+            Some(b) => Some(b.clone()),
+            None => None
+        };
+    }
+    return match res.get("body"){
         Some(b) => Some(b.clone()),
         None => None
     };
-
-
 }
 
 fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
@@ -81,12 +92,14 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     bcc.index_writer_commit(v)?;
     let part_u8 = bcc.archive_index_to_part()?;
     let part_hash:serde_json::Value = serde_json::from_slice(&part_u8)?;
-    BitcodeContext::log(&format!("part hash = {}", &part_hash.to_string()));
+    let b = extract_body(part_hash.clone());
+    let body_hash = b.unwrap_or(json!({}));
+    BitcodeContext::log(&format!("part hash = {}, bosy = {}", &part_hash.to_string(), &body_hash.to_string()));
     bcc.make_success_json(&json!(
         {
             "headers" : "application/json",
             "body" : "SUCCESS",
-            "result" : 0,
+            "result" : body_hash,
         }), id)
 }
 

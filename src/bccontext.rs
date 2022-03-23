@@ -983,20 +983,16 @@ impl<'a> BitcodeContext<'a> {
 
     pub fn new_index_builder(&'a self, v:serde_json::Value) -> CallResult {
       let mut new_map:serde_json::Map::<String, Value>;
-      let mut entry:Value;
+      let entry:Value;
       let method = "NewIndexBuilder";
-      console_log("HERE MY AM 1");
       match v{
         Value::Object(o) => {
-          console_log("HERE MY AM 4");
           new_map = o;
-          console_log("HERE MY AM 5");
           let td = self.temp_dir()?;
           let dir = std::str::from_utf8(&td)?;
           entry= match new_map.get("directory"){
             Some(d) => d.clone(),
             None =>{
-              console_log("HERE MY AM 2");
               new_map.insert("directory".to_string(), serde_json::from_str(dir).unwrap());
               new_map.get("directory").unwrap().clone()
             }
@@ -1004,10 +1000,8 @@ impl<'a> BitcodeContext<'a> {
           entry
         },
         Value::Null => {
-          console_log("HERE MY AM 3");
           new_map = serde_json::Map::<String, Value>::new();
           let td = self.temp_dir()?;
-          console_log("HERE MY AM");
           new_map["directory"] = serde_json::from_slice(&td)?;
           serde_json::Value::Object(new_map.clone())
         },
@@ -1016,7 +1010,6 @@ impl<'a> BitcodeContext<'a> {
         },
       };
       let vp = json!(new_map);
-      console_log(&format!("HERE MY AM 6 val = {} {:?}", vp.clone(), new_map));
       let impl_result = self.call_function(method, vp, "ext")?;
       let id = self.request.id.clone();
       self.make_success_bytes(&impl_result, &id)
@@ -1170,19 +1163,16 @@ impl<'a> BitcodeContext<'a> {
       }
       return match j_res.get("result"){
         Some(x) => {
-          BitcodeContext::log("here In result");
           let r = serde_json::to_vec(&x)?;
           Ok(r)
         },
         None => {
           match j_res.get("error"){
             Some(x) => {
-              BitcodeContext::log("here in error");
               let r = serde_json::to_vec(&x)?;
               return Ok(r);
             },
             None => {
-              BitcodeContext::log("here in neither");
               return Ok(call_ret_val);
             }
           };
