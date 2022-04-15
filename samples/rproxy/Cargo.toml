@@ -7,7 +7,7 @@ workspace = "../.."
 
 
 [lib]
-crate-type = ["rlib", "cdylib"]
+crate-type = ["rlib"]
 
 [dependencies]
 elvwasm = { path = "../.."}
