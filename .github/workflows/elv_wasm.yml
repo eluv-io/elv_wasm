@@ -22,10 +22,8 @@ jobs:
           toolchain: nightly
           default: true
           override: true
-      - uses: jetli/wasm-pack-action@v0.3.0
-        with:
-          # Optional version of wasm-pack to install(eg. 'v0.9.1', 'latest')
-          version: 'latest'
+      - name: PreReqs
+        run: rustup target add wasm32-unknown-unknown
       - name: Build
         run: cargo build --target wasm32-unknown-unknown --release --workspace
       - name: Run tests
