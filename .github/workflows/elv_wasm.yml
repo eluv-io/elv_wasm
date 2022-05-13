@@ -1,0 +1,28 @@
+name: Elv_wasm
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+          override: true
+      - name: Build
+        run: cargo build --target wasm32-unknown-unknown --release --workspace
+      - name: Run tests
+        run: cargo test --verbose

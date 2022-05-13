@@ -556,7 +556,7 @@ impl<'a> BitcodeContext<'a> {
     /// e.g.
     /// ```
     /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-    ///   let res = bcc.q_get_versions()?;
+    ///   let res = bcc.q_get_versions("id_someQID", true)?;
     ///   let qVersions:elvwasm::QRef = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
     ///   // Do stuff with qVersions
     ///   Ok(res)
