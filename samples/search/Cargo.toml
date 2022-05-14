@@ -2,13 +2,16 @@
 name = "search"
 version = "0.1.0"
 edition = "2021"
+workspace = "../.."
 
+[lib]
+crate-type = ["rlib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 elvwasm = { path = "../.."}
-wapc = "*"
-wapc-guest = "*"
+wapc = "0.10.1"
+wapc-guest = "0.4.0"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"

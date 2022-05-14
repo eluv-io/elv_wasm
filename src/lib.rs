@@ -83,6 +83,9 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
 }
 
+static mut ERR_MSG:String = String::new();
+
+
 /// This macro delivers the required initializtion of the eluvio wasm module
 /// In addition the macro also registers a handler of the form
 /// ```ignore
@@ -322,7 +325,10 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
           Ok(m)
         },
         Err(err) => {
-          bcc.make_error_with_error(ErrorKinds::BadHttpParams("parse failed for http"), &*err)
+          unsafe{
+          ERR_MSG = format!("parse failed for http {}", &*err);
+          bcc.make_error_with_error(ErrorKinds::BadHttpParams(&ERR_MSG), &*err)
+          }
         }
       }
     }

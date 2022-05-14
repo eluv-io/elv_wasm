@@ -7,12 +7,12 @@ workspace = "../.."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-crate-type = ["rlib", "cdylib"]
+crate-type = ["rlib"]
 
 [dependencies]
 elvwasm = { path = "../.."}
-wapc = "*"
-wapc-guest = "*"
+wapc = "0.10.1"
+wapc-guest = "0.4.0"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"
