@@ -8,7 +8,7 @@ use elvwasm::ErrorKinds;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
-implement_bitcode_module!("crawl", do_crawl);
+implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3);
 
 fn extract_body(v:Value) -> Option<Value>{
     let obj = match v.as_object(){
@@ -40,6 +40,14 @@ fn extract_body(v:Value) -> Option<Value>{
         Some(b) => Some(b.clone()),
         None => None
     };
+}
+
+fn do_crawl3<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    do_crawl2(bcc)
+}
+
+fn do_crawl2<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    do_crawl(bcc)
 }
 
 fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
