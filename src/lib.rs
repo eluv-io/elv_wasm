@@ -85,32 +85,46 @@ lazy_static! {
 
 static mut ERR_MSG:String = String::new();
 
+#[macro_export]
+macro_rules! register_handlers {
+  () => {};
+  ($handler_name:literal, $handler_func:ident $(,$more_name:literal, $more_func:ident )*) => {
+
+    register_handler($handler_name, $handler_func);
+    register_handlers!($( $more_name, $more_func ),* );
+  }
+}
+
 
 /// This macro delivers the required initializtion of the eluvio wasm module
 /// In addition the macro also registers a handler of the form
 /// ```ignore
 /// fn fn_name<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult
 ///
-/// implement_bitcode_module!("proxy", do_proxy);
+/// implement_bitcode_module!("proxy", do_proxy, "image", do_image);
 /// fn do_proxy<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+///   return bcc.make_success("SUCCESS");
+/// }
+/// fn do_image<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
 ///   return bcc.make_success("SUCCESS");
 /// }
 /// ```
 #[macro_export]
 macro_rules! implement_bitcode_module {
-  ($handler_name:literal, $handler_func:ident) => {
+  ($handler_name:literal, $handler_func:ident $(, $more_lit:literal, $more:ident)*) => {
     extern crate wapc_guest as guest;
 
     use guest::{register_function, CallResult, console_log};
     use std::panic;
     use std::io;
+    use elvwasm::register_handlers;
 
     fn hook_impl(info: &std::panic::PanicInfo) {
       let _ = console_log(&format!("Panic is WASM!! {}", info));
     }
     #[no_mangle]
     pub extern "C" fn wapc_init() {
-      register_handler($handler_name, $handler_func);
+      register_handlers!($handler_name, $handler_func $(, $more_lit, $more)*);
       register_function("_jpc", jpc);
       panic::set_hook(Box::new(hook_impl));
     }
@@ -273,7 +287,7 @@ mod tests {
 
 
 
-type HandlerFunction = fn(bcc: & mut BitcodeContext) -> CallResult;
+type HandlerFunction = fn(bcc: &mut BitcodeContext) -> CallResult;
 
 
 /// register_handler adjusts the global static call map to associate a bitcode module with a path

@@ -24,6 +24,6 @@ structopt = "0.3.25"
 thiserror = "1.0.30"
 
 [workspace]
-members = ["samples", "samples/rproxy", "samples/image", "samples/real-img", "samples/search"]
+members = ["samples", "samples/rproxy", "samples/image", "samples/real-img", "samples/search", "samples/everything"]
 
 

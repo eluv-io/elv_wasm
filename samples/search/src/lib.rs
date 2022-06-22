@@ -8,7 +8,47 @@ use elvwasm::ErrorKinds;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
-implement_bitcode_module!("crawl", do_crawl);
+implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3);
+
+fn extract_body(v:Value) -> Option<Value>{
+    let obj = match v.as_object(){
+        Some(v) => v,
+        None => return None,
+    };
+    let mut full_result = true;
+    let res = match obj.get("result"){
+        Some(m) => m,
+        None => match obj.get("http"){
+            Some(h) => {
+                full_result = false;
+                h
+            },
+            None => return None,
+        },
+    };
+    if full_result{
+        let http = match res.get("http"){
+            Some(h) => h,
+            None => return None
+        };
+        return match http.get("body"){
+            Some(b) => Some(b.clone()),
+            None => None
+        };
+    }
+    return match res.get("body"){
+        Some(b) => Some(b.clone()),
+        None => None
+    };
+}
+
+fn do_crawl3<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    do_crawl2(bcc)
+}
+
+fn do_crawl2<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    do_crawl(bcc)
+}
 
 fn extract_body(v:Value) -> Option<Value>{
     let obj = match v.as_object(){

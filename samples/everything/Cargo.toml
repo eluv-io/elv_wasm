@@ -1,12 +1,11 @@
 [package]
-name = "search"
+name = "everything"
 version = "0.1.0"
 edition = "2021"
 workspace = "../.."
 
 [lib]
 crate-type = ["rlib", "cdylib"]
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 elvwasm = { path = "../.."}
@@ -17,6 +16,11 @@ serde_json = "*"
 serde_derive = "*"
 lazy_static = "1.4.0"
 snailquote = "0.3.0"
+thiserror = "1.0.30"
 scopeguard = "1.1.0"
 base64 = "0.13.0"
-thiserror = "1.0.30"
+
+[dependencies.image]
+version = "0.23.14"
+default-features = false
+features = ["gif", "jpeg", "ico", "png", "pnm", "tga", "tiff", "webp", "bmp", "hdr", "dxt", "dds", "farbfeld"]
