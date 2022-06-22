@@ -101,8 +101,11 @@ macro_rules! register_handlers {
 /// ```ignore
 /// fn fn_name<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult
 ///
-/// implement_bitcode_module!("proxy", do_proxy);
+/// implement_bitcode_module!("proxy", do_proxy, "image", do_image);
 /// fn do_proxy<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
+///   return bcc.make_success("SUCCESS");
+/// }
+/// fn do_image<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> CallResult {
 ///   return bcc.make_success("SUCCESS");
 /// }
 /// ```
