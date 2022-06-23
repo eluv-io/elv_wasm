@@ -49,7 +49,7 @@ fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
 }
 ```
 
-To Build binaries </br> *cargo build –all –features “host-wasm”* </br> To Build samples </br> *cd samples* </br> *cargo build –target wasm32-unknown-unknown* </br> </br> test </br> *target/debug/mock ./samples/target/wasm32-unknown-unknown/debug/deps/rproxy.wasm ./samples/fabric.json*
+To Build all wasm binaries </br> *cargo build --target wasm32-unknown-unknown --release --workspace* </br> 
 
 
  [__link0]: https://docs.rs/elvwasm/0.1.0/elvwasm/?search=elvwasm::jpc
