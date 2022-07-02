@@ -16,7 +16,10 @@ nvm install 14.7.0
 ```
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
-rustup target add wasm32-unknown-unknown
+rustup toolchain install nightly
+rustup update
+rustup target add wasm32-unknown-unknown --toolchain nightly
+rustup default nightly
 ```
 
 ## Building
