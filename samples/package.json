@@ -19,7 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@assemblyscript/loader": "^0.18.32",
-    "asc": "^2.0.2"
+    "asc": "^2.0.3"
   },
   "devDependencies": {
     "@as-pect/cli": "^6.1.1",

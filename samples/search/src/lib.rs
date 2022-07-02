@@ -2,13 +2,20 @@ mod old_man;
 
 extern crate elvwasm;
 extern crate serde_json;
-use serde_json::{json, Value};
+use std::collections::{HashSet, HashMap};
+use petgraph::adj::NodeIndex;
+use petgraph::data::Build;
+use petgraph::graph::{Graph, NodeIndex as OtherNodeIndex};
+use std::collections::VecDeque;
+
+use serde_json::{json, Value, Map};
+use serde::{Deserialize, Serialize};
 use crate::old_man::S_OLD_MAN;
 use elvwasm::ErrorKinds;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
-implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3);
+implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3, "search_update", do_search_update);
 
 fn extract_body(v:Value) -> Option<Value>{
     let obj = match v.as_object(){
@@ -103,6 +110,121 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
             "body" : "SUCCESS",
             "result" : body_hash,
         }), id)
+}
+
+struct FilterDAG{
+    pub graph:Graph<(), String>
+}
+
+impl FilterDAG {
+    pub fn new(fields:&Vec<String>) -> Self {
+        let mut s = Self{graph : Graph::<(), String>::new()};
+        let root = s.graph.add_node(());
+        let mut fdq = VecDeque::<(VecDeque::<Vec<&str>>, OtherNodeIndex, u8)>::new();
+        for field in fields{
+            let fields:Vec<&str> = field.split(".").collect();
+            let mut el = (VecDeque::<Vec<&str>>::new(), root, 0);
+            el.0.push_back(fields);
+            fdq.push_back(el);
+        }
+        let mut current_level:i32 = -1;
+        let mut seen_keys = HashMap::<(OtherNodeIndex, Vec<&str>), OtherNodeIndex>::new();
+        while fields.len() > 0{
+            let (mut field, parent, level) = fdq.pop_front().unwrap();
+            if level as i32 > current_level{
+                current_level = level as i32;
+            }
+            if field.len() > 0{
+                let key = field.pop_front().unwrap();
+                let skey = (parent,key);
+                let mut child = s.graph.add_node(());
+                if !seen_keys.contains_key(&skey){
+                    let egde = s.graph.add_edge(parent, child, skey.1[0].to_string());
+                    seen_keys.insert(skey, child);
+                }else{
+                    child = seen_keys[&skey];
+                }
+                let to_append = (field, child, level+1);
+                fdq.push_back(to_append);
+            }
+        }
+        s
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FieldDefinitions {
+    #[serde(default)]
+    pub field_type: String,
+    #[serde(default)]
+    pub options: Map<String, Value>,
+    #[serde(default)]
+    pub paths: Vec<String>,
+}
+
+fn merge(a: &mut Value, b: Value) {
+    if let Value::Object(a) = a {
+        if let Value::Object(b) = b {
+            for (k, v) in b {
+                if v.is_null() {
+                    a.remove(&k);
+                }
+                else {
+                    merge(a.entry(k).or_insert(Value::Null), v);
+                }
+            }
+
+            return;
+        }
+    }
+
+    *a = b;
+}
+
+fn do_search_update<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    let http_p = &bcc.request.params.http;
+    let qp = &http_p.query;
+    let id = &bcc.request.id;
+    bcc.new_index_builder(json!({}))?;
+    let mut extra_fields = json!({});
+    let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;
+    let fields:Map<String, Value> = serde_json::from_slice(&res)?;
+    for (field, val) in fields.into_iter(){
+        let new_field =json!({format!("f_{}", field):&val});
+        merge(&mut extra_fields, new_field);
+    }
+    let v = json!({});
+    bcc.builder_build(v.clone())?;
+    let mut core_fields = json!({});
+    let core_field_names = vec!["id", "hash", "type", "qlib_id", "has_field", "prefix", "display_title", "asset_type", "title_type"];
+    // create core fields schema
+    for key in core_field_names{
+        core_fields[key] = json!({"options" :  {"builder": {}, "stats": {"simple": false, "histogram": false}}, "type":"string"})
+    }
+
+    let mut all_fields = json!({});
+    merge(&mut all_fields, core_fields);
+    merge(&mut all_fields, extra_fields);
+
+    let res = bcc.sqmd_get_json("/indexer/arguments/document/prefix")?;
+    let document_prefix_filter:String = serde_json::from_slice(&res)?;
+
+    // core_fields = {key: {
+    //     "options": {"builder": {}, "stats": {"simple": False, "histogram": False}},
+    //     "type": "string",
+    // } for key in core_field_names}
+
+        //let fd:FieldDefinitions = serde_json::from_value(val.clone())?;
+    //let v = json!({ "field_name": field, "type": fd.field_type, "stored": true});
+    //bcc.builder_add_text_field(v)?;
+
+    bcc.make_success_json(&json!(
+        {
+            "headers" : "application/json",
+            "body" : "SUCCESS",
+            "result" : {"status" : "update complete"},
+        }), id)
+
 }
 
 #[cfg(test)]
