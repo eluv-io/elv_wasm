@@ -1,12 +1,12 @@
+#![feature(generic_associated_types)]
+
 mod old_man;
+
+pub mod graph;
+pub mod indexer;
 
 extern crate elvwasm;
 extern crate serde_json;
-use std::collections::{HashSet, HashMap};
-use petgraph::adj::NodeIndex;
-use petgraph::data::Build;
-use petgraph::graph::{Graph, NodeIndex as OtherNodeIndex};
-use std::collections::VecDeque;
 
 use serde_json::{json, Value, Map};
 use serde::{Deserialize, Serialize};
@@ -110,46 +110,6 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
             "body" : "SUCCESS",
             "result" : body_hash,
         }), id)
-}
-
-struct FilterDAG{
-    pub graph:Graph<(), String>
-}
-
-impl FilterDAG {
-    pub fn new(fields:&Vec<String>) -> Self {
-        let mut s = Self{graph : Graph::<(), String>::new()};
-        let root = s.graph.add_node(());
-        let mut fdq = VecDeque::<(VecDeque::<Vec<&str>>, OtherNodeIndex, u8)>::new();
-        for field in fields{
-            let fields:Vec<&str> = field.split(".").collect();
-            let mut el = (VecDeque::<Vec<&str>>::new(), root, 0);
-            el.0.push_back(fields);
-            fdq.push_back(el);
-        }
-        let mut current_level:i32 = -1;
-        let mut seen_keys = HashMap::<(OtherNodeIndex, Vec<&str>), OtherNodeIndex>::new();
-        while fields.len() > 0{
-            let (mut field, parent, level) = fdq.pop_front().unwrap();
-            if level as i32 > current_level{
-                current_level = level as i32;
-            }
-            if field.len() > 0{
-                let key = field.pop_front().unwrap();
-                let skey = (parent,key);
-                let mut child = s.graph.add_node(());
-                if !seen_keys.contains_key(&skey){
-                    let egde = s.graph.add_edge(parent, child, skey.1[0].to_string());
-                    seen_keys.insert(skey, child);
-                }else{
-                    child = seen_keys[&skey];
-                }
-                let to_append = (field, child, level+1);
-                fdq.push_back(to_append);
-            }
-        }
-        s
-    }
 }
 
 #[derive(Serialize, Deserialize)]
