@@ -2,8 +2,11 @@
 
 mod old_man;
 
+pub mod crawler;
 pub mod graph;
 pub mod indexer;
+pub mod searcher;
+pub mod utils;
 
 extern crate elvwasm;
 extern crate serde_json;
@@ -143,7 +146,7 @@ fn merge(a: &mut Value, b: Value) {
 
 fn do_search_update<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     let http_p = &bcc.request.params.http;
-    let qp = &http_p.query;
+    let _qp = &http_p.query;
     let id = &bcc.request.id;
     bcc.new_index_builder(json!({}))?;
     let mut extra_fields = json!({});
@@ -167,7 +170,7 @@ fn do_search_update<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     merge(&mut all_fields, extra_fields);
 
     let res = bcc.sqmd_get_json("/indexer/arguments/document/prefix")?;
-    let document_prefix_filter:String = serde_json::from_slice(&res)?;
+    let _document_prefix_filter:String = serde_json::from_slice(&res)?;
 
     // core_fields = {key: {
     //     "options": {"builder": {}, "stats": {"simple": False, "histogram": False}},

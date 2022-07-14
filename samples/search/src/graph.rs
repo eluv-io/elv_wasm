@@ -1,11 +1,10 @@
-use petgraph::data::Build;
-use petgraph::graph::{Graph, Node, NodeIndex};
-use petgraph::visit::{EdgeRef, IntoEdgesDirected};
+use petgraph::graph::{Graph, NodeIndex};
+use petgraph::visit::{EdgeRef};
 use petgraph::Directed;
 use petgraph::EdgeDirection::{Incoming, Outgoing};
 use serde_json::Value;
 use std::collections::VecDeque;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
 // FilterDAG represent the automata to filter hierarchical paths
 struct FilterDAG {
@@ -24,7 +23,7 @@ impl FilterDAG {
         let mut fields_dq = VecDeque::<(VecDeque<&str>, NodeIndex, u8)>::new();
         for field in fields {
             let fields: Vec<&str> = field.split(".").collect(); // Split field path into keys
-            let mut el = (VecDeque::from(fields), root, 0);
+            let el = (VecDeque::from(fields), root, 0);
             fields_dq.push_back(el);
         }
         let mut current_level: i32 = -1;
@@ -40,7 +39,7 @@ impl FilterDAG {
                 let skey = (parent, key);
                 let mut child = s.graph.add_node(());
                 if !seen_keys.contains_key(&skey) {
-                    let edge = s.graph.add_edge(parent, child, skey.1.to_string());
+                    let _edge = s.graph.add_edge(parent, child, skey.1.to_string());
                     seen_keys.insert(skey, child);
                 } else {
                     child = seen_keys[&skey];

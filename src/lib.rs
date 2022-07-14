@@ -330,8 +330,9 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
   elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
   elv_console_log(&format!("splitpath={:?}", split_path));
-  let cm = CALLMAP.lock();
-  match cm.unwrap().get(split_path[1]) {
+  let cm = CALLMAP.lock().unwrap();
+  let cmp = cm.get(split_path[1]);
+  match cmp{
     Some(f) => {
       match f(& mut bcc){
         Ok(m) => {
