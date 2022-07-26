@@ -1,7 +1,7 @@
 use crate::utils::extract_body;
 
 use elvwasm::{BitcodeContext, ErrorKinds};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use serde_json::{json, Value};
 use std::{error::Error, collections::HashMap};
 
@@ -10,8 +10,8 @@ pub struct FieldConfig {
     pub(crate) name: String,
     #[serde(rename = "type")]
     pub(crate) field_type: String,
-    options: Value,
-    pub(crate) paths: Vec<String>,
+    _options: Value,
+    pub(crate) _paths: Vec<String>,
 }
 
 pub struct Indexer {

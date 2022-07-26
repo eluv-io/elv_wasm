@@ -11,7 +11,7 @@ pub mod utils;
 extern crate elvwasm;
 extern crate serde_json;
 
-use serde_json::{json, Value, Map, value::Index};
+use serde_json::{json, Value, Map};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use crate::old_man::S_OLD_MAN;
@@ -20,7 +20,7 @@ use indexer::Indexer;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
-implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3, "search_update", do_search_update);
+implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3, "search_update", do_search_update, "search_update_new", do_search_update_new);
 
 fn extract_body(v:Value) -> Option<Value>{
     let obj = match v.as_object(){
@@ -153,8 +153,13 @@ fn do_search_update_new<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     for (field, val) in fields.into_iter(){
         idx_fields.insert(field, serde_json::from_value(val).unwrap());
     }
-    let idx = Indexer::new(bcc, "idx".to_string(), idx_fields)?;
+    let _idx = Indexer::new(bcc, "idx".to_string(), idx_fields)?;
     let id = &bcc.request.id;
+
+    let res_config = bcc.sqmd_get_json("/indexer/config")?;
+    let fields_config: Value = serde_json::from_slice(&res_config)?;
+    let _indexer_config = crawler::IndexerConfig::parse_index_config(&fields_config)?;
+
 
     bcc.make_success_json(&json!(
         {
