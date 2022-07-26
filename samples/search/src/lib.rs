@@ -11,6 +11,7 @@ pub mod utils;
 extern crate elvwasm;
 extern crate serde_json;
 
+use crawler::FieldConfig;
 use serde_json::{json, Value, Map};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
@@ -149,9 +150,16 @@ fn merge(a: &mut Value, b: Value) {
 fn do_search_update_new<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;
     let fields:Map<String, Value> = serde_json::from_slice(&res)?;
-    let mut idx_fields = HashMap::<String, indexer::FieldConfig>::new();
+    let mut idx_fields = Vec::<crawler::FieldConfig>::new();
     for (field, val) in fields.into_iter(){
-        idx_fields.insert(field, serde_json::from_value(val).unwrap());
+        let fc_cur = FieldConfig{
+            name: field,
+            options: serde_json::from_value(val["options"].clone()).unwrap(),
+            field_type: serde_json::from_value(val["field_type"].clone()).unwrap(),
+            paths: serde_json::from_value(val["paths"].clone()).unwrap()
+        };
+
+        idx_fields.push(fc_cur);
     }
     let _idx = Indexer::new(bcc, "idx".to_string(), idx_fields)?;
     let id = &bcc.request.id;

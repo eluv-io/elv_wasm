@@ -1,26 +1,17 @@
-use crate::utils::extract_body;
+use crate::{utils::extract_body, crawler};
 
 use elvwasm::{BitcodeContext, ErrorKinds};
 use serde::{Deserialize};
 use serde_json::{json, Value};
 use std::{error::Error, collections::HashMap};
 
-#[derive(Deserialize,Debug)]
-pub struct FieldConfig {
-    pub(crate) name: String,
-    #[serde(rename = "type")]
-    pub(crate) field_type: String,
-    _options: Value,
-    pub(crate) _paths: Vec<String>,
-}
-
 pub struct Indexer {
     filepath: String,
-    fields: HashMap<String, FieldConfig>
+    fields: Vec<crawler::FieldConfig>
 }
 
 impl Indexer {
-    pub fn new(bcc: &BitcodeContext, filepath: String, fields: HashMap<String, FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
+    pub fn new(bcc: &BitcodeContext, filepath: String, fields: Vec<crawler::FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
         // Read request
         let http_p = &bcc.request.params.http;
         let query_params = &http_p.query;
@@ -40,7 +31,7 @@ impl Indexer {
 
         // Add fields to schema builder
         for field_config in &fields {
-            Indexer::add_field_to_schema(bcc, field_config.1)?;
+            Indexer::add_field_to_schema(bcc, field_config)?;
         }
 
         // Build index
@@ -50,7 +41,7 @@ impl Indexer {
         return Ok(Indexer { filepath, fields })
     }
 
-    fn add_field_to_schema(bcc: &BitcodeContext, field_config: &FieldConfig) -> Result<(), Box<dyn Error + Send + Sync>>{ //TODO: Add support for other fields.
+    fn add_field_to_schema(bcc: &BitcodeContext, field_config: &crawler::FieldConfig) -> Result<(), Box<dyn Error + Send + Sync>>{ //TODO: Add support for other fields.
         let input_data;
         match field_config.field_type.as_str() {
             "text" => {
@@ -97,11 +88,11 @@ impl Indexer {
 
 struct Writer<'a> {
     bcc: &'a BitcodeContext<'a>,
-    fields: HashMap<String, FieldConfig>
+    fields: HashMap<String, crawler::FieldConfig>
 }
 
 impl<'a> Writer<'a> {
-    pub fn new(bcc: &'a BitcodeContext, fields: HashMap<String, FieldConfig>) -> Writer<'a>{
+    pub fn new(bcc: &'a BitcodeContext, fields: HashMap<String, crawler::FieldConfig>) -> Writer<'a>{
         Writer { bcc, fields }
     }
 

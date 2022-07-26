@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use serde_json::{Value};
+use serde_json::{Value, json};
 use std::{cmp::min, error::Error};
 use elvwasm::{ErrorKinds};
 
@@ -172,8 +172,8 @@ pub struct FieldConfig {
     pub(crate) name: String,
     #[serde(rename = "type")]
     pub(crate) field_type: String,
-    options: Value,
-    pub(crate) paths: Vec<String>,
+    pub options: Value,
+    pub paths: Vec<String>,
 }
 
 #[cfg(test)]
@@ -192,6 +192,10 @@ mod tests {
 
         /* Assert that indexer_config fields are correctly filled out. */
         assert_eq!(22, indexer_config.fields.len());
+        assert_eq!("string", indexer_config.fields[0].field_type);
+        assert_eq!(vec!["site_map.searchables.*.asset_metadata.asset_type"], indexer_config.fields[0].paths);
+        assert_eq!(json!({ "stats": { "histogram": true } }), indexer_config.fields[0].options);
+        assert_eq!("asset_type", indexer_config.fields[0].name);
         assert_eq!("metadata-text", indexer_config.indexer_type);
         assert_eq!("ilib4M649Yi6tCTWpXgxch4i9RJvv4BQ", indexer_config.fabric.root.library);
         assert_eq!("iq__VjLkBkswLMrai3CfCUJtUfhWmZy", indexer_config.fabric.root.content);
