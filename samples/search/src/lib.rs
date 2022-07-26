@@ -11,10 +11,12 @@ pub mod utils;
 extern crate elvwasm;
 extern crate serde_json;
 
-use serde_json::{json, Value, Map};
+use serde_json::{json, Value, Map, value::Index};
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use crate::old_man::S_OLD_MAN;
 use elvwasm::ErrorKinds;
+use indexer::Indexer;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
@@ -142,6 +144,24 @@ fn merge(a: &mut Value, b: Value) {
     }
 
     *a = b;
+}
+
+fn do_search_update_new<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;
+    let fields:Map<String, Value> = serde_json::from_slice(&res)?;
+    let mut idx_fields = HashMap::<String, indexer::FieldConfig>::new();
+    for (field, val) in fields.into_iter(){
+        idx_fields.insert(field, serde_json::from_value(val).unwrap());
+    }
+    let idx = Indexer::new(bcc, "idx".to_string(), idx_fields)?;
+    let id = &bcc.request.id;
+
+    bcc.make_success_json(&json!(
+        {
+            "headers" : "application/json",
+            "body" : "SUCCESS",
+            "result" : {"status" : "update complete"},
+        }), id)
 }
 
 fn do_search_update<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {

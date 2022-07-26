@@ -1,11 +1,11 @@
 use crate::utils::extract_body;
 
 use elvwasm::{BitcodeContext, ErrorKinds};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{error::Error, collections::HashMap};
 
-#[derive(Deserialize)]
+#[derive(Deserialize,Debug)]
 pub struct FieldConfig {
     pub(crate) name: String,
     #[serde(rename = "type")]
@@ -14,13 +14,13 @@ pub struct FieldConfig {
     pub(crate) paths: Vec<String>,
 }
 
-struct Indexer {
+pub struct Indexer {
     filepath: String,
     fields: HashMap<String, FieldConfig>
 }
 
 impl Indexer {
-    fn new(bcc: &BitcodeContext, filepath: String, fields: HashMap<String, FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
+    pub fn new(bcc: &BitcodeContext, filepath: String, fields: HashMap<String, FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
         // Read request
         let http_p = &bcc.request.params.http;
         let query_params = &http_p.query;
@@ -46,7 +46,7 @@ impl Indexer {
         // Build index
         input_data = json!({});
         bcc.builder_build(input_data)?;
-        
+
         return Ok(Indexer { filepath, fields })
     }
 
@@ -107,7 +107,7 @@ impl<'a> Writer<'a> {
 
     pub fn index(&self, uid: &String, data: &Value, fields: &Value) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
         assert!(fields.is_object());
-        
+
         let input = json!({});
         let response_vec = self.bcc.document_create(input)?;
         let response_val: serde_json::Value = serde_json::from_slice(&response_vec)?;

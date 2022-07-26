@@ -17,7 +17,7 @@ struct Searcher<'a, 'b> {
 }
 
 impl<'a, 'b> Searcher<'a, 'b> {
-    
+
 
     fn query(&self, query_str: &str) -> CallResult {
         // let hash_part_id_vec = self

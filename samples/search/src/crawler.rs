@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use serde_json::{Value};
 use std::{cmp::min, error::Error};
+use elvwasm::{ErrorKinds};
+
+
 
 // Used to represent values in prefix path
 #[derive(Clone, PartialEq)]
@@ -93,7 +96,10 @@ impl Prefix {
             if !is_match {
                 break;
             }
-            common_prefix.push(elem.unwrap());
+            match elem {
+                Some(e) => common_prefix.push(e),
+                None => {},
+            };
         }
         Prefix {
             prefix: common_prefix,
@@ -136,7 +142,11 @@ impl IndexerConfig {
         let indexer_config_val: &Value = &config_value["indexer"];
         let indexer_arguments_val = &indexer_config_val["arguments"];
         let mut field_configs: Vec<FieldConfig> = Vec::new();
-        for (field_name, field_value) in indexer_arguments_val["fields"].as_object().unwrap() {
+        let flds = match indexer_arguments_val["fields"].as_object(){
+            Some(x) => x,
+            None => return Err(ErrorKinds::NotExist("fields is not available in index").into())
+        };
+        for (field_name, field_value) in flds {
             field_configs.push(FieldConfig {
                 name: field_name.to_string(),
                 options: field_value["options"].clone(),
