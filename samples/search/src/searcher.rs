@@ -4,7 +4,7 @@ use wapc_guest::CallResult;
 
 
 pub fn content_query(bcc: &mut BitcodeContext) -> CallResult {
-    let searcher = Searcher { bcc: bcc };
+    let searcher = Searcher { bcc };
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     BitcodeContext::log(&format!("In content_query hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));

@@ -83,7 +83,7 @@ struct LinkScanner {
 impl LinkScanner {
     pub fn new(filter_dag: FilterDAG) -> LinkScanner {
         return LinkScanner {
-            filter_dag: filter_dag,
+            filter_dag,
         };
     }
 
@@ -181,7 +181,7 @@ struct DictScanner {
 impl DictScanner {
     pub fn new(filter_dag: FilterDAG) -> DictScanner {
         return DictScanner {
-            filter_dag: filter_dag,
+            filter_dag,
         };
     }
 

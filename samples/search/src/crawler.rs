@@ -83,16 +83,13 @@ impl Prefix {
             if *prefix_1.get(i) == *prefix_2.get(i) {
                 is_match = true;
                 elem = Some(prefix_1.get(i).clone());
-            } else {
-                if *prefix_1.get(i) == PrefixValue::ObjectItemAny && prefix_2.get(i).is_key() {
+            } else if *prefix_1.get(i) == PrefixValue::ObjectItemAny && prefix_2.get(i).is_key() {
                     is_match = true;
                     elem = Some(prefix_2.get(i).clone());
-                } else if *prefix_2.get(i) == PrefixValue::ObjectItemAny && prefix_1.get(i).is_key()
-                {
+                } else if *prefix_2.get(i) == PrefixValue::ObjectItemAny && prefix_1.get(i).is_key() {
                     is_match = true;
                     elem = Some(prefix_1.get(i).clone());
                 }
-            }
             if !is_match {
                 break;
             }
@@ -114,8 +111,13 @@ pub struct RootConfig {
 }
 
 #[derive(Deserialize)]
+pub struct FabricPolicy {
+    pub(crate) paths: Vec<String>,
+}
+
+#[derive(Deserialize)]
 pub struct FabricConfig {
-    pub(crate) policy: Value,
+    pub(crate) policy: FabricPolicy,
     pub(crate) root: RootConfig,
 }
 
@@ -125,6 +127,7 @@ pub struct IndexerConfig {
     pub(crate) indexer_type: String,
     pub(crate) document: Value,
     pub(crate) fields: Vec<FieldConfig>,
+    pub(crate) fabric: FabricConfig,
 }
 
 impl IndexerConfig {
@@ -140,6 +143,7 @@ impl IndexerConfig {
 
         // Parse config into IndexerConfig
         let indexer_config_val: &Value = &config_value["indexer"];
+        let fabric_config_val: &Value = &config_value["fabric"];
         let indexer_arguments_val = &indexer_config_val["arguments"];
         let mut field_configs: Vec<FieldConfig> = Vec::new();
         let flds = match indexer_arguments_val["fields"].as_object(){
@@ -155,6 +159,7 @@ impl IndexerConfig {
             });
         }
         Ok(IndexerConfig {
+            fabric:serde_json::from_value(fabric_config_val.clone())?,
             indexer_type: serde_json::from_value(indexer_config_val["type"].clone())?,
             document: indexer_arguments_val["document"].clone(),
             fields: field_configs,
@@ -188,6 +193,9 @@ mod tests {
         /* Assert that indexer_config fields are correctly filled out. */
         assert_eq!(22, indexer_config.fields.len());
         assert_eq!("metadata-text", indexer_config.indexer_type);
+        assert_eq!("ilib4M649Yi6tCTWpXgxch4i9RJvv4BQ", indexer_config.fabric.root.library);
+        assert_eq!("iq__VjLkBkswLMrai3CfCUJtUfhWmZy", indexer_config.fabric.root.content);
+        assert_eq!(vec!["/offerings/*"], indexer_config.fabric.policy.paths);
         assert!(config_value["indexer"]["arguments"]["document"] == indexer_config.document);
     }
 }
