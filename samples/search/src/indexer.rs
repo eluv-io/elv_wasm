@@ -1,7 +1,6 @@
 use crate::{utils::extract_body, crawler};
 
 use elvwasm::{BitcodeContext, ErrorKinds};
-use serde::{Deserialize};
 use serde_json::{json, Value};
 use std::{error::Error, collections::HashMap};
 
@@ -146,3 +145,123 @@ impl<'a> Writer<'a> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    //use super::*;
+    use elvwasm::Request;
+    use test_utils::test_metadata::INDEX_CONFIG;
+    use std::collections::hash_map::RandomState;
+    use crate::{crawler};
+    use std::collections::HashMap;
+    use serde_json::Value;
+    use elvwasm::BitcodeContext;
+    use crate::Indexer;
+
+    macro_rules! output_raw_pointers {
+        ($raw_ptr:ident, $raw_len:ident) => {
+              unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+        }
+      }
+
+    #[no_mangle]
+    pub extern "C" fn __console_log(ptr: *const u8, len: usize){
+      let out_str = output_raw_pointers!(ptr,len);
+      println!("console output : {}", out_str);
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_call(
+      bd_ptr: *const u8,
+      bd_len: usize,
+      ns_ptr: *const u8,
+      ns_len: usize,
+      op_ptr: *const u8,
+      op_len: usize,
+      ptr: *const u8,
+      len: usize,
+      ) -> usize {
+        let out_bd = output_raw_pointers!(bd_ptr, bd_len);
+        let out_ns = output_raw_pointers!(ns_ptr, ns_len);
+        let out_op = output_raw_pointers!(op_ptr, op_len);
+        let out_ptr = output_raw_pointers!(ptr, len);
+        println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
+        0
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_response(ptr: *const u8){
+      println!("host __host_response ptr = {:?}", ptr);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_response_len() -> usize{
+      println!("host __host_response_len");
+      0
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_error_len() -> usize{
+      println!("host __host_error_len");
+      0
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_error(ptr: *const u8){
+      println!("host __host_error ptr = {:?}", ptr);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_response(ptr: *const u8, len: usize){
+      let out_resp = output_raw_pointers!(ptr,len);
+      println!("host  __guest_response ptr = {}", out_resp);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_error(ptr: *const u8, len: usize){
+      let out_error = output_raw_pointers!(ptr,len);
+      println!("host  __guest_error ptr = {}", out_error);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8){
+      println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
+
+    }
+
+
+
+
+    #[test]
+    fn test_index() -> () {
+        let index_object_meta: Value = serde_json::from_str(INDEX_CONFIG)
+            .expect("Could not read index object into json value.");
+        let config_value: &Value = &index_object_meta["indexer"]["config"];
+        let indexer_config: crawler::IndexerConfig = crawler::IndexerConfig::parse_index_config(config_value)
+            .expect("Could not parse indexer config.");
+        let new_id = "id123".to_string();
+        let req = &Request{
+            id: new_id.clone(),
+            jpc: "1.0".to_string(),
+            method: "foo".to_string(),
+            params: elvwasm::JpcParams {
+                http: elvwasm::HttpParams {
+                    headers: HashMap::<String, Vec<String>, RandomState>::new(),
+                    path: "/".to_string(),
+                    query: HashMap::<String, Vec<String>, RandomState>::new(),
+                    verb: "GET".to_string(),
+                    fragment: "".to_string(),
+                    content_length: 0,
+                    client_ip: "localhost".to_string(),
+                    self_url: "localhost".to_string(),
+                    proto: "".to_string(),
+                    host: "somehost.com".to_string()
+                }
+            },
+            q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
+        };
+        let bcc = BitcodeContext::new(req);
+        //let idx = Indexer::new(&bcc, indexer_config.document.prefix, indexer_config.fields).expect("failed to create index");
+
+    }
+}
+

@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{Value};
 use std::{cmp::min, error::Error};
 use elvwasm::{ErrorKinds};
 
@@ -122,10 +122,15 @@ pub struct FabricConfig {
 }
 
 #[derive(Deserialize)]
+pub struct FabricDocument {
+    pub(crate) prefix: String,
+}
+
+#[derive(Deserialize)]
 pub struct IndexerConfig {
     #[serde(rename = "type")]
     pub(crate) indexer_type: String,
-    pub(crate) document: Value,
+    pub(crate) document: FabricDocument,
     pub(crate) fields: Vec<FieldConfig>,
     pub(crate) fabric: FabricConfig,
 }
@@ -161,7 +166,7 @@ impl IndexerConfig {
         Ok(IndexerConfig {
             fabric:serde_json::from_value(fabric_config_val.clone())?,
             indexer_type: serde_json::from_value(indexer_config_val["type"].clone())?,
-            document: indexer_arguments_val["document"].clone(),
+            document: serde_json::from_value(indexer_arguments_val["document"].clone())?,
             fields: field_configs,
         })
     }
@@ -181,6 +186,7 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use test_utils::test_metadata::INDEX_CONFIG;
+    use serde_json::json;
 
     #[test]
     fn test_parse_index_config() -> () {
@@ -200,6 +206,6 @@ mod tests {
         assert_eq!("ilib4M649Yi6tCTWpXgxch4i9RJvv4BQ", indexer_config.fabric.root.library);
         assert_eq!("iq__VjLkBkswLMrai3CfCUJtUfhWmZy", indexer_config.fabric.root.content);
         assert_eq!(vec!["/offerings/*"], indexer_config.fabric.policy.paths);
-        assert!(config_value["indexer"]["arguments"]["document"] == indexer_config.document);
+        assert!(config_value["indexer"]["arguments"]["document"]["prefix"] == indexer_config.document.prefix);
     }
 }
