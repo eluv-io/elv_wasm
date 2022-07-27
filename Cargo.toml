@@ -1,7 +1,11 @@
 [package]
 name = "elvwasm"
+description = "Contains and collects the bitcode extension API for the Eluvio content fabric"
+homepage = "https://eluvio.co/"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/eluv-io/elv_wasm"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
