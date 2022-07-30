@@ -29,5 +29,3 @@ thiserror = "1.0.30"
 
 [workspace]
 members = ["samples", "samples/rproxy", "samples/image", "samples/real-img", "samples/search", "samples/everything"]
-
-

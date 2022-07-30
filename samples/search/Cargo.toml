@@ -24,5 +24,11 @@ base64 = "0.13.0"
 thiserror = "1.0.30"
 petgraph = "0.6.2"
 
+
 [dev-dependencies]
 test-utils = {path = "test-utils"}
+tantivy_jpc = { git = "https://github.com/JanFalkin/tantivy_jpc", branch = "use-in-rust" }
+wasmer = "2.1.1"
+json_dotpath = "1.1.0"
+structopt = "0.3.25"
+wasmer-compiler-cranelift = "2.1.1"

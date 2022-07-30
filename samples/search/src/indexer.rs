@@ -146,90 +146,215 @@ impl<'a> Writer<'a> {
     }
 }
 
+ // The following are mearly intended to verify internal consistency.  There are no actual calls made
+// but the tests verify that the json parsing of the http message is correct
 #[cfg(test)]
-mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
-    //use super::*;
-    use elvwasm::Request;
+mod tests{
+    extern crate wapc;
+    extern crate wapc_guest as guest;
+    extern crate tantivy_jpc;
+
+    extern crate wasmer;
+
+    extern crate base64;
+    extern crate serde;
+    extern crate serde_derive;
+    extern crate serde_json;
+    extern crate json_dotpath;
+    extern crate snailquote;
+    use std::sync::{Arc};
+
+    use elvwasm::ErrorKinds;
+    use std::fs::File;
+    use std::io::BufReader;
+    use json_dotpath::DotPaths;
     use test_utils::test_metadata::INDEX_CONFIG;
+    use elvwasm::Request;
     use std::collections::hash_map::RandomState;
     use crate::{crawler};
     use std::collections::HashMap;
     use serde_json::Value;
     use elvwasm::BitcodeContext;
-    use crate::Indexer;
 
-    macro_rules! output_raw_pointers {
-        ($raw_ptr:ident, $raw_len:ident) => {
-              unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+
+    use tantivy_jpc::tests::FakeContext;
+
+
+    use serde::{Deserialize, Serialize};
+    pub static mut QFAB: MockFabric = MockFabric{
+        fab : None,
+        ctx: None
+    };
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct RootMockFabric {
+      pub library:Library,
+      pub call:serde_json::Value,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct Object {
+      pub hash: String,
+      pub id: String,
+      pub qlib_id: String,
+      #[serde(rename = "type")]
+      pub qtype: String,
+      pub write_token: String,
+      pub meta : serde_json::Map<String, serde_json::Value>
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct Library {
+      pub id: String,
+      pub objects: std::vec::Vec<Object>,
+    }
+
+    #[derive(Serialize, Deserialize,  Clone, Debug)]
+    pub struct MockFabric{
+        ctx: Option<FakeContext>,
+        fab : Option<RootMockFabric>
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct JPCRequest {
+      pub jpc: String,
+      pub params: serde_json::Map<String, serde_json::Value>
+    }
+
+    impl MockFabric{
+        pub fn init(& mut self, path_to_json:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+            let file = File::open(path_to_json)?;
+            let reader = BufReader::new(file);
+
+            // Read the JSON contents of the file as an instance of `User`.
+            let json_rep:RootMockFabric = serde_json::from_reader(reader)?;
+            self.fab = Some(json_rep);
+            return Ok("DONE".as_bytes().to_vec())
         }
-      }
+        pub fn write_stream(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            println!("in WriteStream");
+            Ok("Not Implemented".as_bytes().to_vec())
+        }
+        pub fn sqmd_delete(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            println!("in SQMD delete");
+            let j:JPCRequest = serde_json::from_str(json_rep)?;
+            let path = j.params["path"].to_string();
+            if  !path.is_empty(){
+                let mut fab = self.fab.clone().unwrap();
+                let p = &snailquote::unescape(&path).unwrap();
+                let pp:String = p.chars().map(|x| match x {
+                    '/' => '.',
+                    _ => x
+                }).collect();
+                fab.library.objects[0].meta.dot_remove(&pp[1..])?;//{
+                return Ok("DONE".as_bytes().to_vec())
+            }else{
+                println!("failed to find path argument");
+            }
+            Ok("FAILED".as_bytes().to_vec())
+        }
+        pub fn sqmd_set(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            println!("in SQMD set");
+            let j:JPCRequest = serde_json::from_str(json_rep)?;
+            let path = j.params["path"].to_string();
+            let meta = j.params["meta"].to_string();
+            if !path.is_empty(){
+                let mut fab = self.fab.clone().unwrap();
+                let p = &snailquote::unescape(&path).unwrap();
+                let pp:String = p.chars().map(|x| match x {
+                    '/' => '.',
+                    _ => x
+                }).collect();
+                fab.library.objects[0].meta.dot_set(&pp[1..], meta)?;
+                return Ok("DONE".as_bytes().to_vec())
 
-    #[no_mangle]
-    pub extern "C" fn __console_log(ptr: *const u8, len: usize){
-      let out_str = output_raw_pointers!(ptr,len);
-      println!("console output : {}", out_str);
+            }else{
+                println!("failed to find path argument");
+            }
+            Ok("FAILED".as_bytes().to_vec())
+        }
+        pub fn sqmd_get(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            println!("in SQMD get");
+            let j:JPCRequest = serde_json::from_str(json_rep)?;
+            let path = j.params["path"].to_string();
+            if !path.is_empty(){
+                let fab = self.fab.clone().unwrap();
+                let p = &snailquote::unescape(&path).unwrap();
+                let pp:String = p.chars().map(|x| match x {
+                    '/' => '.',
+                    _ => x
+                }).collect();
+                let gotten:Option<serde_json::Value> = fab.library.objects[0].meta.dot_get(&pp[1..])?;
+                let ret = gotten.unwrap();
+                println!("sqmd_get returning = {}", ret);
+                return Ok(ret.to_string().as_bytes().to_vec())
+            }else{
+                println!("failed to find path argument");
+            }
+            Ok("FAILED".as_bytes().to_vec())
+        }
+        pub fn proxy_http(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            println!("in ProxyHttp");
+            let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
+            let enc = base64::encode(to_encode);
+            Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
+        }
+        pub fn callback(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            println!("in callback");
+            let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
+            let enc = base64::encode(to_encode);
+            Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
+        }
+        pub fn new_index_builder(&mut self, dir:&str)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            self.ctx = Some(FakeContext::new());
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn host_callback(i_cb:u64, id:&str, context:&str, method:&str, pkg:&[u8])-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            let s_pkg = std::str::from_utf8(pkg)?;
+            println!("In host callback, values i_cb = {} id = {} method = {} context = {}, pkg = {}", i_cb, id,method,context, s_pkg);
+            match method {
+                "SQMDGet" =>{
+                   unsafe{ QFAB.sqmd_get(s_pkg) }
+                }
+                "SQMDSet" =>{
+                    unsafe{ QFAB.sqmd_set(s_pkg) }
+                 }
+                "SQMDDelete" =>{
+                    unsafe{ QFAB.sqmd_delete(s_pkg) }
+                 }
+                "Write" => {
+                    unsafe{ QFAB.write_stream(s_pkg) }
+                }
+                "Callback" => {
+                    unsafe{ QFAB.callback(s_pkg) }
+                }
+                "ProxyHttp" => {
+                    unsafe{ QFAB.proxy_http(s_pkg) }
+                }
+                _ => {
+                    Err(Box::new(ErrorKinds::NotExist("Method not handled")))
+                }
+            }
+        }
     }
-    #[no_mangle]
-    pub extern "C" fn __host_call(
-      bd_ptr: *const u8,
-      bd_len: usize,
-      ns_ptr: *const u8,
-      ns_len: usize,
-      op_ptr: *const u8,
-      op_len: usize,
-      ptr: *const u8,
-      len: usize,
-      ) -> usize {
-        let out_bd = output_raw_pointers!(bd_ptr, bd_len);
-        let out_ns = output_raw_pointers!(ns_ptr, ns_len);
-        let out_op = output_raw_pointers!(op_ptr, op_len);
-        let out_ptr = output_raw_pointers!(ptr, len);
-        println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
-        0
-    }
-    #[no_mangle]
-    pub extern "C" fn __host_response(ptr: *const u8){
-      println!("host __host_response ptr = {:?}", ptr);
+
+    struct WasmerHolder{
+        _instance:wasmer::Instance
     }
 
-    #[no_mangle]
-    pub extern "C" fn __host_response_len() -> usize{
-      println!("host __host_response_len");
-      0
+    impl wapc::WebAssemblyEngineProvider for WasmerHolder{
+        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error>>{
+            Ok(())
+        }
+        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error>>{
+            //.instance.store().engine.
+            //self._instance.
+            Ok(0)
+        }
+        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error>>{
+            Ok(())
+        }
     }
-
-    #[no_mangle]
-    pub extern "C" fn __host_error_len() -> usize{
-      println!("host __host_error_len");
-      0
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __host_error(ptr: *const u8){
-      println!("host __host_error ptr = {:?}", ptr);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __guest_response(ptr: *const u8, len: usize){
-      let out_resp = output_raw_pointers!(ptr,len);
-      println!("host  __guest_response ptr = {}", out_resp);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __guest_error(ptr: *const u8, len: usize){
-      let out_error = output_raw_pointers!(ptr,len);
-      println!("host  __guest_error ptr = {}", out_error);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8){
-      println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
-
-    }
-
-
-
 
     #[test]
     fn test_index() -> () {
@@ -265,3 +390,4 @@ mod tests {
     }
 }
 
+//}
