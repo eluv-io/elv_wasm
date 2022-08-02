@@ -162,8 +162,9 @@ mod tests{
     extern crate serde_json;
     extern crate json_dotpath;
     extern crate snailquote;
+    extern crate tempdir;
     use std::sync::{Arc};
-
+    use tempdir::TempDir;
     use elvwasm::ErrorKinds;
     use std::fs::File;
     use std::io::BufReader;
@@ -186,6 +187,74 @@ mod tests{
         ctx: None
     };
 
+    macro_rules! output_raw_pointers {
+        ($raw_ptr:ident, $raw_len:ident) => {
+              unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
+        }
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __console_log(ptr: *const u8, len: usize){
+        let out_str = output_raw_pointers!(ptr,len);
+        println!("console output : {}", out_str);
+      }
+      #[no_mangle]
+      pub extern "C" fn __host_call(
+        bd_ptr: *const u8,
+        bd_len: usize,
+        ns_ptr: *const u8,
+        ns_len: usize,
+        op_ptr: *const u8,
+        op_len: usize,
+        ptr: *const u8,
+        len: usize,
+        ) -> usize {
+          let out_bd = output_raw_pointers!(bd_ptr, bd_len);
+          let out_ns = output_raw_pointers!(ns_ptr, ns_len);
+          let out_op = output_raw_pointers!(op_ptr, op_len);
+          let out_ptr = output_raw_pointers!(ptr, len);
+          println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
+          0
+      }
+      #[no_mangle]
+      pub extern "C" fn __host_response(ptr: *const u8){
+        println!("host __host_response ptr = {:?}", ptr);
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __host_response_len() -> usize{
+        println!("host __host_response_len");
+        0
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __host_error_len() -> usize{
+        println!("host __host_error_len");
+        0
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __host_error(ptr: *const u8){
+        println!("host __host_error ptr = {:?}", ptr);
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __guest_response(ptr: *const u8, len: usize){
+        let out_resp = output_raw_pointers!(ptr,len);
+        println!("host  __guest_response ptr = {}", out_resp);
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __guest_error(ptr: *const u8, len: usize){
+        let out_error = output_raw_pointers!(ptr,len);
+        println!("host  __guest_error ptr = {}", out_error);
+      }
+
+      #[no_mangle]
+      pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8){
+        println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
+
+      }
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct RootMockFabric {
       pub library:Library,
@@ -309,12 +378,58 @@ mod tests{
             self.ctx = Some(FakeContext::new());
             Ok("DONE".as_bytes().to_vec())
         }
+        pub fn archive_index_to_part(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn builder_add_text_field(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn builder_build(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn document_create(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn document_add_text(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn document_create_index(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn index_create_writer(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn index_writer_create_document(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn index_writer_commit(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn index_reader_builder_create(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn reader_builder_query_parser_create(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn query_parser_for_index(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn query_parser_parse_query(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
+        pub fn query_parser_search(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+            Ok("DONE".as_bytes().to_vec())
+        }
         pub fn host_callback(i_cb:u64, id:&str, context:&str, method:&str, pkg:&[u8])-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
             let s_pkg = std::str::from_utf8(pkg)?;
             println!("In host callback, values i_cb = {} id = {} method = {} context = {}, pkg = {}", i_cb, id,method,context, s_pkg);
             match method {
                 "SQMDGet" =>{
                    unsafe{ QFAB.sqmd_get(s_pkg) }
+                }
+                "TempDir" => {
+                   let v = String::into_bytes(tempdir::TempDir::new("qbitcode").unwrap().path().to_owned());
+                   Ok(v)
                 }
                 "SQMDSet" =>{
                     unsafe{ QFAB.sqmd_set(s_pkg) }
@@ -330,6 +445,51 @@ mod tests{
                 }
                 "ProxyHttp" => {
                     unsafe{ QFAB.proxy_http(s_pkg) }
+                }
+                "NewIndexBuilder" => {
+                    unsafe{ QFAB.new_index_builder(s_pkg) }
+                }
+                "ArchiveIndexToPart" => {
+                    unsafe{ QFAB.archive_index_to_part() }
+                }
+                "BuilderAddTextField" => {
+                    unsafe{ QFAB.builder_add_text_field() }
+                }
+                "BuilderBuild" => {
+                    unsafe{ QFAB.builder_build() }
+                }
+                "DocumentCreate" => {
+                    unsafe{ QFAB.document_create() }
+                }
+                "DocumentAddText" => {
+                    unsafe{ QFAB.document_add_text() }
+                }
+                "DocumentCreateIndex" => {
+                    unsafe{ QFAB.document_create_index() }
+                }
+                "IndexCreateWriter" => {
+                    unsafe{ QFAB.index_create_writer() }
+                }
+                "IndexWriterAddDocument" => {
+                    unsafe{ QFAB.index_writer_create_document() }
+                }
+                "IndexWriterCommit" => {
+                    unsafe{ QFAB.index_writer_commit() }
+                }
+                "IndexReaderBuilderCreate" => {
+                    unsafe{ QFAB.index_reader_builder_create() }
+                }
+                "ReaderBuilderQueryParserCreate" => {
+                    unsafe{ QFAB.reader_builder_query_parser_create() }
+                }
+                "QueryParserForIndex" => {
+                    unsafe{ QFAB.query_parser_for_index()}
+                }
+                "QueryParserParseQuery" => {
+                    unsafe{ QFAB.query_parser_parse_query()}
+                }
+                "QueryParserSearch" => {
+                    unsafe{ QFAB.query_parser_search()}
                 }
                 _ => {
                     Err(Box::new(ErrorKinds::NotExist("Method not handled")))
@@ -356,6 +516,7 @@ mod tests{
         }
     }
 
+    use super::*;
     #[test]
     fn test_index() -> () {
         let index_object_meta: Value = serde_json::from_str(INDEX_CONFIG)
@@ -385,7 +546,7 @@ mod tests{
             q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
         };
         let bcc = BitcodeContext::new(req);
-        //let idx = Indexer::new(&bcc, indexer_config.document.prefix, indexer_config.fields).expect("failed to create index");
+        let idx = Indexer::new(&bcc, indexer_config.document.prefix, indexer_config.fields).expect("failed to create index");
 
     }
 }
