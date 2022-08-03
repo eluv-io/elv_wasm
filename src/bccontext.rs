@@ -278,6 +278,18 @@ pub struct ReadStreamResult {
     pub result: String,
 }
 
+pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
+    let js_ret = json!({
+      "result" : msg,
+      "jpc" : "1.0",
+      "id"  : id,
+    });
+    let v = serde_json::to_vec(&js_ret)?;
+    let out = std::str::from_utf8(&v)?;
+    elv_console_log(&format!("returning : {}", out));
+    Ok(v)
+}
+
 /// This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext
 /// is automatically created during the processing of the http request.  During initialization, all context
 /// data is acquired from the http request.  The BitcodeContext provides 2 way communication to the content fabric.

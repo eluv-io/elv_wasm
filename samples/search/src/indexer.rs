@@ -184,7 +184,8 @@ mod tests{
     use serde::{Deserialize, Serialize};
     pub static mut QFAB: MockFabric = MockFabric{
         fab : None,
-        ctx: None
+        ctx: None,
+        resp: vec![]
     };
 
     macro_rules! output_raw_pointers {
@@ -214,17 +215,20 @@ mod tests{
           let out_op = output_raw_pointers!(op_ptr, op_len);
           let out_ptr = output_raw_pointers!(ptr, len);
           println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
-          0
+          let v = MockFabric::host_callback(0, out_bd, out_ns, out_op, out_ptr.as_bytes()).expect("host callback failed");
+          unsafe{QFAB.resp = v;}
+          1
       }
       #[no_mangle]
-      pub extern "C" fn __host_response(ptr: *const u8){
+      pub extern "C" fn __host_response(ptr: *mut u8){
         println!("host __host_response ptr = {:?}", ptr);
+        unsafe{std::ptr::copy(QFAB.resp.as_ptr(), ptr, QFAB.resp.len())}
       }
 
       #[no_mangle]
       pub extern "C" fn __host_response_len() -> usize{
         println!("host __host_response_len");
-        0
+        unsafe{QFAB.resp.len()}
       }
 
       #[no_mangle]
@@ -281,7 +285,8 @@ mod tests{
     #[derive(Serialize, Deserialize,  Clone, Debug)]
     pub struct MockFabric{
         ctx: Option<FakeContext>,
-        fab : Option<RootMockFabric>
+        fab : Option<RootMockFabric>,
+        resp: Vec<u8>
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -374,9 +379,9 @@ mod tests{
             let enc = base64::encode(to_encode);
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
-        pub fn new_index_builder(&mut self, dir:&str)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn new_index_builder(&mut self, dir:&str)-> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>>{
             self.ctx = Some(FakeContext::new());
-            Ok("DONE".as_bytes().to_vec())
+            Ok(json!("DONE"))
         }
         pub fn archive_index_to_part(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
             Ok("DONE".as_bytes().to_vec())
@@ -428,8 +433,10 @@ mod tests{
                    unsafe{ QFAB.sqmd_get(s_pkg) }
                 }
                 "TempDir" => {
-                   let v = String::into_bytes(tempdir::TempDir::new("qbitcode").unwrap().path().to_owned());
-                   Ok(v)
+                   let td = tempdir::TempDir::new("qbitcode")?;
+                   let dir = td.path().to_str().unwrap();
+                   let v = json!({"directory" : dir });
+                   elvwasm::make_success_json(&v, id)
                 }
                 "SQMDSet" =>{
                     unsafe{ QFAB.sqmd_set(s_pkg) }
@@ -447,16 +454,30 @@ mod tests{
                     unsafe{ QFAB.proxy_http(s_pkg) }
                 }
                 "NewIndexBuilder" => {
-                    unsafe{ QFAB.new_index_builder(s_pkg) }
+                    unsafe{
+                        let v = QFAB.new_index_builder(s_pkg)?;
+                        elvwasm::make_success_json(&v, id)
+                    }
                 }
                 "ArchiveIndexToPart" => {
                     unsafe{ QFAB.archive_index_to_part() }
                 }
                 "BuilderAddTextField" => {
-                    unsafe{ QFAB.builder_add_text_field() }
+                    unsafe{
+                        let v:&Value = &serde_json::from_slice(pkg)?;
+                        let t = &mut QFAB.ctx.clone().unwrap();
+                        let s = t.call_jpc("builder".to_string(), "add_text_field".to_string(), v["params"].clone(), true);
+                        elvwasm::make_success_json(&json!({ "http" : { "body" : serde_json::from_slice::<Value>(&s).unwrap()}}), id)
+                    }
                 }
                 "BuilderBuild" => {
-                    unsafe{ QFAB.builder_build() }
+                    unsafe{
+                    let t = &mut QFAB.ctx.clone().unwrap();
+                    unsafe{
+                        let doc = t.build().unwrap();
+                        elvwasm::make_success_json(&json!({"document-id": t.id}), id)
+                    }
+                    }
                 }
                 "DocumentCreate" => {
                     unsafe{ QFAB.document_create() }
