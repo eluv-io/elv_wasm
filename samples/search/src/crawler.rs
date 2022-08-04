@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value};
 use std::{cmp::min, error::Error};
 use elvwasm::{ErrorKinds};
@@ -172,7 +172,7 @@ impl IndexerConfig {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct FieldConfig {
     pub(crate) name: String,
     #[serde(rename = "type")]

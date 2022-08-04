@@ -178,14 +178,15 @@ mod tests{
     use elvwasm::BitcodeContext;
 
 
-    use tantivy_jpc::tests::FakeContext;
+    use tantivy_jpc::tests::{FakeContext, TestDocument};
 
 
     use serde::{Deserialize, Serialize};
     pub static mut QFAB: MockFabric = MockFabric{
         fab : None,
         ctx: None,
-        resp: vec![]
+        resp: vec![],
+        docs: vec![]
     };
 
     macro_rules! output_raw_pointers {
@@ -286,7 +287,8 @@ mod tests{
     pub struct MockFabric{
         ctx: Option<FakeContext>,
         fab : Option<RootMockFabric>,
-        resp: Vec<u8>
+        resp: Vec<u8>,
+        docs: Vec<TestDocument>
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -472,11 +474,10 @@ mod tests{
                 }
                 "BuilderBuild" => {
                     unsafe{
-                    let t = &mut QFAB.ctx.clone().unwrap();
-                    unsafe{
+                        let t = &mut QFAB.ctx.clone().unwrap();
                         let doc = t.build().unwrap();
+                        QFAB.docs.append(vec![doc].as_mut());
                         elvwasm::make_success_json(&json!({"document-id": t.id}), id)
-                    }
                     }
                 }
                 "DocumentCreate" => {
@@ -567,7 +568,8 @@ mod tests{
             q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
         };
         let bcc = BitcodeContext::new(req);
-        let idx = Indexer::new(&bcc, indexer_config.document.prefix, indexer_config.fields).expect("failed to create index");
+        let idx = Indexer::new(&bcc, indexer_config.document.prefix, indexer_config.fields.clone()).expect("failed to create index");
+        assert_eq!(&idx.fields.len(), &indexer_config.fields.len());
 
     }
 }
