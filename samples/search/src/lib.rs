@@ -13,7 +13,6 @@ extern crate serde_json;
 
 use crawler::FieldConfig;
 use serde_json::{json, Value, Map};
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use crate::old_man::S_OLD_MAN;
 use elvwasm::ErrorKinds;
@@ -190,7 +189,7 @@ fn do_search_update<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
         merge(&mut extra_fields, new_field);
     }
     let v = json!({});
-    bcc.builder_build(v.clone())?;
+    bcc.builder_build(v)?;
     let mut core_fields = json!({});
     let core_field_names = vec!["id", "hash", "type", "qlib_id", "has_field", "prefix", "display_title", "asset_type", "title_type"];
     // create core fields schema

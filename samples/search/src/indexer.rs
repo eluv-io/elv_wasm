@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::{utils::extract_body, crawler};
 
 use elvwasm::{BitcodeContext, ErrorKinds};
@@ -24,9 +26,9 @@ impl Indexer {
         let mut input_data = json!({
             "directory": "index" //TODO is this correct directory?
         });
-        BitcodeContext::log(&format!("before BUILDER"));
+        BitcodeContext::log("before BUILDER");
         bcc.new_index_builder(input_data)?;
-        BitcodeContext::log(&format!("NEW INDEX BUILDER"));
+        BitcodeContext::log("NEW INDEX BUILDER");
 
         // Add fields to schema builder
         for field_config in &fields {
@@ -37,7 +39,7 @@ impl Indexer {
         input_data = json!({});
         bcc.builder_build(input_data)?;
 
-        return Ok(Indexer { filepath, fields })
+        Ok(Indexer { filepath, fields })
     }
 
     fn add_field_to_schema(bcc: &BitcodeContext, field_config: &crawler::FieldConfig) -> Result<(), Box<dyn Error + Send + Sync>>{ //TODO: Add support for other fields.
@@ -46,12 +48,12 @@ impl Indexer {
             "text" => {
                 input_data = json!({
                     "name": field_config.name,
-                    "type": 1 as u8, //FIXME this should be a TextOption
+                    "type": 1_u8, //FIXME this should be a TextOption
                     "stored": true,
                 });
                 let field_title_vec = bcc.builder_add_text_field(input_data)?;
                 let ft_json: serde_json::Value = serde_json::from_slice(&field_title_vec)?;
-                match extract_body(ft_json.clone()) {
+                match extract_body(ft_json) {
                     Some(o) => o.get("field").unwrap().as_u64(),
                     None => {
                         return Err(Box::new(ErrorKinds::BadHttpParams(
@@ -59,17 +61,17 @@ impl Indexer {
                         )))
                     }
                 };
-                BitcodeContext::log(&format!("ADDED TEXT FIELD."));
+                BitcodeContext::log("ADDED TEXT FIELD.");
             }
             "string" => {
                 input_data = json!({
                     "name": field_config.name,
-                    "type": 1 as u8, //FIXME this should be a TextOption. What is the right number here?
+                    "type": 1_u8, //FIXME this should be a TextOption. What is the right number here?
                     "stored": true,
                 });
                 let field_title_vec = bcc.builder_add_text_field(input_data)?;
                 let ft_json: serde_json::Value = serde_json::from_slice(&field_title_vec)?;
-                match extract_body(ft_json.clone()) {
+                match extract_body(ft_json) {
                     Some(o) => o.get("field").unwrap().as_u64(),
                     None => {
                         return Err(Box::new(ErrorKinds::BadHttpParams(
@@ -77,7 +79,7 @@ impl Indexer {
                         )))
                     }
                 };
-                BitcodeContext::log(&format!("ADDED STRING FIELD."));
+                BitcodeContext::log("ADDED STRING FIELD.");
             }
             _ => panic!("unknown field type"),
         }
@@ -101,7 +103,7 @@ impl<'a> Writer<'a> {
         let input = json!({});
         let response_vec = self.bcc.document_create(input)?;
         let response_val: serde_json::Value = serde_json::from_slice(&response_vec)?;
-        let doc_id = match extract_body(response_val.clone()) {
+        let doc_id = match extract_body(response_val) {
             Some(o) => o.get("document-create-id").unwrap().as_u64(),
             None => {
                 return self.bcc.make_error_with_kind(ErrorKinds::BadHttpParams(
@@ -164,7 +166,6 @@ mod tests{
     extern crate snailquote;
     extern crate tempdir;
     use std::sync::{Arc};
-    use tempdir::TempDir;
     use elvwasm::ErrorKinds;
     use std::fs::File;
     use std::io::BufReader;
@@ -381,7 +382,7 @@ mod tests{
             let enc = base64::encode(to_encode);
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
-        pub fn new_index_builder(&mut self, dir:&str)-> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn new_index_builder(&mut self, _dir:&str)-> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>>{
             self.ctx = Some(FakeContext::new());
             Ok(json!("DONE"))
         }

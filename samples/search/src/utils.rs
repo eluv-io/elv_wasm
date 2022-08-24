@@ -26,13 +26,7 @@ pub fn extract_body(v: Value) -> Option<Value> {
             Some(h) => h,
             None => return None,
         };
-        return match http.get("body") {
-            Some(b) => Some(b.clone()),
-            None => None,
-        };
+        return http.get("body").cloned();
     }
-    return match res.get("body") {
-        Some(b) => Some(b.clone()),
-        None => None,
-    };
+    res.get("body").cloned()
 }

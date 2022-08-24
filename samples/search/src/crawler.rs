@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Value};
 use std::{cmp::min, error::Error};
@@ -6,7 +8,7 @@ use elvwasm::{ErrorKinds};
 
 
 // Used to represent values in prefix path
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum PrefixValue {
     ObjectItemAny,
     ArrayItemAny,
@@ -15,7 +17,7 @@ pub enum PrefixValue {
 
 impl PrefixValue {
     pub fn is_key(&self) -> bool {
-        return matches!(self, PrefixValue::Key(..));
+        matches!(self, PrefixValue::Key(..))
     }
 }
 
@@ -25,26 +27,26 @@ pub struct Prefix {
 
 impl Prefix {
     pub fn get(&self, i: usize) -> &PrefixValue {
-        return &self.prefix[i];
+        &self.prefix[i]
     }
 
-    pub fn from_jpath(jpath: &String) -> Prefix {
+    pub fn from_jpath(jpath: &str) -> Prefix {
         let mut prefix: Vec<PrefixValue> = Vec::new();
-        let otokens: Vec<&str> = jpath.split("/").collect();
+        let otokens: Vec<&str> = jpath.split('/').collect();
         let mut start = 0;
         if (*otokens.get(start).unwrap()).eq("") {
             start = 1;
         }
         for &otokens in &otokens[start..] {
-            let ltokens: Vec<&str> = otokens.split("[").collect();
+            let ltokens: Vec<&str> = otokens.split('[').collect();
             if ltokens[0] == "*" {
                 prefix.push(PrefixValue::ObjectItemAny)
-            } else if ltokens[0] != "" {
+            } else if !ltokens[0].is_empty() {
                 prefix.push(PrefixValue::Key(ltokens[0].to_string()));
             }
 
             for &ltoken in &ltokens[1..] {
-                assert!(ltoken.chars().last().unwrap() == ']');
+                assert!(ltoken.ends_with(']'));
 
                 let mut ltoken_slice = ltoken.chars();
                 ltoken_slice.next_back();
@@ -93,10 +95,7 @@ impl Prefix {
             if !is_match {
                 break;
             }
-            match elem {
-                Some(e) => common_prefix.push(e),
-                None => {},
-            };
+            if let Some(e) = elem { common_prefix.push(e) }
         }
         Prefix {
             prefix: common_prefix,

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::visit::{EdgeRef};
 use petgraph::Directed;
@@ -22,23 +24,23 @@ impl FilterDAG {
         // Build DAG by traversing each field path
         let mut fields_dq = VecDeque::<(VecDeque<&str>, NodeIndex, u8)>::new();
         for field in fields {
-            let fields: Vec<&str> = field.split(".").collect(); // Split field path into keys
+            let fields: Vec<&str> = field.split('.').collect(); // Split field path into keys
             let el = (VecDeque::from(fields), root, 0);
             fields_dq.push_back(el);
         }
         let mut current_level: i32 = -1;
         let mut seen_keys = HashMap::<(NodeIndex, &str), NodeIndex>::new();
-        while fields_dq.len() > 0 {
+        while !fields_dq.is_empty() {
             let (mut field, parent, level) = fields_dq.pop_front().unwrap();
             if level as i32 > current_level {
                 seen_keys.clear();
                 current_level = level as i32;
             }
-            if field.len() > 0 {
+            if !field.is_empty() {
                 let key = field.pop_front().unwrap();
                 let skey = (parent, key);
                 let mut child = s.graph.add_node(());
-                if !seen_keys.contains_key(&skey) {
+                if let std::collections::hash_map::Entry::Vacant(_e) = seen_keys.entry(skey) {
                     let _edge = s.graph.add_edge(parent, child, skey.1.to_string());
                     seen_keys.insert(skey, child);
                 } else {
@@ -51,8 +53,8 @@ impl FilterDAG {
         s
     }
 
-    pub fn get_root(&self) -> NodeIndex {
-        return self.root;
+    pub fn _get_root(&self) -> NodeIndex {
+        self.root
     }
     // Gets keys for outgoing edges connected to a vertex, given by its NodeIndex
     pub fn next_keys(&self, vertex: NodeIndex) -> Vec<(&String, NodeIndex)> {
@@ -72,26 +74,26 @@ impl FilterDAG {
             in_edge_option = self.graph.edges_directed(vertex, Incoming).next();
         }
         prefix_vec.reverse();
-        return prefix_vec;
+        prefix_vec
     }
 }
 
 struct LinkScanner {
-    pub filter_dag: FilterDAG,
+    pub _filter_dag: FilterDAG,
 }
 
 impl LinkScanner {
-    pub fn new(filter_dag: FilterDAG) -> LinkScanner {
-        return LinkScanner {
-            filter_dag,
-        };
+    pub fn _new(_filter_dag: FilterDAG) -> LinkScanner {
+        LinkScanner {
+            _filter_dag,
+        }
     }
 
     fn is_valid_field_type(field_type: &Value) -> bool {
-        return field_type.is_string() || field_type.is_i64(); // TODO: check the these are the valid field types.
+        field_type.is_string() || field_type.is_i64() // TODO: check the these are the valid field types.
     }
 
-    pub fn scanner<'a, 'b>(
+    pub fn _scanner<'a, 'b>(
         &'a mut self,
         dictionary: &'b Value,
         field_state_option: Option<NodeIndex>,
@@ -99,15 +101,15 @@ impl LinkScanner {
     ) -> LinkScannerIterator<'a, 'b> {
         let mut scanning_queue: VecDeque<(&'b Value, NodeIndex<u32>, Vec<String>)> =
             VecDeque::<(&Value, NodeIndex, Vec<String>)>::new();
-        let field_state = field_state_option.unwrap_or(self.filter_dag.get_root());
-        let prefix = prefix_option.unwrap_or(Vec::new());
+        let field_state = field_state_option.unwrap_or_else(|| self._filter_dag._get_root());
+        let prefix = prefix_option.unwrap_or_default();
 
-        scanning_queue.push_back((&dictionary, field_state, prefix));
+        scanning_queue.push_back((dictionary, field_state, prefix));
 
-        return LinkScannerIterator::<'a, 'b> {
-            filter_dag: &self.filter_dag,
+        LinkScannerIterator::<'a, 'b> {
+            filter_dag: &self._filter_dag,
             scanning_queue,
-        };
+        }
     }
 }
 
@@ -122,7 +124,7 @@ impl<'a, 'b> Iterator for LinkScannerIterator<'a, 'b> {
     fn next(&mut self) -> Option<(&'b Value, NodeIndex, Vec<String>)> {
         let mut ret_val: Option<(&'b Value, NodeIndex, Vec<String>)> = None;
 
-        if self.scanning_queue.len() > 0 {
+        if !self.scanning_queue.is_empty() {
             let (dictionary, field_state, prefix) = self.scanning_queue.pop_front().unwrap();
             if dictionary.is_array() {
                 let to_scan = dictionary.as_array().unwrap();
@@ -170,22 +172,22 @@ impl<'a, 'b> Iterator for LinkScannerIterator<'a, 'b> {
                 panic!("Dict type of {} not supported.", dictionary);
             }
         }
-        return ret_val;
+        ret_val
     }
 }
 
-struct DictScanner {
+struct _DictScanner {
     pub filter_dag: FilterDAG,
 }
 
-impl DictScanner {
-    pub fn new(filter_dag: FilterDAG) -> DictScanner {
-        return DictScanner {
+impl _DictScanner {
+    pub fn _new(filter_dag: FilterDAG) -> _DictScanner {
+        _DictScanner {
             filter_dag,
-        };
+        }
     }
 
-    pub fn scanner<'a, 'b>(
+    pub fn _scanner<'a, 'b>(
         &'a mut self,
         dictionary: &'b Value,
         field_state_option: Option<NodeIndex>,
@@ -193,15 +195,15 @@ impl DictScanner {
     ) -> DictScannerIterator<'a, 'b> {
         let mut scanning_queue: VecDeque<(&'b Value, NodeIndex<u32>, Vec<String>)> =
             VecDeque::<(&Value, NodeIndex, Vec<String>)>::new();
-        let field_state = field_state_option.unwrap_or(self.filter_dag.get_root());
-        let prefix = prefix_option.unwrap_or(Vec::new());
+        let field_state = field_state_option.unwrap_or_else(|| self.filter_dag._get_root());
+        let prefix = prefix_option.unwrap_or_default();
 
-        scanning_queue.push_back((&dictionary, field_state, prefix));
+        scanning_queue.push_back((dictionary, field_state, prefix));
 
-        return DictScannerIterator::<'a, 'b> {
+        DictScannerIterator::<'a, 'b> {
             filter_dag: &self.filter_dag,
             scanning_queue,
-        };
+        }
     }
 }
 
@@ -214,7 +216,7 @@ impl<'a, 'b> Iterator for DictScannerIterator<'a, 'b> {
     type Item = (&'b Value, NodeIndex, Vec<String>);
 
     fn next(&mut self) -> Option<(&'b Value, NodeIndex, Vec<String>)> {
-        if self.scanning_queue.len() > 0 {
+        if !self.scanning_queue.is_empty() {
             let (dictionary, field_state, prefix) = self.scanning_queue.pop_front().unwrap();
             let next_keys = self.filter_dag.next_keys(field_state);
 
@@ -244,6 +246,6 @@ impl<'a, 'b> Iterator for DictScannerIterator<'a, 'b> {
                 }
             }
         }
-        return None;
+        None
     }
 }
