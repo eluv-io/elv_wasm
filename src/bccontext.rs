@@ -295,16 +295,18 @@ pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
 /// data is acquired from the http request.  The BitcodeContext provides 2 way communication to the content fabric.
 /// There is convenience impl method [BitcodeContext::call_function] that allows the fabric to be accessed via a known set of APIs.
 #[derive(Debug, Clone)]
-pub struct BitcodeContext<'a> {
-    pub request: &'a Request,
+pub struct BitcodeContext {
+    pub request: Request,
     pub return_buffer: Vec<u8>,
+    pub index_temp_dir: Option<String>,
 }
 
-impl<'a> BitcodeContext<'a> {
-    pub fn new(request: &'a Request) -> BitcodeContext<'a> {
+impl<'a> BitcodeContext {
+    pub fn new(request: Request) -> BitcodeContext {
         BitcodeContext {
             request,
             return_buffer: vec![],
+            index_temp_dir: None,
         }
     }
 
@@ -1012,7 +1014,7 @@ impl<'a> BitcodeContext<'a> {
         "ProxyHttp"
     );
 
-    pub fn new_index_builder(&'a self, v: serde_json::Value) -> CallResult {
+    pub fn new_index_builder(&'a mut self, v: serde_json::Value) -> CallResult {
         let mut new_map: serde_json::Map<String, Value>;
         let entry: Value;
         let method = "NewIndexBuilder";
@@ -1021,6 +1023,7 @@ impl<'a> BitcodeContext<'a> {
                 new_map = o;
                 let td = self.temp_dir()?;
                 let dir = std::str::from_utf8(&td)?;
+                //self.index_temp_dir = Some(dir.to_string());
                 entry = match new_map.get("directory") {
                     Some(d) => d.clone(),
                     None => {
@@ -1034,6 +1037,7 @@ impl<'a> BitcodeContext<'a> {
                 new_map = serde_json::Map::<String, Value>::new();
                 let td = self.temp_dir()?;
                 new_map["directory"] = serde_json::from_slice(&td)?;
+                //self.index_temp_dir = Some(new_map["directory"].to_string());
                 serde_json::Value::Object(new_map.clone())
             }
             _ => {

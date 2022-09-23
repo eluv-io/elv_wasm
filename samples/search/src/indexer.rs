@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, clippy::box_collection)]
 
 use crate::{utils::extract_body, crawler};
 
@@ -7,8 +7,8 @@ use serde_json::{json, Value};
 use std::{error::Error, collections::HashMap};
 
 pub struct Indexer {
-    filepath: String,
-    fields: Vec<crawler::FieldConfig>
+    pub filepath: String,
+    pub fields: Vec<crawler::FieldConfig>
 }
 
 impl Indexer {
@@ -569,7 +569,7 @@ mod tests{
             q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
         };
         let bcc = BitcodeContext::new(req);
-        let idx = Indexer::new(&bcc, indexer_config.document.prefix, indexer_config.fields.clone()).expect("failed to create index");
+        let idx = Indexer::new(&bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
         assert_eq!(&idx.fields.len(), &indexer_config.fields.len());
 
     }
