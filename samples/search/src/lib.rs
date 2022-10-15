@@ -20,7 +20,7 @@ use indexer::Indexer;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
-implement_bitcode_module!("crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3, "search_update", do_search_update, "search_update_new", do_search_update_new);
+implement_bitcode_module!( "search", do_search, "crawl", do_crawl, "more_crawl", do_crawl2, "even_more_crawl", do_crawl3, "search_update", do_search_update, "search_update_new", do_search_update_new);
 
 fn extract_body(v:Value) -> Option<Value>{
     let obj = match v.as_object(){
@@ -61,7 +61,9 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     let qp = &http_p.query;
     BitcodeContext::log(&format!("In do_crawl hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
     let id = &bcc.request.id;
-    let mut v = json!({});
+    let td = bcc.temp_dir()?;
+    let dir:&str = serde_json::from_slice(&td)?;
+    let mut v = json!({"directory" : dir});
     BitcodeContext::log("before BUILDER");
     bcc.new_index_builder(v)?;
     BitcodeContext::log("NEW INDEX BUILDER");
@@ -104,16 +106,18 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     bcc.index_add_document(v)?;
     v = json!({});
     bcc.index_writer_commit(v)?;
-    let part_u8 = bcc.archive_index_to_part()?;
+    let part_u8 = bcc.archive_index_to_part(dir)?;
     let part_hash:serde_json::Value = serde_json::from_slice(&part_u8)?;
     let b = extract_body(part_hash.clone());
     let body_hash = b.unwrap_or_else(|| json!({}));
+    bcc.callback(200, "application/json", part_u8.len())?;
+    BitcodeContext::write_stream_auto(id.clone(), "fos", &part_u8)?;
     BitcodeContext::log(&format!("part hash = {}, bosy = {}", &part_hash.to_string(), &body_hash.to_string()));
     bcc.make_success_json(&json!(
         {
             "headers" : "application/json",
             "body" : "SUCCESS",
-            "result" : body_hash,
+            "result" : 0,
         }), id)
 }
 
@@ -144,6 +148,65 @@ fn merge(a: &mut Value, b: Value) {
     }
 
     *a = b;
+}
+// fn do_search<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+//     bcc.log_info("In do search")?;
+//     let id = &bcc.request.id;
+//     bcc.make_success_json(&json!(
+//         {
+//             "headers" : "application/json",
+//             "body" : "SUCCESS",
+//             "result" : 0,
+//         }), id)
+// }
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct Restore {
+    http: HttpP,
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct HttpP {
+    body: String,
+}
+
+
+fn do_search<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+    bcc.log_info("In do search")?;
+    let id = &bcc.request.id;
+    let http_p = &bcc.request.params.http;
+    bcc.log_info(&format!("http={:?}", &http_p))?;
+    let qp = &http_p.query;
+    if qp.len() == 0{
+        bcc.log_info("qp len 0")?;
+        return bcc.make_error("query params are empty");
+    }
+    bcc.log_info("here")?;
+
+    let part_hash = &qp["part-hash"][0];
+    let content_hash = &qp["content-hash"][0];
+
+    let index_bytes = bcc.restore_index_from_part(content_hash, part_hash)?;
+    let index_dir:Restore = serde_json::from_slice(&index_bytes)?;
+    bcc.log_info(&format!("directory={}", index_dir.http.body))?;
+    bcc.new_index_builder(json!({"directory" : index_dir.http.body}))?;
+    bcc.builder_create_index(json!({}))?;
+    bcc.index_reader_builder_create(json!({}))?;
+    bcc.index_reader_searcher(json!({}))?;
+    bcc.query_parser_parse_query("sea")?;
+    // let v_index_parser = serde_json::from_str(r#"{
+    //     "fields" : ["title", "body"]
+    //   }
+    // }"#).unwrap();
+    let v_index_parser = json!({"fields" : ["title", "body"]});
+    bcc.query_parser_for_index(v_index_parser)?;
+    let res = bcc.query_parser_search(json!({}))?;
+    bcc.callback(200, "application/json", res.len())?;
+    BitcodeContext::write_stream_auto(id.clone(), "fos", &res)?;
+    bcc.make_success_json(&json!(
+        {
+            "headers" : "application/json",
+            "body" : "SUCCESS",
+            "result" : 0,
+        }), id)
 }
 
 fn do_search_update_new<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
@@ -180,7 +243,9 @@ fn do_search_update<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     let http_p = &bcc.request.params.http;
     let _qp = &http_p.query;
     let id = &bcc.request.id;
-    bcc.new_index_builder(json!({}))?;
+    let td = bcc.temp_dir()?;
+    let dir:&str = serde_json::from_slice(&td)?;
+    bcc.new_index_builder(json!({"directory": dir}))?;
     let mut extra_fields = json!({});
     let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;
     let fields:Map<String, Value> = serde_json::from_slice(&res)?;

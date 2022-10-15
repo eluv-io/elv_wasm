@@ -33,8 +33,7 @@ impl<'a, 'b> Searcher<'a, 'b> {
         input = serde_json::from_str(r#"{ "fields" : ["title", "body"] } }"#).unwrap();
         self.bcc.query_parser_for_index(input)?;
 
-        input = json!({"query": query_str});
-        self.bcc.query_parser_parse_query(input)?;
+        self.bcc.query_parser_parse_query(query_str)?;
 
         input = json!({});
         let _search_results = self.bcc.query_parser_search(input);

@@ -386,7 +386,7 @@ mod tests{
             self.ctx = Some(FakeContext::new());
             Ok(json!("DONE"))
         }
-        pub fn archive_index_to_part(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn archive_index_to_part(&mut self, _dir:&str)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
             Ok("DONE".as_bytes().to_vec())
         }
         pub fn builder_add_text_field(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
@@ -463,7 +463,7 @@ mod tests{
                     }
                 }
                 "ArchiveIndexToPart" => {
-                    unsafe{ QFAB.archive_index_to_part() }
+                    unsafe{ QFAB.archive_index_to_part("/tmp/foo") }
                 }
                 "BuilderAddTextField" => {
                     unsafe{
