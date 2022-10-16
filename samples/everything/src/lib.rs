@@ -214,7 +214,9 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In do_crawl hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
   let id = &bcc.request.id;
-  let mut v = json!({});
+  let td = bcc.temp_dir()?;
+  let dir:&str = serde_json::from_slice(&td)?;
+  let mut v = json!({"directory" : dir});
   BitcodeContext::log("before BUILDER");
   bcc.new_index_builder(v)?;
   BitcodeContext::log("NEW INDEX BUILDER");
@@ -257,7 +259,7 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   bcc.index_add_document(v)?;
   v = json!({});
   bcc.index_writer_commit(v)?;
-  let part_u8 = bcc.archive_index_to_part()?;
+  let part_u8 = bcc.archive_index_to_part(dir)?;
   let part_hash:serde_json::Value = serde_json::from_slice(&part_u8)?;
   let b = extract_body(part_hash.clone());
   let body_hash = b.unwrap_or_else(|| json!({}));
