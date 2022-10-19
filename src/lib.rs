@@ -35,7 +35,7 @@
       Ok(m) => m,
       Err(e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed"))
     };
-    let proxy_resp =  bcc.proxy_http(json!({"request": req}))?;
+    let proxy_resp =  bcc.proxy_http(Some(json!({"request": req})))?;
     let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
     let client_response = serde_json::to_vec(&proxy_resp_json["result"])?;
     let id = &bcc.request.id;

@@ -157,7 +157,7 @@ fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
     Ok(m) => m,
     Err(_e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed")),
   };
-  let proxy_resp =  bcc.proxy_http(json!({"request": req}))?;
+  let proxy_resp =  bcc.proxy_http(Some(json!({"request": req})))?;
   let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
   let client_response = serde_json::to_vec(&proxy_resp_json["result"])?;
   let id = &bcc.request.id;
@@ -221,7 +221,7 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   bcc.new_index_builder(v)?;
   BitcodeContext::log("NEW INDEX BUILDER");
   v = json!({ "field_name": "title", "type": 1_u8, "stored": true});
-  let field_title_vec = bcc.builder_add_text_field(v)?;
+  let field_title_vec = bcc.builder_add_text_field(Some(v))?;
   let ft_json:serde_json::Value = serde_json::from_slice(&field_title_vec)?;
   let field_title = match extract_body(ft_json){
       Some(o) => o.get("field").unwrap().as_u64(),
@@ -229,16 +229,15 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
   };
   BitcodeContext::log("TEXT FILED 1");
   v = json!({ "field_name": "body", "type": 2_u8 , "stored": false});
-  let field_body_vec = bcc.builder_add_text_field(v)?;
+  let field_body_vec = bcc.builder_add_text_field(Some(v))?;
   let fb_json:serde_json::Value = serde_json::from_slice(&field_body_vec)?;
   let field_body = match extract_body(fb_json){
       Some(o) => o.get("field").unwrap().as_u64(),
       None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
   };
   BitcodeContext::log("TEXT FILED 2");
-  v = json!({});
-  bcc.builder_build(v.clone())?;
-  let doc_old_man_u8 = bcc.document_create(v)?;
+  bcc.builder_build(None)?;
+  let doc_old_man_u8 = bcc.document_create(None)?;
   BitcodeContext::log("DOC CREATE");
   let doc_old_man:serde_json::Value = serde_json::from_slice(&doc_old_man_u8)?;
   console_log(&format!("obj_old = {:?}", &doc_old_man));
@@ -247,18 +246,16 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
       None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
   };
   v = json!({ "field": field_title, "value": "The Old Man and the Sea", "doc_id": doc_id});
-  bcc.document_add_text(v)?;
+  bcc.document_add_text(Some(v))?;
   BitcodeContext::log("DOC ADD TEXT TITLE");
   v = json!({ "field": field_body, "value": S_OLD_MAN, "doc_id": doc_id});
-  bcc.document_add_text(v)?;
+  bcc.document_add_text(Some(v))?;
   BitcodeContext::log("DOC ADD TEXT BODY");
-  v = json!({});
-  bcc.document_create_index(v.clone())?;
-  bcc.index_create_writer(v)?;
+  bcc.document_create_index(None)?;
+  bcc.index_create_writer(None)?;
   v = json!({ "document_id": doc_id});
-  bcc.index_add_document(v)?;
-  v = json!({});
-  bcc.index_writer_commit(v)?;
+  bcc.index_add_document(Some(v))?;
+  bcc.index_writer_commit(None)?;
   let part_u8 = bcc.archive_index_to_part(dir)?;
   let part_hash:serde_json::Value = serde_json::from_slice(&part_u8)?;
   let b = extract_body(part_hash.clone());

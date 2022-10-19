@@ -24,9 +24,13 @@ macro_rules! implement_ext_func {
     $fabric_name:literal
   ) => {
     $(#[$meta])*
-    pub fn $handler_name(&'a self, v:serde_json::Value) -> CallResult {
+    pub fn $handler_name(&'a self, v:Option<serde_json::Value>) -> CallResult {
+      let v_call = match v{
+        Some(v) => v,
+        None => Value::default(),
+      };
       let method = $fabric_name;
-      let impl_result = self.call_function(method, v, "ext")?;
+      let impl_result = self.call_function(method, v_call, "ext")?;
       let id = self.request.id.clone();
       self.make_success_bytes(&impl_result, &id)
     }
@@ -1008,7 +1012,7 @@ impl<'a> BitcodeContext<'a> {
         ///         }
         ///      }
         ///   });
-        ///   bcc.proxy_http(v)
+        ///   bcc.proxy_http(Some(v))
         /// }
         /// ```
         /// # Returns
@@ -1090,7 +1094,7 @@ impl<'a> BitcodeContext<'a> {
         ///     "type":   1,
         ///     "stored": true,
         ///   });
-        ///   bcc.builder_add_text_field(v)
+        ///   bcc.builder_add_text_field(Some(v))
         /// }
         /// ```
         builder_add_text_field,
@@ -1104,8 +1108,7 @@ impl<'a> BitcodeContext<'a> {
         ///
         ///
         ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-        ///   let v = json!({});
-        ///   bcc.builder_build(v)
+        ///   bcc.builder_build(None)
         /// }
         /// ```
         builder_build,
