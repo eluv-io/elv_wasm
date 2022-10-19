@@ -298,7 +298,7 @@ type HandlerFunction<'a> = fn(bcc: &'a mut BitcodeContext) -> CallResult;
 /// register_handler adjusts the global static call map to associate a bitcode module with a path
 /// this map is used by jpc to implement bitcode calls
 #[no_mangle]
-pub fn register_handler<'a>(name: &str, h: HandlerFunction<'static>) {
+pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
   let hd = HandlerData{
     hf:h,
     req: None,
@@ -316,7 +316,7 @@ fn elv_console_log(s:&str){
   println!("{}", s)
 }
 
-fn do_bitcode<'a>(json_params:  Request) -> CallResult{
+fn do_bitcode(json_params:  Request) -> CallResult{
   elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
   elv_console_log(&format!("splitpath={:?}", split_path));
@@ -364,7 +364,7 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
   };
 
   elv_console_log("Request parsed");
-  do_bitcode(json_params.clone())
+  do_bitcode(json_params)
 }
 
 

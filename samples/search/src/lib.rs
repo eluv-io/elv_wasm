@@ -69,15 +69,15 @@ fn extract_body(v:Value) -> Option<Value>{
 //         }), id)
 // }
 
-fn do_crawl3<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{
+fn do_crawl3(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
     do_crawl2(bcc)
 }
 
-fn do_crawl2<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{
+fn do_crawl2(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
     do_crawl(bcc)
 }
 
-fn do_crawl<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{
+fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     bcc.log_info(&format!("In do_crawl hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp))?;
@@ -209,7 +209,7 @@ fn do_search(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         }), &id)
 }
 
-fn do_search_update_new<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{
+fn do_search_update_new(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
     let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;
     let fields:Map<String, Value> = serde_json::from_slice(&res)?;
     let mut idx_fields = Vec::<crawler::FieldConfig>::new();
@@ -239,7 +239,7 @@ fn do_search_update_new<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{
         }), id)
 }
 
-fn do_search_update<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{
+fn do_search_update(bcc:&mut elvwasm::BitcodeContext) -> CallResult{
     let http_p = &bcc.request.params.http;
     let _qp = &http_p.query;
     let id = bcc.request.id.clone();
