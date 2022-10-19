@@ -79,6 +79,7 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
+#[derive(Clone)]
 struct HandlerData<'a>{
   pub hf:HandlerFunction<'a>,
   pub req:Option<BitcodeContext>,
@@ -88,7 +89,6 @@ lazy_static! {
   static ref CALLMAP: Mutex<HashMap<String, HandlerData<'static>>> = Mutex::new(HashMap::new());
 }
 
-static mut ERR_MSG:String = String::new();
 
 #[macro_export]
 macro_rules! register_handlers {
@@ -315,34 +315,33 @@ fn elv_console_log(s:&str){
 fn elv_console_log(s:&str){
   println!("{}", s)
 }
+//static BCC_INNER:&'static mut BitcodeContext = &mut BitcodeContext::default();
+
 
 fn do_bitcode<'a>(json_params:  Request) -> CallResult{
   elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
   elv_console_log(&format!("splitpath={:?}", split_path));
-  let mut cm = match CALLMAP.lock(){
+  //let mut bind:Option<&HandlerData> = None;
+
+  let cm = match CALLMAP.lock(){
     Ok(c) => c,
-    Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), "unable to gain access to callmap"),
+    Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {}", e)),
   };
+  let mut bind = cm.get(split_path[1]).into_iter();
+//  let mut cm_copy = cm.get(split_path[1]).clone();
+  let mut cm_handler = match bind.find(|mut _x| true){
+    Some(x) => {
+      x.to_owned()
+    }
+    None =>return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), "unable to gain access to callmap"),
+  };
+  let req_call = &mut cm_handler.req;
   //let cmp = cm.get(split_path[1]);
-  match cm.get(split_path[1]){
+  match req_call.take(){
     Some(f) => {
-      f.req = Some(BitcodeContext::new(json_params));
-      let ref_req = f.req.as_mut();
-      let bcc = ref_req.unwrap();
-      match ((*f).hf)(bcc){
-        Ok(m) => {
-          elv_console_log(&format!("here and m={}", str::from_utf8(&m).unwrap()));
-          Ok(m)
-        },
-        Err(err) => {
-          unsafe{
-          ERR_MSG = format!("parse failed for http {}", &*err);
-          //(*bcc).make_error_with_error(ErrorKinds::BadHttpParams(&ERR_MSG), &*err)
-          bcc.make_error(&ERR_MSG)
-          }
-        }
-      }
+      let bcc = Box::new(f);
+      (cm_handler.hf)(Box::leak(bcc))
     }
     None => {
       elv_console_log(&format!("Failed to find path {}", split_path[1]));

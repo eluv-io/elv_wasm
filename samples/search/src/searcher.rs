@@ -12,7 +12,7 @@ pub fn content_query(bcc: &mut BitcodeContext) -> CallResult {
 }
 
 struct Searcher<'a, 'b> {
-    bcc: &'a BitcodeContext<'b>,
+    bcc: &'a BitcodeContext,
 }
 
 impl<'a, 'b> Searcher<'a, 'b> {

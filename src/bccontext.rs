@@ -159,13 +159,13 @@ pub struct FileStreamSize {
 }
 
 /// Bitcode representation of the JPC (JSON Procedure Call) parameters from a client request
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct JpcParams {
     pub http: HttpParams,
 }
 
 /// Bitcode representation of the http parameters from a client request
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct HttpParams {
     #[serde(default)]
     pub headers: HashMap<String, Vec<String>>,
@@ -188,7 +188,7 @@ pub struct HttpParams {
 }
 
 /// Bitcode representation of a content sans meta data
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct QInfo {
     #[serde(default)]
     pub hash: String,
@@ -229,7 +229,7 @@ pub struct QPartInfo {
 }
 
 /// Bitcode representation of a incomming client request
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Request {
     pub id: String,
     pub jpc: String,
@@ -254,7 +254,7 @@ pub struct Response {
 
 /// Bitcode representation of a result from new_stream
 /// ```
-/// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+/// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
 ///   let res = bcc.new_stream()?;
 ///   let stream1:elvwasm::NewStreamResult = serde_json::from_slice(&res)?;
 ///   // stream1.stream_id has new id
@@ -268,7 +268,7 @@ pub struct NewStreamResult {
 
 /// Bitcode representation of a result from read_stream
 /// ```
-/// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+/// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
 ///   let res = bcc.new_stream()?;
 ///   let stream1:elvwasm::NewStreamResult = serde_json::from_slice(&res)?;
 ///   // stream1.stream_id has new id
@@ -298,7 +298,7 @@ pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
 /// is automatically created during the processing of the http request.  During initialization, all context
 /// data is acquired from the http request.  The BitcodeContext provides 2 way communication to the content fabric.
 /// There is convenience impl method [BitcodeContext::call_function] that allows the fabric to be accessed via a known set of APIs.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BitcodeContext {
     pub request: Request,
     pub return_buffer: Vec<u8>,
@@ -350,7 +350,7 @@ impl<'a> BitcodeContext {
     /// [Vec<u8>] parseable to [QList]
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_list_content()?;
     ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
     ///   // do stuff with the qlist
@@ -368,7 +368,7 @@ impl<'a> BitcodeContext {
     /// [Vec<u8>] parseable to [QList]
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_list_content_for(&bcc.request.q_info.qlib_id)?;
     ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
     ///   // do stuff with the qlist
@@ -393,7 +393,7 @@ impl<'a> BitcodeContext {
     /// { "qid" : "idObj", "qhash" : "newHash"}
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_list_content()?;
     ///   let q:serde_json::Value = serde_json::from_slice(&res).unwrap();
     ///   let m = q.as_object().unwrap();
@@ -418,7 +418,7 @@ impl<'a> BitcodeContext {
     /// nil
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_commit_content("hq__jd7sd655fffg7HrF76mHDolzzwe")?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
@@ -438,7 +438,7 @@ impl<'a> BitcodeContext {
     /// { "qwtoken" : "writeTokenForEdit"}
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_modify_content()?;
     ///   let q:serde_json::Value = serde_json::from_slice(&res).unwrap();
     ///   let m = q.as_object().unwrap();
@@ -560,7 +560,7 @@ impl<'a> BitcodeContext {
     /// utf8 bytes stream containing a string with the state store id
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_create_q_state_store()?;
     ///   let ssID = std::str::from_utf8(&res)?;
     ///   Ok(res)
@@ -578,7 +578,7 @@ impl<'a> BitcodeContext {
     /// [Vec<u8>] parseable to [QRef]
     /// e.g.
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_get_versions("id_someQID", true)?;
     ///   let qVersions:elvwasm::QRef = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
     ///   // Do stuff with qVersions
@@ -640,7 +640,7 @@ impl<'a> BitcodeContext {
     /// * error only no success return
     /// ```
     /// use serde_json::json;
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_set_json("/some_key", &json!({"foo" : "bar"}))?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
@@ -665,7 +665,7 @@ impl<'a> BitcodeContext {
     /// ```
     /// use serde_json::json;
     ///
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_merge_json("/some_key", r#"{{"foo" : "bar"}}"#)?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
@@ -687,7 +687,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// * error only no success return
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_delete_json("/some_key")?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
@@ -708,7 +708,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// * nothing only error on failure
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_clear_json("/some_key")?; // this will blast some_key and all its descendants
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
@@ -729,7 +729,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// * UTF8 [u8] slice containing json
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json("/some_key")?;
     ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
     ///   let mut meta = v.as_object().unwrap();
@@ -747,7 +747,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// * UTF8 [u8] slice containing json
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json_resolve("/some_key")?;
     ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
     ///   let mut meta = v.as_object().unwrap();
@@ -766,7 +766,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// * UTF8 [u8] slice containing json
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json_external("libid4556", "hq_bad2a1ac0a2923ad85e1489736701c06320242a9", "/some_key")?;
     ///   let mut meta_str: String = String::from_utf8(res.clone())?;
     ///   Ok(res)
@@ -791,7 +791,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// * UTF8 [u8] slice containing json
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_query("$['some'].value[0].description")?;
     ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
     ///   let mut meta = v.as_object().unwrap();
@@ -811,7 +811,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// Nothing error only
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_create_q_state_store()?;
     ///   let ssID = std::str::from_utf8(&res)?;
     ///   bcc.qss_set(ssID, "akey", "avalue")?;
@@ -837,7 +837,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// [Vec<u8>] containing string value
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.qss_get("sid_648nfjfh5666nmjejh", "akey")?;
     ///   let strVal = std::str::from_utf8(&res)?;
     ///   Ok(res)
@@ -861,7 +861,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// Nothing error only
     /// ```
-    /// fn do_something<'s, 'r>(bcc: &'s mut elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.qss_delete("sid_648nfjfh5666nmjejh", "akey")?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
@@ -1003,7 +1003,7 @@ impl<'a> BitcodeContext {
         /// ```
         /// use serde_json::json;
         ///
-        /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+        /// fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
         ///   let v = json!({
         ///         "request_parameters" : {
         ///         "url": "https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&q=fabric&cx=012842113009817296384:qjezbmwk0cx",
@@ -1077,7 +1077,7 @@ impl<'a> BitcodeContext {
     //   /// ```
     //   /// use serde_json::json;
     //   ///
-    //   /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+    //   /// fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     //   ///   let v = json!({});
     //   ///   bcc.new_index_builder(v)
     //   /// }
@@ -1092,7 +1092,7 @@ impl<'a> BitcodeContext {
         /// ```
         /// use serde_json::json;
         ///
-        ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+        ///fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
         ///   let v = json!({
         ///     "name":   "title",
         ///     "type":   1,
@@ -1111,7 +1111,7 @@ impl<'a> BitcodeContext {
         /// use serde_json::json;
         ///
         ///
-        ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+        ///fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
         ///   bcc.builder_build(None)
         /// }
         /// ```
@@ -1185,7 +1185,7 @@ impl<'a> BitcodeContext {
         /// # Arguments
         /// * `v` : a JSON Value
         /// ```
-        /// fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
+        /// fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
         ///   let v = serde_json::from_str(r#"{
         ///         "fields" : ["field1", "field2"]
         ///       }
