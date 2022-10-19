@@ -37,7 +37,7 @@ impl Indexer {
 
         // Build index
         input_data = json!({});
-        bcc.builder_build(input_data)?;
+        bcc.builder_build(Some(input_data))?;
 
         Ok(Indexer { filepath, fields })
     }
@@ -51,7 +51,7 @@ impl Indexer {
                     "type": 1_u8, //FIXME this should be a TextOption
                     "stored": true,
                 });
-                let field_title_vec = bcc.builder_add_text_field(input_data)?;
+                let field_title_vec = bcc.builder_add_text_field(Some(input_data))?;
                 let ft_json: serde_json::Value = serde_json::from_slice(&field_title_vec)?;
                 match extract_body(ft_json) {
                     Some(o) => o.get("field").unwrap().as_u64(),
@@ -69,7 +69,7 @@ impl Indexer {
                     "type": 1_u8, //FIXME this should be a TextOption. What is the right number here?
                     "stored": true,
                 });
-                let field_title_vec = bcc.builder_add_text_field(input_data)?;
+                let field_title_vec = bcc.builder_add_text_field(Some(input_data))?;
                 let ft_json: serde_json::Value = serde_json::from_slice(&field_title_vec)?;
                 match extract_body(ft_json) {
                     Some(o) => o.get("field").unwrap().as_u64(),
@@ -100,8 +100,7 @@ impl<'a> Writer<'a> {
     pub fn index(&self, uid: &String, data: &Value, fields: &Value) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
         assert!(fields.is_object());
 
-        let input = json!({});
-        let response_vec = self.bcc.document_create(input)?;
+        let response_vec = self.bcc.document_create(None)?;
         let response_val: serde_json::Value = serde_json::from_slice(&response_vec)?;
         let doc_id = match extract_body(response_val) {
             Some(o) => o.get("document-create-id").unwrap().as_u64(),
@@ -136,7 +135,7 @@ impl<'a> Writer<'a> {
                     "value": field_content.as_str(),
                     "doc": doc_id
                 });
-                self.bcc.document_add_text(input)?;
+                self.bcc.document_add_text(Some(input))?;
             }
             _ => {
                 return Err(Box::new(ErrorKinds::Invalid(
@@ -386,7 +385,7 @@ mod tests{
             self.ctx = Some(FakeContext::new());
             Ok(json!("DONE"))
         }
-        pub fn archive_index_to_part(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn archive_index_to_part(&mut self, _dir:&str)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
             Ok("DONE".as_bytes().to_vec())
         }
         pub fn builder_add_text_field(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
@@ -463,7 +462,7 @@ mod tests{
                     }
                 }
                 "ArchiveIndexToPart" => {
-                    unsafe{ QFAB.archive_index_to_part() }
+                    unsafe{ QFAB.archive_index_to_part("/tmp/foo") }
                 }
                 "BuilderAddTextField" => {
                     unsafe{

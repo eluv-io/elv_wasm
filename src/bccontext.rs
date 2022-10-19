@@ -24,9 +24,13 @@ macro_rules! implement_ext_func {
     $fabric_name:literal
   ) => {
     $(#[$meta])*
-    pub fn $handler_name(&'a self, v:serde_json::Value) -> CallResult {
+    pub fn $handler_name(&'a self, v:Option<serde_json::Value>) -> CallResult {
+      let v_call = match v{
+        Some(v) => v,
+        None => Value::default(),
+      };
       let method = $fabric_name;
-      let impl_result = self.call_function(method, v, "ext")?;
+      let impl_result = self.call_function(method, v_call, "ext")?;
       let id = self.request.id.clone();
       self.make_success_bytes(&impl_result, &id)
     }
@@ -310,8 +314,13 @@ impl<'a> BitcodeContext {
         }
     }
 
-    pub fn log(s: &str) {
+
+    pub fn log(s: &str){
         console_log(s);
+    }
+
+    pub fn log_info(&'a self, s: &str) -> CallResult{
+        self.call_function("Log", json!({"level" : "INFO", "msg" : s}), "ctx")
     }
 
     // CORE functions
@@ -1005,7 +1014,7 @@ impl<'a> BitcodeContext {
         ///         }
         ///      }
         ///   });
-        ///   bcc.proxy_http(v)
+        ///   bcc.proxy_http(Some(v))
         /// }
         /// ```
         /// # Returns
@@ -1050,8 +1059,16 @@ impl<'a> BitcodeContext {
         self.make_success_bytes(&impl_result, &id)
     }
 
-    pub fn archive_index_to_part(&'a self) -> CallResult {
-        self.call_function("ArchiveIndexToPart", json!({}), "ext")
+    pub fn archive_index_to_part(&'a self, dir:&str) -> CallResult {
+        self.call_function("ArchiveIndexToPart", json!({"directory" : dir}), "ext")
+    }
+
+    pub fn restore_index_from_part(&'a self, content_hash:&str, part_hash:&str) -> CallResult {
+        self.call_function("RestoreIndexFromPart", json!({"content-hash" : content_hash, "part-hash": part_hash}), "ext")
+    }
+
+    pub fn query_parser_parse_query(&'a self, query:&str) -> CallResult {
+        self.call_function("QueryParserParseQuery", json!({"query" : query}), "ext")
     }
 
     // implement_ext_func!(
@@ -1081,7 +1098,7 @@ impl<'a> BitcodeContext {
         ///     "type":   1,
         ///     "stored": true,
         ///   });
-        ///   bcc.builder_add_text_field(v)
+        ///   bcc.builder_add_text_field(Some(v))
         /// }
         /// ```
         builder_add_text_field,
@@ -1095,13 +1112,19 @@ impl<'a> BitcodeContext {
         ///
         ///
         ///fn do_something<'s, 'r>(bcc: &'s elvwasm::BitcodeContext<'r>) -> wapc_guest::CallResult {
-        ///   let v = json!({});
-        ///   bcc.builder_build(v)
+        ///   bcc.builder_build(None)
         /// }
         /// ```
         builder_build,
         "BuilderBuild"
     );
+
+    implement_ext_func!(
+        /// builder_create_index create an index from an existing dir
+        builder_create_index,
+        "BuilderCreateIndex"
+    );
+
 
     implement_ext_func!(
         /// document_create create a new document for a given Index
@@ -1146,6 +1169,12 @@ impl<'a> BitcodeContext {
     );
 
     implement_ext_func!(
+        /// index_reader_searcher creates a new query parser for the index
+        index_reader_searcher,
+        "IndexReaderSearcher"
+    );
+
+    implement_ext_func!(
         /// reader_builder_query_parser_create creates a ReaderBuilder from a QueryParser
         reader_builder_query_parser_create,
         "ReaderBuilderQueryParserCreate"
@@ -1168,12 +1197,6 @@ impl<'a> BitcodeContext {
         /// * slice of [u8]
         query_parser_for_index,
         "QueryParserForIndex"
-    );
-
-    implement_ext_func!(
-        /// query_parser_parse_query parses a given query into the QueryParser to search on
-        query_parser_parse_query,
-        "QueryParserParseQuery"
     );
 
     implement_ext_func!(
