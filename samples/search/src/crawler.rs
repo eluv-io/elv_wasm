@@ -151,7 +151,7 @@ impl Crawler{
     pub fn new(iurl:&str) -> Crawler{
         Crawler { inception_url: iurl.to_string() }
     }
-    pub fn crawl(&self, config:IndexerConfig) -> Result<CrawlResult, Box<dyn Error + Send + Sync>>{
+    pub fn crawl(&self, _config:IndexerConfig) -> Result<CrawlResult, Box<dyn Error + Send + Sync>>{
         Ok(CrawlResult::default())
     }
 }
@@ -266,8 +266,8 @@ mod tests {
             },
             q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
         };
-        let bcc = BitcodeContext::new(req);
-        let idx = Indexer::new(&bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
+        let mut bcc = BitcodeContext::new(req.clone());
+        let idx = Indexer::new(&mut bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
         assert_eq!(&idx.fields.len(), &indexer_config.fields.len());
         let crawler = Crawler::new("");
         crawler.crawl(indexer_config).unwrap();

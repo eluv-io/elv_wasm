@@ -11,11 +11,11 @@ pub fn content_query(bcc: &mut BitcodeContext) -> CallResult {
     Ok(Vec::new())
 }
 
-struct Searcher<'a, 'b> {
+struct Searcher<'a> {
     bcc: &'a BitcodeContext,
 }
 
-impl<'a, 'b> Searcher<'a, 'b> {
+impl<'a> Searcher<'a> {
 
 
     fn query(&self, query_str: &str) -> CallResult {

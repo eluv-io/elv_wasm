@@ -18,7 +18,7 @@
   static SQMD_REQUEST: &str = "/request_parameters";
   static STANDARD_ERROR:&str = "no error, failed to acquire error context";
 
-  fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+  fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
@@ -315,30 +315,24 @@ fn elv_console_log(s:&str){
 fn elv_console_log(s:&str){
   println!("{}", s)
 }
-//static BCC_INNER:&'static mut BitcodeContext = &mut BitcodeContext::default();
-
 
 fn do_bitcode<'a>(json_params:  Request) -> CallResult{
   elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
   elv_console_log(&format!("splitpath={:?}", split_path));
-  //let mut bind:Option<&HandlerData> = None;
 
   let cm = match CALLMAP.lock(){
     Ok(c) => c,
     Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {}", e)),
   };
   let mut bind = cm.get(split_path[1]).into_iter();
-//  let mut cm_copy = cm.get(split_path[1]).clone();
-  let mut cm_handler = match bind.find(|mut _x| true){
+  let cm_handler = match bind.find(|mut _x| true){
     Some(x) => {
       x.to_owned()
     }
     None =>return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), "unable to gain access to callmap"),
   };
-  let req_call = &mut cm_handler.req;
-  //let cmp = cm.get(split_path[1]);
-  match req_call.take(){
+  match cm_handler.req{
     Some(f) => {
       let bcc = Box::new(f);
       (cm_handler.hf)(Box::leak(bcc))

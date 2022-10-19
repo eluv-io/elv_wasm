@@ -58,7 +58,7 @@ fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
     bcc.sqmd_get_json(&json_path)
 }
 
-fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext<>, stream_id:&str, asset_path:&str) -> image::ImageResult<image::DynamicImage>{
+fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext, stream_id:&str, asset_path:&str) -> image::ImageResult<image::DynamicImage>{
   let f2s = match bcc.q_file_to_stream(stream_id, asset_path, &bcc.request.q_info.hash){
     Ok(v) => v,
     Err(x) => return Err(image::ImageError::IoError(std::io::Error::new(std::io::ErrorKind::NotFound,x)))
@@ -85,7 +85,7 @@ fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext<>, stream_id:&str, asset
   image::load_from_memory_with_format(&buffer, image::ImageFormat::Jpeg)
 }
 
-fn do_img<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+fn do_img<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let offering = get_offering(bcc, &http_p.path)?;
     BitcodeContext::log(&format!("json={}", std::str::from_utf8(&offering).unwrap_or_default()));

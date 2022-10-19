@@ -12,7 +12,7 @@ pub struct Indexer {
 }
 
 impl Indexer {
-    pub fn new(bcc: &BitcodeContext, filepath: String, fields: Vec<crawler::FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
+    pub fn new(bcc: &mut BitcodeContext, filepath: String, fields: Vec<crawler::FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
         // Read request
         let http_p = &bcc.request.params.http;
         let query_params = &http_p.query;
@@ -88,7 +88,7 @@ impl Indexer {
 }
 
 struct Writer<'a> {
-    bcc: &'a BitcodeContext<'a>,
+    bcc: &'a BitcodeContext,
     fields: HashMap<String, crawler::FieldConfig>
 }
 
@@ -567,8 +567,8 @@ mod tests{
             },
             q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
         };
-        let bcc = BitcodeContext::new(req);
-        let idx = Indexer::new(&bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
+        let mut bcc = BitcodeContext::new(req.clone());
+        let idx = Indexer::new(&mut bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
         assert_eq!(&idx.fields.len(), &indexer_config.fields.len());
 
     }
