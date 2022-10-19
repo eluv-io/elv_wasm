@@ -321,25 +321,30 @@ fn do_bitcode(json_params:  Request) -> CallResult{
   let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
   elv_console_log(&format!("splitpath={:?}", split_path));
 
+  let mut v_leaks:Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
+
   let cm = match CALLMAP.lock(){
     Ok(c) => c,
     Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {}", e)),
   };
   let mut bind = cm.get(split_path[1]).into_iter();
-  let cm_handler = match bind.find(|mut _x| true){
-    Some(x) => {
-      x.to_owned()
-    }
-    None =>return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), "unable to gain access to callmap"),
-  };
+  let cm_handler = bind.find(|mut _x| true).as_mut().unwrap().to_owned();
   match cm_handler.req{
     Some(f) => {
       let bcc = Box::new(f);
-      (cm_handler.hf)(Box::leak(bcc))
+      let l = Box::leak(bcc);
+      unsafe{
+        v_leaks.push(Box::from_raw(l));
+      }
+      (cm_handler.hf)(l)
     }
     None => {
-      elv_console_log(&format!("Failed to find path {}", split_path[1]));
-      make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), "No valid path provided")
+      let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: Some("".to_string()), return_buffer: vec![]};
+      let l = Box::leak(Box::new(bcc));
+      unsafe{
+        v_leaks.push(Box::from_raw(l));
+      }
+      (cm_handler.hf)(l)
     }
   }
 }
