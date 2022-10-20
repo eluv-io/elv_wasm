@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if ! command -v wasm-gc &> /dev/null
+then
+    echo "wasm-gc could not be found, please install via cargo install wasm-gc"
+    exit
+fi
+
 echo $1 $2
 
 if [ $# -ne 2 ]

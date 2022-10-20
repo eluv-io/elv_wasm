@@ -17,7 +17,7 @@ implement_bitcode_module!("proxy", do_proxy);
 static SQMD_REQUEST: &str = "/request_parameters";
 static STANDARD_ERROR:&str = "no error, failed to acquire error context";
 
-fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
+fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
