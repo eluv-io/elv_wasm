@@ -18,7 +18,7 @@
   static SQMD_REQUEST: &str = "/request_parameters";
   static STANDARD_ERROR:&str = "no error, failed to acquire error context";
 
-  fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+  fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
@@ -79,11 +79,16 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
-lazy_static! {
-  static ref CALLMAP: Mutex<HashMap<String, HandlerFunction>> = Mutex::new(HashMap::new());
+#[derive(Clone)]
+struct HandlerData<'a>{
+  pub hf:HandlerFunction<'a>,
+  pub req:Option<BitcodeContext>,
 }
 
-static mut ERR_MSG:String = String::new();
+lazy_static! {
+  static ref CALLMAP: Mutex<HashMap<String, HandlerData<'static>>> = Mutex::new(HashMap::new());
+}
+
 
 #[macro_export]
 macro_rules! register_handlers {
@@ -287,14 +292,24 @@ mod tests {
 
 
 
-type HandlerFunction = fn(bcc: &mut BitcodeContext) -> CallResult;
+type HandlerFunction<'a> = fn(bcc: &'a mut BitcodeContext) -> CallResult;
 
 
 /// register_handler adjusts the global static call map to associate a bitcode module with a path
 /// this map is used by jpc to implement bitcode calls
 #[no_mangle]
-pub fn register_handler(name: &str, h: HandlerFunction) {
-  CALLMAP.lock().unwrap().insert(name.to_string(), h);
+pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
+  let hd = HandlerData{
+    hf:h,
+    req: None,
+  };
+  match CALLMAP.lock().as_mut(){
+    Ok(x) => x.insert(name.to_string(),hd),
+    Err(e) => {
+      elv_console_log(&format!("MutexGuard unable to aquire lock, error = {}", e));
+      return
+    },
+  };
 }
 
 #[cfg(not(test))]
@@ -305,6 +320,39 @@ fn elv_console_log(s:&str){
 #[cfg(test)]
 fn elv_console_log(s:&str){
   println!("{}", s)
+}
+
+fn do_bitcode(json_params:  Request) -> CallResult{
+  elv_console_log("Parameters parsed");
+  let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
+  elv_console_log(&format!("splitpath={:?}", split_path));
+
+  let mut v_leaks:Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
+
+  let cm = match CALLMAP.lock(){
+    Ok(c) => c,
+    Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {}", e)),
+  };
+  let mut bind = cm.get(split_path[1]).into_iter();
+  let cm_handler = bind.find(|mut _x| true).as_mut().unwrap().to_owned();
+  match cm_handler.req{
+    Some(f) => {
+      let bcc = Box::new(f);
+      let l = Box::leak(bcc);
+      unsafe{
+        v_leaks.push(Box::from_raw(l));
+      }
+      (cm_handler.hf)(l)
+    }
+    None => {
+      let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: None, return_buffer: vec![]};
+      let l = Box::leak(Box::new(bcc));
+      unsafe{
+        v_leaks.push(Box::from_raw(l));
+      }
+      (cm_handler.hf)(l)
+    }
+  }
 }
 
 /// jpc is the main entry point into a wasm bitcode for the web assembly procedure calls
@@ -325,33 +373,9 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
       return make_json_error(ErrorKinds::BadHttpParams("parse failed for http"), "ID not found");
     }
   };
+
   elv_console_log("Request parsed");
-  let mut bcc = BitcodeContext::new(&json_params);
-  elv_console_log("Parameters parsed");
-  let split_path: Vec<&str> = bcc.request.params.http.path.as_str().split('/').collect();
-  elv_console_log(&format!("splitpath={:?}", split_path));
-  let cm = CALLMAP.lock().unwrap();
-  let cmp = cm.get(split_path[1]);
-  match cmp{
-    Some(f) => {
-      match f(& mut bcc){
-        Ok(m) => {
-          elv_console_log(&format!("here and m={}", str::from_utf8(&m).unwrap()));
-          Ok(m)
-        },
-        Err(err) => {
-          unsafe{
-          ERR_MSG = format!("parse failed for http {}", &*err);
-          bcc.make_error_with_error(ErrorKinds::BadHttpParams(&ERR_MSG), &*err)
-          }
-        }
-      }
-    }
-    None => {
-      elv_console_log(&format!("Failed to find path {}", split_path[1]));
-      bcc.make_error_with_kind(ErrorKinds::BadHttpParams("No valid path provided"))
-    }
-  }
+  do_bitcode(json_params)
 }
 
 

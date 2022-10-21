@@ -62,7 +62,7 @@ fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
     bcc.sqmd_get_json(&json_path)
 }
 
-fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext<>, stream_id:&str, asset_path:&str) -> image::ImageResult<image::DynamicImage>{
+fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext, stream_id:&str, asset_path:&str) -> image::ImageResult<image::DynamicImage>{
   let f2s = match bcc.q_file_to_stream(stream_id, asset_path, &bcc.request.q_info.hash){
     Ok(v) => v,
     Err(x) => return Err(image::ImageError::IoError(std::io::Error::new(std::io::ErrorKind::NotFound,x)))
@@ -89,7 +89,7 @@ fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext<>, stream_id:&str, asset
   image::load_from_memory_with_format(&buffer, image::ImageFormat::Jpeg)
 }
 
-fn do_img<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+fn do_img(bcc: & mut elvwasm::BitcodeContext) -> CallResult{
     let http_p = &bcc.request.params.http;
     let offering = get_offering(bcc, &http_p.path)?;
     BitcodeContext::log(&format!("json={}", std::str::from_utf8(&offering).unwrap_or_default()));
@@ -140,7 +140,7 @@ fn do_img<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
       }), &bcc.request.id)
 }
 
-fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
@@ -209,11 +209,11 @@ fn extract_body(v:Value) -> Option<Value>{
 }
 
 
-fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In do_crawl hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
-  let id = &bcc.request.id;
+  let id = bcc.request.id.clone();
   let td = bcc.temp_dir()?;
   let dir:&str = serde_json::from_slice(&td)?;
   let mut v = json!({"directory" : dir});
@@ -266,5 +266,5 @@ fn do_crawl<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
           "headers" : "application/json",
           "body" : "SUCCESS",
           "result" : body_hash,
-      }), id)
+      }), &id)
 }

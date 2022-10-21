@@ -100,7 +100,7 @@ fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_f
   bcc.ffmpeg_run(ffmpeg_args)
 }
 
-fn do_image<>(bcc: &mut elvwasm::BitcodeContext<>) -> CallResult {
+fn do_image<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   BitcodeContext::log("HELLO FROM do image");
   let http_p = &bcc.request.params.http;
   let qp = http_p.query.clone();
