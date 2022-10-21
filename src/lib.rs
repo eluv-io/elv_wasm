@@ -303,7 +303,13 @@ pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
     hf:h,
     req: None,
   };
-  CALLMAP.lock().unwrap().insert(name.to_string(),hd);
+  match CALLMAP.lock().as_mut(){
+    Ok(x) => x.insert(name.to_string(),hd),
+    Err(e) => {
+      elv_console_log(&format!("MutexGuard unable to aquire lock, error = {}", e));
+      return
+    },
+  };
 }
 
 #[cfg(not(test))]
@@ -339,7 +345,7 @@ fn do_bitcode(json_params:  Request) -> CallResult{
       (cm_handler.hf)(l)
     }
     None => {
-      let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: Some("".to_string()), return_buffer: vec![]};
+      let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: None, return_buffer: vec![]};
       let l = Box::leak(Box::new(bcc));
       unsafe{
         v_leaks.push(Box::from_raw(l));
