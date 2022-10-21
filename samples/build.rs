@@ -1,4 +1,5 @@
 use std::process::Command;
+use std::env;
 
 pub fn execute(exe: &str, args: &[&str]) {
     Command::new(exe)
@@ -9,6 +10,12 @@ pub fn execute(exe: &str, args: &[&str]) {
 
 fn main() {
     println!("handling building assemblyscript");
-    execute("npm", &["install", "asc"]);
-    execute("npm", &["run", "asbuild"]);
+    let do_asc = match env::var_os("BUILD_ASC"){
+        Some(_) => true,
+        None => false,
+    };
+    if do_asc{
+        execute("npm", &["install", "asc"]);
+        execute("npm", &["run", "asbuild"]);
+    }
 }
