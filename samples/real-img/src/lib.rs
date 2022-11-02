@@ -53,7 +53,7 @@ fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
     if v.len() > 1 {
       s = v[2];
     }
-    let json_path = format!("/public/image/offerings/{}",s);
+    let json_path = format!("/public/image/offerings/{s}");
     // input_path should just be offering
     bcc.sqmd_get_json(&json_path)
 }
@@ -79,7 +79,7 @@ fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext, stream_id:&str, asset_p
   let base = read_data.result;
   let buffer = match base64::decode(base){
     Ok(v) => v,
-    Err(x) => return Err(image::ImageError::Decoding(DecodingError::from_format_hint(ImageFormatHint::Name(format!("{}",x)))))
+    Err(x) => return Err(image::ImageError::Decoding(DecodingError::from_format_hint(ImageFormatHint::Name(format!("{x}")))))
   };
   BitcodeContext::log(&format!("bytes read = {}", read_data.retval));
   image::load_from_memory_with_format(&buffer, image::ImageFormat::Jpeg)

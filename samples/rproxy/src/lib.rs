@@ -9,7 +9,7 @@ implement_bitcode_module!("proxy", do_proxy);
 fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
-  BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
+  BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers));
   let res = bcc.sqmd_get_json("/request_parameters")?;
   let mut meta_str: String = match String::from_utf8(res){
     Ok(m) => m,

@@ -26,7 +26,7 @@ fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
   if v.len() > 1 {
     s = v[2];
   }
-  let json_path = format!("/public/image/offerings/{}",s);
+  let json_path = format!("/public/image/offerings/{s}");
   // input_path should just be offering
   bcc.sqmd_get_json_resolve(&json_path)
 }
@@ -57,7 +57,7 @@ fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str)
   }
   let input = fabric_file.to_string();
   let output = temp_file;
-  BitcodeContext::log(&format!("input={}",input));
+  BitcodeContext::log(&format!("input={input}"));
   let j = json!({
     "stream_id":output,
     "path":input,
@@ -70,7 +70,7 @@ fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str)
 
 fn ffmpeg_run_no_watermark(bcc:&BitcodeContext, height:&str,input_file:&str, new_file:&str) -> CallResult {
   BitcodeContext::log("ffmpeg_run_no_watermark");
-  let scale_factor = &format!("scale={}:-1", height);
+  let scale_factor = &format!("scale={height}:-1");
   // need to run ffmpeg here input file is in input_file
   let mut ffmpeg_args_no_watermark = [
       "-hide_banner",
@@ -88,7 +88,7 @@ fn ffmpeg_run_no_watermark(bcc:&BitcodeContext, height:&str,input_file:&str, new
 }
 
 fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_file:&str, watermark_file:&str, overlay_x:&str, overlay_y:&str) -> CallResult{
-  let base_placement = format!("{}:{}",overlay_x,overlay_y);
+  let base_placement = format!("{overlay_x}:{overlay_y}");
   let scale_factor = "[0:v]scale=%SCALE%:-1[bg];[bg][1:v]overlay=%OVERLAY%";
   let scale_factor = &scale_factor.replace("%SCALE%", height).replace("%OVERLAY%", &base_placement);
   if input_file.is_empty() || watermark_file.is_empty() || new_file.is_empty(){
@@ -104,7 +104,7 @@ fn do_image<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   BitcodeContext::log("HELLO FROM do image");
   let http_p = &bcc.request.params.http;
   let qp = http_p.query.clone();
-  BitcodeContext::log(&format!("In do_image hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
+  BitcodeContext::log(&format!("In do_image hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers));
   let offering = get_offering(bcc, &http_p.path)?;
   let offering_json:WatermarkJson = serde_json::from_slice(&offering)?;
   let id = bcc.request.id.clone();

@@ -1,5 +1,3 @@
-#![feature(arbitrary_enum_discriminant)]
-
 //! elvwasm contains and collects the bitcode extension API for the Eluvio content fabric. </br>
 //! The library is intended to be built as wasm and the resultant part uploaded to the content fabric.
 //! The main entry point for each client module is implemented by [jpc] which automatically creates and dispatches
@@ -304,10 +302,9 @@ pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
     req: None,
   };
   match CALLMAP.lock().as_mut(){
-    Ok(x) => x.insert(name.to_string(),hd),
+    Ok(x) => {x.insert(name.to_string(),hd);},
     Err(e) => {
-      elv_console_log(&format!("MutexGuard unable to aquire lock, error = {}", e));
-      return
+      elv_console_log(&format!("MutexGuard unable to aquire lock, error = {e}" ))
     },
   };
 }
@@ -325,13 +322,13 @@ fn elv_console_log(s:&str){
 fn do_bitcode(json_params:  Request) -> CallResult{
   elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
-  elv_console_log(&format!("splitpath={:?}", split_path));
+  elv_console_log(&format!("splitpath={split_path:?}"));
 
   let mut v_leaks:Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
 
   let cm = match CALLMAP.lock(){
     Ok(c) => c,
-    Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {}", e)),
+    Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {e}")),
   };
   let mut bind = cm.get(split_path[1]).into_iter();
   let cm_handler = bind.find(|mut _x| true).as_mut().unwrap().to_owned();
@@ -366,7 +363,7 @@ fn do_bitcode(json_params:  Request) -> CallResult{
 pub fn jpc(_msg: &[u8]) -> CallResult {
   elv_console_log("In jpc");
   let input_string = str::from_utf8(_msg)?;
-  elv_console_log(&format!("parameters = {}", input_string));
+  elv_console_log(&format!("parameters = {input_string}"));
   let json_params: Request = match serde_json::from_str(input_string){
     Ok(m) => {m},
     Err(_err) => {

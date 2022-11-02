@@ -17,8 +17,8 @@ impl Indexer {
         let http_p = &bcc.request.params.http;
         let query_params = &http_p.query;
         BitcodeContext::log(&format!(
-            "In create_index hash={} headers={:#?} query params={:#?}",
-            &bcc.request.q_info.hash, &http_p.headers, query_params
+            "In create_index hash={} headers={:#?} query params={query_params:#?}",
+            &bcc.request.q_info.hash, &http_p.headers
         ));
         let _id = &bcc.request.id;
 

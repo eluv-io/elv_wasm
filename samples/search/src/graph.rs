@@ -169,7 +169,7 @@ impl<'a, 'b> Iterator for LinkScannerIterator<'a, 'b> {
                     ret_val = Some((dictionary, field_state, prefix))
                 }
             } else {
-                panic!("Dict type of {} not supported.", dictionary);
+                panic!("Dict type of {dictionary} not supported.");
             }
         }
         ret_val

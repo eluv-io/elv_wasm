@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 use crate::old_man::S_OLD_MAN;
 use serde::{Deserialize, Serialize};
 use elvwasm::ErrorKinds;
+use snailquote::unescape;
 
 extern crate image;
 use image::GenericImageView;
@@ -57,7 +58,7 @@ fn get_offering(bcc :&BitcodeContext, input_path:&str) -> CallResult {
     if v.len() > 1 {
       s = v[2];
     }
-    let json_path = format!("/public/image/offerings/{}",s);
+    let json_path = format!("/public/image/offerings/{s}");
     // input_path should just be offering
     bcc.sqmd_get_json(&json_path)
 }
@@ -83,7 +84,7 @@ fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext, stream_id:&str, asset_p
   let base = read_data.result;
   let buffer = match base64::decode(base){
     Ok(v) => v,
-    Err(x) => return Err(image::ImageError::Decoding(DecodingError::from_format_hint(ImageFormatHint::Name(format!("{}",x)))))
+    Err(x) => return Err(image::ImageError::Decoding(DecodingError::from_format_hint(ImageFormatHint::Name(format!("{x}")))))
   };
   BitcodeContext::log(&format!("bytes read = {}", read_data.retval));
   image::load_from_memory_with_format(&buffer, image::ImageFormat::Jpeg)
@@ -143,7 +144,7 @@ fn do_img(bcc: & mut elvwasm::BitcodeContext) -> CallResult{
 fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
-  BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
+  BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers));
   let res = bcc.sqmd_get_json("/request_parameters")?;
   let mut meta_str: String = match String::from_utf8(res){
     Ok(m) => m,
@@ -209,62 +210,58 @@ fn extract_body(v:Value) -> Option<Value>{
 }
 
 
-fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
+fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
-  BitcodeContext::log(&format!("In do_crawl hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp));
+  bcc.log_info(&format!("In do_crawl hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers))?;
   let id = bcc.request.id.clone();
-  let td = bcc.temp_dir()?;
-  let dir:&str = serde_json::from_slice(&td)?;
-  let mut v = json!({"directory" : dir});
-  BitcodeContext::log("before BUILDER");
-  bcc.new_index_builder(v)?;
-  BitcodeContext::log("NEW INDEX BUILDER");
-  v = json!({ "field_name": "title", "type": 1_u8, "stored": true});
-  let field_title_vec = bcc.builder_add_text_field(Some(v))?;
-  let ft_json:serde_json::Value = serde_json::from_slice(&field_title_vec)?;
+  let nib_res = serde_json::from_slice(&bcc.new_index_builder(json!({}))?)?;
+  let dir = match extract_body(nib_res){
+      Some(v) => match v.get("dir"){
+          Some(d) => match unescape(&d.to_string()){
+              Ok(u) => u,
+              Err(_) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("unescape failed on directory"))
+          },
+          None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return"))
+      },
+      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return"))
+  };
+  let ft_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "title", "type": 2_u8, "stored": true})))?)?;
   let field_title = match extract_body(ft_json){
       Some(o) => o.get("field").unwrap().as_u64(),
       None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
   };
-  BitcodeContext::log("TEXT FILED 1");
-  v = json!({ "field_name": "body", "type": 2_u8 , "stored": false});
-  let field_body_vec = bcc.builder_add_text_field(Some(v))?;
-  let fb_json:serde_json::Value = serde_json::from_slice(&field_body_vec)?;
+  let fb_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "body", "type": 2_u8 , "stored": true})))?)?;
   let field_body = match extract_body(fb_json){
       Some(o) => o.get("field").unwrap().as_u64(),
       None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
   };
-  BitcodeContext::log("TEXT FILED 2");
   bcc.builder_build(None)?;
-  let doc_old_man_u8 = bcc.document_create(None)?;
-  BitcodeContext::log("DOC CREATE");
-  let doc_old_man:serde_json::Value = serde_json::from_slice(&doc_old_man_u8)?;
+  let doc_old_man:serde_json::Value = serde_json::from_slice(&bcc.document_create(None)?)?;
   console_log(&format!("obj_old = {:?}", &doc_old_man));
-  let doc_id = match extract_body(doc_old_man){
+  let o_doc_id = match extract_body(doc_old_man){
       Some(o) => o.get("document-create-id").unwrap().as_u64(),
       None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
   };
-  v = json!({ "field": field_title, "value": "The Old Man and the Sea", "doc_id": doc_id});
-  bcc.document_add_text(Some(v))?;
-  BitcodeContext::log("DOC ADD TEXT TITLE");
-  v = json!({ "field": field_body, "value": S_OLD_MAN, "doc_id": doc_id});
-  bcc.document_add_text(Some(v))?;
-  BitcodeContext::log("DOC ADD TEXT BODY");
+  let doc_id = o_doc_id.unwrap();
+  bcc.log_info(&format!("doc_id={doc_id}, field_title = {}, field_body={}", field_title.unwrap(), field_body.unwrap()))?;
+  bcc.document_add_text(Some(json!({ "field": field_title.unwrap(), "value": "The Old Man and the Sea", "doc_id": doc_id})))?;
+  bcc.document_add_text(Some(json!({ "field": field_body.unwrap(), "value": S_OLD_MAN, "doc_id": doc_id})))?;
   bcc.document_create_index(None)?;
   bcc.index_create_writer(None)?;
-  v = json!({ "document_id": doc_id});
-  bcc.index_add_document(Some(v))?;
+  bcc.index_add_document(Some(json!({ "document_id": doc_id})))?;
   bcc.index_writer_commit(None)?;
-  let part_u8 = bcc.archive_index_to_part(dir)?;
+  let part_u8 = bcc.archive_index_to_part(&dir)?;
   let part_hash:serde_json::Value = serde_json::from_slice(&part_u8)?;
   let b = extract_body(part_hash.clone());
   let body_hash = b.unwrap_or_else(|| json!({}));
-  BitcodeContext::log(&format!("part hash = {}, bosy = {}", &part_hash.to_string(), &body_hash.to_string()));
+  bcc.callback(200, "application/json", part_u8.len())?;
+  BitcodeContext::write_stream_auto(id.clone(), "fos", &part_u8)?;
+  bcc.log_info(&format!("part hash = {}, bosy = {}", &part_hash.to_string(), &body_hash.to_string()))?;
   bcc.make_success_json(&json!(
       {
           "headers" : "application/json",
           "body" : "SUCCESS",
-          "result" : body_hash,
+          "result" : 0,
       }), &id)
 }

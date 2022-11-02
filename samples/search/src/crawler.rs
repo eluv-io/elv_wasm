@@ -64,7 +64,7 @@ impl Prefix {
         let mut str_elems: Vec<String> = Vec::new();
         for elem in &self.prefix {
             match elem {
-                PrefixValue::Key(value) => str_elems.push(format!("/{}", value)),
+                PrefixValue::Key(value) => str_elems.push(format!("/{value}")),
                 PrefixValue::ObjectItemAny => str_elems.push("/*".to_string()),
                 PrefixValue::ArrayItemAny => str_elems.push("[*]".to_string()),
             }

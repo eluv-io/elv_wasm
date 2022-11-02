@@ -83,7 +83,7 @@ fn discriminant(v: &ErrorKinds) -> u8 {
 /// # Arguments
 /// * `err`- the error to be translated to a response
 pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
-    elv_console_log(&format!("error={}", err));
+    elv_console_log(&format!("error={err}"));
     let msg = json!(
       {
         "error" :  {
@@ -100,7 +100,7 @@ pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
     );
     let vr = serde_json::to_vec(&msg)?;
     let out = str::from_utf8(&vr)?;
-    elv_console_log(&format!("returning a test {}", out));
+    elv_console_log(&format!("returning a test {out}"));
     Ok(vr)
 }
 
@@ -290,7 +290,7 @@ pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
     });
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
-    elv_console_log(&format!("returning : {}", out));
+    elv_console_log(&format!("returning : {out}" ));
     Ok(v)
 }
 
@@ -928,11 +928,6 @@ impl<'a> BitcodeContext {
         )
     }
 
-    pub fn temp_dir(&'a self) -> CallResult {
-        let temp_dir_res = self.call_function("TempDir", json!({}), "ctx")?;
-        Ok(temp_dir_res)
-    }
-
     /// callback issues a Callback on the fabric setting up an expectation that the output stream
     /// contains a specified sized buffer
     /// # Arguments
@@ -960,7 +955,7 @@ impl<'a> BitcodeContext {
         let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
         let v = serde_json::to_vec(&js_ret)?;
         let out = std::str::from_utf8(&v)?;
-        elv_console_log(&format!("returning : {}", out));
+        elv_console_log(&format!("returning : {out}"));
         Ok(v)
     }
 
@@ -972,7 +967,7 @@ impl<'a> BitcodeContext {
         });
         let v = serde_json::to_vec(&js_ret)?;
         let out = std::str::from_utf8(&v)?;
-        elv_console_log(&format!("returning : {}", out));
+        elv_console_log(&format!("returning : {out}"));
         Ok(v)
     }
 
@@ -1023,37 +1018,9 @@ impl<'a> BitcodeContext {
         "ProxyHttp"
     );
 
-    pub fn new_index_builder(&'a mut self, v: serde_json::Value) -> CallResult {
-        let mut new_map: serde_json::Map<String, Value>;
-        let entry: Value;
+    pub fn new_index_builder(&'a mut self, _v: serde_json::Value) -> CallResult {
         let method = "NewIndexBuilder";
-        match v {
-            Value::Object(o) => {
-                new_map = o;
-                let td = self.temp_dir()?;
-                let dir = std::str::from_utf8(&td)?;
-                //self.index_temp_dir = Some(dir.to_string());
-                entry = match new_map.get("directory") {
-                    Some(d) => d.clone(),
-                    None => {
-                        new_map.insert("directory".to_string(), serde_json::from_str(dir).unwrap());
-                        new_map.get("directory").unwrap().clone()
-                    }
-                };
-                entry
-            }
-            Value::Null => {
-                new_map = serde_json::Map::<String, Value>::new();
-                let td = self.temp_dir()?;
-                new_map["directory"] = serde_json::from_slice(&td)?;
-                //self.index_temp_dir = Some(new_map["directory"].to_string());
-                serde_json::Value::Object(new_map.clone())
-            }
-            _ => {
-                return make_json_error(ErrorKinds::Invalid(""), &self.request.id);
-            }
-        };
-        let vp = json!(new_map);
+        let vp = json!({});
         let impl_result = self.call_function(method, vp, "ext")?;
         let id = self.request.id.clone();
         self.make_success_bytes(&impl_result, &id)
@@ -1230,7 +1197,7 @@ impl<'a> BitcodeContext {
         let call_val = serde_json::to_vec(response)?;
         let call_str = serde_json::to_string(response)?;
 
-        elv_console_log(&format!("CALL STRING = {}", call_str));
+        elv_console_log(&format!("CALL STRING = {call_str}"));
         let call_ret_val = host_call(self.request.id.as_str(), module, fn_name, &call_val)?;
         let j_res: serde_json::Value = serde_json::from_slice(&call_ret_val)?;
         if !j_res.is_object() {
@@ -1331,7 +1298,7 @@ impl<'a> BitcodeContext {
         };
 
         let jtemp = v.to_string();
-        elv_console_log(&format!("json={}", jtemp));
+        elv_console_log(&format!("json={jtemp}"));
         let written = v["written"].as_u64().unwrap_or_default();
 
         if written != 0 {

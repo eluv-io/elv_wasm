@@ -1,5 +1,3 @@
-#![feature(generic_associated_types)]
-
 mod old_man;
 
 pub mod crawler;
@@ -17,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::old_man::S_OLD_MAN;
 use elvwasm::ErrorKinds;
 use indexer::Indexer;
+use snailquote::unescape;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
 
@@ -80,11 +79,19 @@ fn do_crawl2(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
 fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    bcc.log_info(&format!("In do_crawl hash={} headers={:#?} query params={:#?}",&bcc.request.q_info.hash, &http_p.headers, qp))?;
+    bcc.log_info(&format!("In do_crawl hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers))?;
     let id = bcc.request.id.clone();
-    let td = bcc.temp_dir()?;
-    let dir:&str = serde_json::from_slice(&td)?;
-    bcc.new_index_builder(json!({"directory" : dir}))?;
+    let nib_res = serde_json::from_slice(&bcc.new_index_builder(json!({}))?)?;
+    let dir = match extract_body(nib_res){
+        Some(v) => match v.get("dir"){
+            Some(d) => match unescape(&d.to_string()){
+                Ok(u) => u,
+                Err(_) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("unescape failed on directory"))
+            },
+            None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return"))
+        },
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return"))
+    };
     let ft_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "title", "type": 2_u8, "stored": true})))?)?;
     let field_title = match extract_body(ft_json){
         Some(o) => o.get("field").unwrap().as_u64(),
@@ -103,14 +110,14 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
         None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
     };
     let doc_id = o_doc_id.unwrap();
-    bcc.log_info(&format!("doc_id={}, field_title = {}, field_body={}", doc_id, field_title.unwrap(), field_body.unwrap()))?;
+    bcc.log_info(&format!("doc_id={doc_id}, field_title = {}, field_body={}", field_title.unwrap(), field_body.unwrap()))?;
     bcc.document_add_text(Some(json!({ "field": field_title.unwrap(), "value": "The Old Man and the Sea", "doc_id": doc_id})))?;
     bcc.document_add_text(Some(json!({ "field": field_body.unwrap(), "value": S_OLD_MAN, "doc_id": doc_id})))?;
     bcc.document_create_index(None)?;
     bcc.index_create_writer(None)?;
     bcc.index_add_document(Some(json!({ "document_id": doc_id})))?;
     bcc.index_writer_commit(None)?;
-    let part_u8 = bcc.archive_index_to_part(dir)?;
+    let part_u8 = bcc.archive_index_to_part(&dir)?;
     let part_hash:serde_json::Value = serde_json::from_slice(&part_u8)?;
     let b = extract_body(part_hash.clone());
     let body_hash = b.unwrap_or_else(|| json!({}));
@@ -179,9 +186,7 @@ fn do_search(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let content_hash = &qp["content-hash"][0];
 
 
-    let index_dir:Restore = serde_json::from_slice(&bcc.restore_index_from_part(content_hash, part_hash)?)?;
-    bcc.log_info(&format!("directory={}", index_dir.http.body))?;
-    bcc.new_index_builder(json!({"directory" : index_dir.http.body}))?;
+    bcc.restore_index_from_part(content_hash, part_hash)?;
     let ft_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "title", "type": 2_u8, "stored": true})))?)?;
     let _field_title = match extract_body(ft_json){
         Some(o) => o.get("field").unwrap().as_u64(),
@@ -243,14 +248,22 @@ fn do_search_update(bcc:&mut elvwasm::BitcodeContext) -> CallResult{
     let http_p = &bcc.request.params.http;
     let _qp = &http_p.query;
     let id = bcc.request.id.clone();
-    let td = bcc.temp_dir()?;
-    let dir:&str = serde_json::from_slice(&td)?;
-    bcc.new_index_builder(json!({"directory": dir}))?;
+    let nib_res = serde_json::from_slice(&bcc.new_index_builder(json!({}))?)?;
+    let _dir = match extract_body(nib_res){
+        Some(v) => match v.get("dir"){
+            Some(d) => match unescape(&d.to_string()){
+                Ok(u) => u,
+                Err(_) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("unescape failed on directory"))
+            },
+            None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return"))
+        },
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return"))
+    };
     let mut extra_fields = json!({});
     let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;
     let fields:Map<String, Value> = serde_json::from_slice(&res)?;
     for (field, val) in fields.into_iter(){
-        let new_field =json!({format!("f_{}", field):&val});
+        let new_field =json!({format!("f_{field}"):&val});
         merge(&mut extra_fields, new_field);
     }
     bcc.builder_build(None)?;
