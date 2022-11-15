@@ -14,8 +14,8 @@ crate-type = ["rlib", "cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-wapc = "0.10.1"
-wapc-guest = "0.4.0"
+wapc = "*"
+wapc-guest = "*"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"
@@ -28,4 +28,4 @@ structopt = "0.3.25"
 thiserror = "1.0.30"
 
 [workspace]
-members = ["samples", "samples/rproxy", "samples/image", "samples/real-img", "samples/search", "samples/everything"]
+members = ["samples", "samples/rproxy", "samples/image", "samples/real-img", "samples/search", "samples/everything", "samples/objtar"]

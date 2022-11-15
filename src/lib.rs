@@ -58,13 +58,15 @@
     *target/debug/mock ./samples/target/wasm32-unknown-unknown/debug/deps/rproxy.wasm ./samples/fabric.json*
 */
 
+#![feature(arbitrary_enum_discriminant)]
+
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate wapc_guest as guest;
 #[macro_use(defer)] extern crate scopeguard;
 
-mod bccontext;
+pub mod bccontext;
 pub use self::bccontext::*;
 
 //use guest::console_log;
@@ -330,6 +332,10 @@ fn do_bitcode(json_params:  Request) -> CallResult{
     Ok(c) => c,
     Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {e}")),
   };
+  // let mut element = 1;
+  // if json_params.method == "content"{
+  //   element = 0;
+  // }
   let mut bind = cm.get(split_path[1]).into_iter();
   let cm_handler = bind.find(|mut _x| true).as_mut().unwrap().to_owned();
   match cm_handler.req{

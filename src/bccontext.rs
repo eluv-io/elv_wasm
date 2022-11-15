@@ -17,6 +17,9 @@ use std::str;
 use guest::prelude::*;
 use guest::CallResult;
 
+#[feature(arbitrary_enum_discriminant)]
+
+
 macro_rules! implement_ext_func {
   (
     $(#[$meta:meta])*
@@ -36,6 +39,7 @@ macro_rules! implement_ext_func {
     }
   }
 }
+
 
 #[derive(Error, Debug, Clone, Serialize, Copy)]
 #[repr(u8)]
@@ -116,6 +120,16 @@ pub struct Q {
     pub qlib_id: String,
     #[serde(default)]
     pub meta: serde_json::Value,
+    #[serde(default)]
+    pub size_stats:SizeStats,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct SizeStats{
+	pub parts:i32,
+    #[serde(default)]
+	pub size:String,
+    pub size_bytes:i64,
 }
 
 /// Bitcode representation of a fabric size error
@@ -132,6 +146,19 @@ pub struct QRef {
     pub id: String,
     pub versions: Vec<Q>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct ReadResult {
+    pub result: String,
+    #[serde(rename = "return", default)]
+    pub ret: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct WritePartResult {
+    pub written: usize,
+}
+
 
 /// Bitcode representation of a full content listing given an optional filter
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -187,6 +214,21 @@ pub struct HttpParams {
     pub host: String,
 }
 
+// #[derive(Serialize, Deserialize, Clone, Debug, Default)]
+// pub struct Q {
+//     #[serde(default)]
+// 	pub id:String,
+//     #[serde(default)]
+// 	pub hash:String,
+//     #[serde(default)]
+// 	pub write_token:String,
+//     #[serde(rename = "type", default)]
+//     pub qtype: String,
+//     pub qlib_id: String,
+//     pub metadata: serde_json::Value,
+// 	SizeStats  *SizeStats     `json:"size_stats,omitempty"`
+// }
+
 /// Bitcode representation of a content sans meta data
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct QInfo {
@@ -220,6 +262,19 @@ pub struct QPart {
     pub hash: String,
     #[serde(default)]
     pub size: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QPartListContents {
+    #[serde(default)]
+    pub content: Q,
+    #[serde(default)]
+    pub parts: Vec<QPart>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QPartList {
+    pub part_list: QPartListContents
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -450,6 +505,10 @@ impl<'a> BitcodeContext {
         self.call_function("QModifyContent", json!({}), "core")
     }
 
+    pub fn q_part_list(&'a self, object_id_or_hash: String) -> CallResult {
+        self.call_function("QPartList", json!({"object_id_or_hash" : object_id_or_hash}), "core")
+    }
+
     /// write_part_to_stream writes the content of a part to to a fabric stream
     /// # Arguments
     /// * `stream_id`-    stream identifier from new_stream or the like
@@ -463,6 +522,7 @@ impl<'a> BitcodeContext {
         &'a self,
         stream_id: String,
         qphash: String,
+        qihot: String,
         offset: i64,
         length: i64,
     ) -> CallResult {
@@ -472,6 +532,7 @@ impl<'a> BitcodeContext {
             "off":offset,
             "len" : length,
             "qphash":qphash,
+            "qihot" : qihot,
          }
         );
         self.call_function("QWritePartToStream", msg, "core")
@@ -920,6 +981,7 @@ impl<'a> BitcodeContext {
     ///  }
     pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
         let input = vec![0; sz];
+        BitcodeContext::log(&format!("imput len = {}", input.len()));
         host_call(
             self.request.id.as_str(),
             stream_to_read.as_str(),
