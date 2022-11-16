@@ -21,7 +21,6 @@ implement_bitcode_module!("tar", do_tar_from_obj);
 
 #[no_mangle]
 fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
-    BitcodeContext::log("HERE");
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     let id = &bcc.request.id;
@@ -34,9 +33,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         Ok(v) => v.to_string(),
         Err(_e) => return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid("Part list not available err =")),
     };
-    BitcodeContext::log(&format!("return is {s}\n"));
     let pl:QPartList = serde_json::from_str(&s)?;
-    BitcodeContext::log(&format!("pl {:?}\n", pl));
 
     let w = std::io::Cursor::new(Vec::new());
     let mut zip = zip::ZipWriter::new(w);
@@ -54,11 +51,12 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         BitcodeContext::log(&format!("zip starting {} part size = {usz} \n", part.hash.clone()));
         let b64_decoded = decode(&data.result)?;
         zip.write_all(&b64_decoded)?;
-        BitcodeContext::log("Wrote file");
     }
-    BitcodeContext::log("Done\n");
 
-    let zip_res = zip.finish().unwrap().into_inner();
+    let zip_res = match zip.finish(){
+        Ok(z) => z.into_inner(),
+        Err(e) => return bcc.make_error_with_error(elvwasm::ErrorKinds::Invalid("zip failed to finish"), e),
+    };
 
     bcc.callback(200, "application/zip", zip_res.len())?;
     BitcodeContext::write_stream_auto(bcc.request.id.clone(), "fos", &zip_res)?;
