@@ -24,7 +24,5 @@ jobs:
           override: true
       - name: PreReqs
         run: rustup target add wasm32-unknown-unknown
-      - name: Build
-        run: cargo build --target wasm32-unknown-unknown --release --workspace
       - name: Run tests
         run: cargo test --verbose
