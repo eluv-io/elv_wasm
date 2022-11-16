@@ -223,15 +223,20 @@ mod tests {
 
     #[test]
     fn test_basic_http(){
-        register_handler("test_handler", handler_for_test);
+        register_handler("testing", handler_for_test);
         let test_json = json!({
           "id" : "dummydummy",
           "jpc" : "1.0",
-          "method" : "GET",
+          "method" : "content",
           "params" : {
             "http" : {
               "path" : "/testing",
+              "verb" : "GET",
             },
+          },
+          "qinfo" : {
+            "qlib_id" : "idlib1234",
+            "type" : "some_type",
           },
         });
         match serde_json::to_vec(&test_json){
@@ -269,12 +274,12 @@ mod tests {
           let res = jpc(&x);
           match res{
             Ok(k) => {
-                let mut res_json:serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&k).unwrap();
-                let mut err_json:serde_json::Map<String, serde_json::Value> = serde_json::from_value(res_json["error"].take()).unwrap();
-                println!("{:?}", err_json);
-                assert_eq!(err_json["op"], 11);
-                let err_json_data:serde_json::Map<String, serde_json::Value> = serde_json::from_value(err_json["data"].take()).unwrap();
-                assert_eq!(err_json_data["op"], 11);
+              let mut res_json:serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&k).unwrap();
+              let mut err_json:serde_json::Map<String, serde_json::Value> = serde_json::from_value(res_json["error"].take()).unwrap();
+              println!("{:?}", err_json);
+              assert_eq!(err_json["op"], 11);
+              let err_json_data:serde_json::Map<String, serde_json::Value> = serde_json::from_value(err_json["data"].take()).unwrap();
+              assert_eq!(err_json_data["op"], 11);
             },
             Err(err) => {
               panic!("failed test_http err = {:?}", err);
@@ -337,7 +342,10 @@ fn do_bitcode(json_params:  Request) -> CallResult{
   //   element = 0;
   // }
   let mut bind = cm.get(split_path[1]).into_iter();
-  let cm_handler = bind.find(|mut _x| true).as_mut().unwrap().to_owned();
+  let cm_handler = match bind.find(|mut _x| true).as_mut(){
+    Some(b) => b.to_owned(),
+    None => return Err(Box::new(ErrorKinds::Invalid("no handler found for "))),
+  };
   match cm_handler.req{
     Some(f) => {
       let bcc = Box::new(f);
