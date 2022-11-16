@@ -32,15 +32,13 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let plraw = bcc.q_part_list(obj_id[0].to_string())?;
     let s = match from_utf8(&plraw) {
         Ok(v) => v.to_string(),
-        Err(e) => return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid("Part list not available")),
+        Err(_e) => return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid("Part list not available err =")),
     };
     BitcodeContext::log(&format!("return is {s}\n"));
     let pl:QPartList = serde_json::from_str(&s)?;
     BitcodeContext::log(&format!("pl {:?}\n", pl));
 
-    const BUF_SIZE:usize = 65536;
-    let buf: &mut [u8] = &mut [0u8; BUF_SIZE];
-    let w = std::io::Cursor::new(buf);
+    let w = std::io::Cursor::new(Vec::new());
     let mut zip = zip::ZipWriter::new(w);
     for part in pl.part_list.parts {
         let res = bcc.new_stream()?;
@@ -52,22 +50,11 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let _wprb = bcc.write_part_to_stream(stream_wm.stream_id.clone(), part.hash.clone(), bcc.request.q_info.hash.clone(), 0, -1)?;
         let usz = part.size.try_into()?;
         let data:ReadResult = serde_json::from_slice(&bcc.read_stream(stream_wm.stream_id.clone(), usz)?)?;
-        let mut steps = usz / BUF_SIZE;
-        if steps == 0 && usz > 0{
-            steps = 1
-        }
         zip.start_file(part.hash.clone(), FileOptions::default())?;
         BitcodeContext::log(&format!("zip starting {} part size = {usz} \n", part.hash.clone()));
-        for step in 0..steps{
-            let mut write_size = BUF_SIZE;
-            if step == steps-1{
-                write_size = usz-1;
-            }
-            BitcodeContext::log(&format!("About to write start = {} end = {} len = {} data = {} ,result = {}\n", step, (step+1), write_size, data.ret.len(), data.result.len()));
-            let b64_decoded = decode(&data.result)?;
-            let w = zip.write(&b64_decoded)?;
-            BitcodeContext::log(&format!("Wrote = {}\n", w));
-        }
+        let b64_decoded = decode(&data.result)?;
+        zip.write_all(&b64_decoded)?;
+        BitcodeContext::log("Wrote file");
     }
     BitcodeContext::log("Done\n");
 
