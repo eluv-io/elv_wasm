@@ -10,8 +10,8 @@ crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 elvwasm = { path = "../.."}
-wapc = "0.10.1"
-wapc-guest = "0.4.0"
+wapc = "*"
+wapc-guest = "*"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"
