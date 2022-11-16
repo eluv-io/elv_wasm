@@ -24,9 +24,10 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     let id = &bcc.request.id;
+    let vqhot = &vec!(bcc.request.q_info.qhot());
     let obj_id = match qp.get("object_id_or_hash"){
         Some(x) => x,
-        None => return bcc.make_error("unable to locate query parameter object_id_or_hash"),
+        None => vqhot,
     };
     let plraw = bcc.q_part_list(obj_id[0].to_string())?;
     let s = match from_utf8(&plraw) {
