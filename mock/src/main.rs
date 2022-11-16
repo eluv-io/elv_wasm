@@ -23,7 +23,8 @@ use wasmtime_provider::WasmtimeEngineProvider;
 use wapc::WapcHost;
 
 
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
+
 static mut QFAB: MockFabric = MockFabric{
     fab : None
 };

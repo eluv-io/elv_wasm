@@ -181,7 +181,8 @@ mod tests{
     use tantivy_jpc::tests::{FakeContext, TestDocument};
 
 
-    use serde::{Deserialize, Serialize};
+    use serde_derive::{Deserialize, Serialize};
+
     pub static mut QFAB: MockFabric = MockFabric{
         fab : None,
         ctx: None,

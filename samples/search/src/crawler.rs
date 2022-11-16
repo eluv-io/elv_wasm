@@ -1,6 +1,7 @@
 #![allow(dead_code, clippy::box_collection)]
 
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
+
 use serde_json::{Value};
 use std::{cmp::min, error::Error};
 use elvwasm::{ErrorKinds};

@@ -2,7 +2,8 @@ extern crate elvwasm;
 extern crate serde_json;
 #[macro_use(defer)] extern crate scopeguard;
 use serde_json::json;
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
+
 
 extern crate image;
 use image::GenericImageView;

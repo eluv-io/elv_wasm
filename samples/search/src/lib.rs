@@ -11,7 +11,8 @@ extern crate serde_json;
 
 use crawler::FieldConfig;
 use serde_json::{json, Value, Map};
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
+
 use crate::old_man::S_OLD_MAN;
 use elvwasm::ErrorKinds;
 use indexer::Indexer;
