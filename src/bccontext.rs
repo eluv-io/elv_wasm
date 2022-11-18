@@ -18,8 +18,6 @@ use std::str;
 use guest::prelude::*;
 use guest::CallResult;
 
-#[feature(arbitrary_enum_discriminant)]
-
 
 macro_rules! implement_ext_func {
   (
@@ -42,33 +40,33 @@ macro_rules! implement_ext_func {
 }
 
 
-#[derive(Error, Debug, Clone, Serialize, Copy)]
+#[derive(Error, Debug, Clone, Serialize)]
 #[repr(u8)]
 pub enum ErrorKinds {
     #[error("Other Error : {0}")]
-    Other(&'static str) = 0,
+    Other(String) = 0,
     #[error("NotImplemented : {0}")]
-    NotImplemented(&'static str),
+    NotImplemented(String),
     #[error("Invalid : {0}")]
-    Invalid(&'static str),
+    Invalid(String),
     #[error("Permission : {0}")]
-    Permission(&'static str),
+    Permission(String),
     #[error("IO : {0}")]
-    IO(&'static str),
+    IO(String),
     #[error("Exist : {0}")]
-    Exist(&'static str),
+    Exist(String),
     #[error("NotExist : {0}")]
-    NotExist(&'static str),
+    NotExist(String),
     #[error("IsDir : {0}")]
-    IsDir(&'static str),
+    IsDir(String),
     #[error("NotDir : {0}")]
-    NotDir(&'static str),
+    NotDir(String),
     #[error("Finalized : {0}")]
-    Finalized(&'static str),
+    Finalized(String),
     #[error("NotFinalized : {0}")]
-    NotFinalized(&'static str),
+    NotFinalized(String),
     #[error("BadHttpParams : {0}")]
-    BadHttpParams(&'static str),
+    BadHttpParams(String),
 }
 
 #[cfg(not(test))]
@@ -1035,7 +1033,7 @@ impl<'a> BitcodeContext {
     }
 
     pub fn make_error(&'a self, msg: &'static str) -> CallResult {
-        make_json_error(ErrorKinds::Invalid(msg), &self.request.id)
+        make_json_error(ErrorKinds::Invalid(msg.to_string()), &self.request.id)
     }
 
     pub fn make_error_with_kind(&'a self, kind: ErrorKinds) -> CallResult {
@@ -1347,7 +1345,7 @@ impl<'a> BitcodeContext {
         let strm_json: serde_json::Value = serde_json::from_slice(&strm)?;
         let sid = strm_json["stream_id"].to_string();
         if sid.is_empty() {
-            return self.make_error_with_kind(ErrorKinds::IO("Unable to find stream_id"));
+            return self.make_error_with_kind(ErrorKinds::IO(format!("Unable to find stream_id {sid}")));
         }
         let j = json!({
           "stream_id" : sid,
@@ -1356,7 +1354,7 @@ impl<'a> BitcodeContext {
         });
 
         let v: serde_json::Value = match self.call_function("QFileToStream", j, "core") {
-            Err(e) => return Err(e),
+            Err(e) => return self.make_error_with_kind(ErrorKinds::NotExist(format!("QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"))),
             Ok(e) => serde_json::from_slice(&e).unwrap_or_default(),
         };
 
@@ -1367,7 +1365,7 @@ impl<'a> BitcodeContext {
         if written != 0 {
             return self.read_stream(sid, written as usize);
         }
-        self.make_error_with_kind(ErrorKinds::NotExist("failed to write data"))
+        self.make_error_with_kind(ErrorKinds::NotExist(format!("wrote 0 bytes, sid={sid} path={path}, hot={hash_or_token}")))
     }
 
     /// q_upload_file : uploads the input data and stores it at the fabric file location as filetype mime

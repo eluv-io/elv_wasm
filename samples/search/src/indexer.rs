@@ -57,7 +57,7 @@ impl Indexer {
                     Some(o) => o.get("field").unwrap().as_u64(),
                     None => {
                         return Err(Box::new(ErrorKinds::BadHttpParams(
-                            "could not find key document-create-id",
+                            "could not find key document-create-id".to_string(),
                         )))
                     }
                 };
@@ -75,7 +75,7 @@ impl Indexer {
                     Some(o) => o.get("field").unwrap().as_u64(),
                     None => {
                         return Err(Box::new(ErrorKinds::BadHttpParams(
-                            "could not find key document-create-id",
+                            "could not find key document-create-id".to_string(),
                         )))
                     }
                 };
@@ -106,7 +106,7 @@ impl<'a> Writer<'a> {
             Some(o) => o.get("document-create-id").unwrap().as_u64(),
             None => {
                 return self.bcc.make_error_with_kind(ErrorKinds::BadHttpParams(
-                    "could not find key document-create-id",
+                    "could not find key document-create-id".to_string(),
                 ))
             }
         }
@@ -139,7 +139,7 @@ impl<'a> Writer<'a> {
             }
             _ => {
                 return Err(Box::new(ErrorKinds::Invalid(
-                    "invalid field type encountered",
+                    "invalid field type encountered".to_string(),
                 )))
             }
         }
@@ -515,7 +515,7 @@ mod tests{
                     unsafe{ QFAB.query_parser_search()}
                 }
                 _ => {
-                    Err(Box::new(ErrorKinds::NotExist("Method not handled")))
+                    Err(Box::new(ErrorKinds::NotExist(format!("Method not handled name={method}"))))
                 }
             }
         }
@@ -526,15 +526,15 @@ mod tests{
     }
 
     impl wapc::WebAssemblyEngineProvider for WasmerHolder{
-        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error>>{
+        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>{
             Ok(())
         }
-        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error>>{
+        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + Send + Sync>>{
             //.instance.store().engine.
             //self._instance.
             Ok(0)
         }
-        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error>>{
+        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>{
             Ok(())
         }
     }

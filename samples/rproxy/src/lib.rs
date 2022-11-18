@@ -13,7 +13,7 @@ fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   let res = bcc.sqmd_get_json("/request_parameters")?;
   let mut meta_str: String = match String::from_utf8(res){
     Ok(m) => m,
-    Err(_e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid("failed to parse request params"));}
+    Err(e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid(format!("failed to parse request params err = {e}")))}
   };
   meta_str = meta_str.replace("${API_KEY}", &qp["API_KEY"][0].to_string()).
     replace("${QUERY}", &qp["QUERY"][0].to_string()).
@@ -21,7 +21,7 @@ fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   BitcodeContext::log(&format!("MetaData = {}", &meta_str));
   let req:serde_json::Map<String,serde_json::Value> = match serde_json::from_str::<serde_json::Map<String,serde_json::Value>>(&meta_str){
     Ok(m) => m,
-    Err(_e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed")),
+    Err(e) => return bcc.make_error_with_kind(ErrorKinds::Invalid(format!("serde_json::from_str failed error = {e}"))),
   };
   let proxy_resp =  bcc.proxy_http(Some(json!({"request": req})))?;
   let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;

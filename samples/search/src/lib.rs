@@ -87,28 +87,28 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
         Some(v) => match v.get("dir"){
             Some(d) => match unescape(&d.to_string()){
                 Ok(u) => u,
-                Err(_) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("unescape failed on directory"))
+                Err(e) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams(format!("unescape failed on directory error={e}")))
             },
-            None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return"))
+            None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return".to_string()))
         },
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return"))
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return".to_string()))
     };
     let ft_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "title", "type": 2_u8, "stored": true})))?)?;
     let field_title = match extract_body(ft_json){
         Some(o) => o.get("field").unwrap().as_u64(),
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
     };
     let fb_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "body", "type": 2_u8 , "stored": true})))?)?;
     let field_body = match extract_body(fb_json){
         Some(o) => o.get("field").unwrap().as_u64(),
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
     };
     bcc.builder_build(None)?;
     let doc_old_man:serde_json::Value = serde_json::from_slice(&bcc.document_create(None)?)?;
     console_log(&format!("obj_old = {:?}", &doc_old_man));
     let o_doc_id = match extract_body(doc_old_man){
         Some(o) => o.get("document-create-id").unwrap().as_u64(),
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
     };
     let doc_id = o_doc_id.unwrap();
     bcc.log_info(&format!("doc_id={doc_id}, field_title = {}, field_body={}", field_title.unwrap(), field_body.unwrap()))?;
@@ -124,7 +124,7 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
     let body_hash = b.unwrap_or_else(|| json!({}));
     bcc.callback(200, "application/json", part_u8.len())?;
     BitcodeContext::write_stream_auto(id.clone(), "fos", &part_u8)?;
-    bcc.log_info(&format!("part hash = {}, bosy = {}", &part_hash.to_string(), &body_hash.to_string()))?;
+    bcc.log_info(&format!("part hash = {part_hash}, body = {body_hash}"))?;
     bcc.make_success_json(&json!(
         {
             "headers" : "application/json",
@@ -191,12 +191,12 @@ fn do_search(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let ft_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "title", "type": 2_u8, "stored": true})))?)?;
     let _field_title = match extract_body(ft_json){
         Some(o) => o.get("field").unwrap().as_u64(),
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
     };
     let fb_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "body", "type": 2_u8 , "stored": true})))?)?;
     let _field_body = match extract_body(fb_json){
         Some(o) => o.get("field").unwrap().as_u64(),
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
     };
     bcc.builder_build(None)?;
     bcc.builder_create_index(None)?;
@@ -254,11 +254,11 @@ fn do_search_update(bcc:&mut elvwasm::BitcodeContext) -> CallResult{
         Some(v) => match v.get("dir"){
             Some(d) => match unescape(&d.to_string()){
                 Ok(u) => u,
-                Err(_) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("unescape failed on directory"))
+                Err(e) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams(format!("unescape failed on directory error={e}")))
             },
-            None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return"))
+            None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return".to_string()))
         },
-        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return"))
+        None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return".to_string()))
     };
     let mut extra_fields = json!({});
     let res = bcc.sqmd_get_json("/indexer/arguments/fields")?;

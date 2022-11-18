@@ -54,7 +54,7 @@ pub struct ImageWatermark{
 
 fn fabric_file_to_tmp_file(bcc :&BitcodeContext,fabric_file:&str,temp_file:&str) -> CallResult {
   if fabric_file.is_empty() || temp_file.is_empty(){
-    return bcc.make_error_with_kind(ErrorKinds::Invalid("parameters must not be empty strings"));
+    return bcc.make_error_with_kind(ErrorKinds::Invalid("parameters must not be empty strings".to_string()));
   }
   let input = fabric_file.to_string();
   let output = temp_file;
@@ -93,7 +93,7 @@ fn ffmpeg_run_watermark(bcc:&BitcodeContext, height:&str, input_file:&str, new_f
   let scale_factor = "[0:v]scale=%SCALE%:-1[bg];[bg][1:v]overlay=%OVERLAY%";
   let scale_factor = &scale_factor.replace("%SCALE%", height).replace("%OVERLAY%", &base_placement);
   if input_file.is_empty() || watermark_file.is_empty() || new_file.is_empty(){
-    return bcc.make_error_with_kind(ErrorKinds::Invalid("parameter validation failed, one file is empty or null"));
+    return bcc.make_error_with_kind(ErrorKinds::Invalid("parameter validation failed, one file is empty or null".to_string()));
   }
   // need to run ffmpeg here input file is in input_file
   let ffmpeg_args = ["-hide_banner","-nostats","-y","-i", input_file,"-i", watermark_file,"-filter_complex", scale_factor,"-f", "singlejpeg", new_file].to_vec();
@@ -124,7 +124,7 @@ fn do_image<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   fabric_file_to_tmp_file(bcc, &asset_path, &input_file_stream.stream_id)?;
   if !offering_json.image.is_empty() {
     if watermark_file_stream.stream_id.is_empty() || watermark_file_stream.file_name.is_empty(){
-      return bcc.make_error_with_kind(ErrorKinds::NotExist("failed to acquire watermark stream"));
+      return bcc.make_error_with_kind(ErrorKinds::NotExist(format!("failed to acquire watermark stream path = {asset_path}")));
     }
     fabric_file_to_tmp_file(bcc, &offering_json.image, &watermark_file_stream.stream_id)?;
     ffmpeg_run_watermark(bcc, &offering_json.height,

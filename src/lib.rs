@@ -23,7 +23,7 @@
     let res = bcc.sqmd_get_json(SQMD_REQUEST)?;
     let mut meta_str: String = match String::from_utf8(res){
       Ok(m) => m,
-      Err(e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid("unable to parse utf input"));}
+      Err(e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid(format!("unable to parse utf input {e}")));}
     };
     meta_str = meta_str.replace("${API_KEY}", &qp["API_KEY"][0].to_string()).
       replace("${QUERY}", &qp["QUERY"][0].to_string()).
@@ -31,7 +31,7 @@
     BitcodeContext::log(&format!("MetaData = {}", &meta_str));
     let req:serde_json::Map<String,serde_json::Value> = match serde_json::from_str::<serde_json::Map<String,serde_json::Value>>(&meta_str){
       Ok(m) => m,
-      Err(e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed"))
+      Err(e) => return bcc.make_error_with_kind(ErrorKinds::Invalid(format!("serde_json::from_str failed {e}")))
     };
     let proxy_resp =  bcc.proxy_http(Some(json!({"request": req})))?;
     let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
@@ -326,6 +326,8 @@ fn elv_console_log(s:&str){
   println!("{}", s)
 }
 
+const ID_NOT_CALCULATED_YET:&str = "id not yet calculated";
+
 fn do_bitcode(json_params:  Request) -> CallResult{
   elv_console_log("Parameters parsed");
   let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
@@ -335,7 +337,7 @@ fn do_bitcode(json_params:  Request) -> CallResult{
 
   let cm = match CALLMAP.lock(){
     Ok(c) => c,
-    Err(e) => return make_json_error(ErrorKinds::BadHttpParams("No valid path provided"), &format!("unable to gain access to callmap error = {e}")),
+    Err(e) => return make_json_error(ErrorKinds::BadHttpParams(format!("unable to gain access to callmap: error = {e}")), ID_NOT_CALCULATED_YET),
   };
   // let mut element = 1;
   // if json_params.method == "content"{
@@ -344,16 +346,22 @@ fn do_bitcode(json_params:  Request) -> CallResult{
   let mut bind = cm.get(split_path[1]).into_iter();
   let cm_handler = match bind.find(|mut _x| true).as_mut(){
     Some(b) => b.to_owned(),
-    None => return Err(Box::new(ErrorKinds::Invalid("no handler found for "))),
+    None => return Err(Box::new(ErrorKinds::Invalid(format!("handler not found {}", split_path[1])))),
   };
   match cm_handler.req{
     Some(f) => {
+      let id = f.request.id.to_string();
       let bcc = Box::new(f);
       let l = Box::leak(bcc);
       unsafe{
         v_leaks.push(Box::from_raw(l));
       }
-      (cm_handler.hf)(l)
+      match (cm_handler.hf)(l){
+        Ok(o) => Ok(o),
+        Err(e) => {
+          make_json_error(ErrorKinds::Other(e.to_string()), &id)
+        },
+      }
     }
     None => {
       let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: None, return_buffer: vec![]};
@@ -380,8 +388,8 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
   elv_console_log(&format!("parameters = {input_string}"));
   let json_params: Request = match serde_json::from_str(input_string){
     Ok(m) => {m},
-    Err(_err) => {
-      return make_json_error(ErrorKinds::BadHttpParams("parse failed for http"), "ID not found");
+    Err(err) => {
+      return make_json_error(ErrorKinds::BadHttpParams(format!("parse failed for http error = {err}")), ID_NOT_CALCULATED_YET);
     }
   };
 

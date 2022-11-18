@@ -149,7 +149,7 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
   let res = bcc.sqmd_get_json("/request_parameters")?;
   let mut meta_str: String = match String::from_utf8(res){
     Ok(m) => m,
-    Err(_e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid("failed to parse request params"));}
+    Err(e) => {return bcc.make_error_with_kind(ErrorKinds::Invalid(format!("failed to parse request params error={e}")))}
   };
   meta_str = meta_str.replace("${API_KEY}", &qp["API_KEY"][0].to_string()).
     replace("${QUERY}", &qp["QUERY"][0].to_string()).
@@ -157,7 +157,7 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
   BitcodeContext::log(&format!("MetaData = {}", &meta_str));
   let req:serde_json::Map<String,serde_json::Value> = match serde_json::from_str::<serde_json::Map<String,serde_json::Value>>(&meta_str){
     Ok(m) => m,
-    Err(_e) => return bcc.make_error_with_kind(ErrorKinds::Invalid("serde_json::from_str failed")),
+    Err(e) => return bcc.make_error_with_kind(ErrorKinds::Invalid(format!("serde_json::from_str failed error = {e}"))),
   };
   let proxy_resp =  bcc.proxy_http(Some(json!({"request": req})))?;
   let proxy_resp_json:serde_json::Value = serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
@@ -221,28 +221,28 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
       Some(v) => match v.get("dir"){
           Some(d) => match unescape(&d.to_string()){
               Ok(u) => u,
-              Err(_) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("unescape failed on directory"))
+              Err(e) => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams(format!("unescape failed on directory error={e}")))
           },
-          None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return"))
+          None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find dir in new_index_builder return".to_string()))
       },
-      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return"))
+      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find body in new_index_builder return".to_string()))
   };
   let ft_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "title", "type": 2_u8, "stored": true})))?)?;
   let field_title = match extract_body(ft_json){
       Some(o) => o.get("field").unwrap().as_u64(),
-      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
   };
   let fb_json:serde_json::Value = serde_json::from_slice(&bcc.builder_add_text_field(Some(json!({ "field_name": "body", "type": 2_u8 , "stored": true})))?)?;
   let field_body = match extract_body(fb_json){
       Some(o) => o.get("field").unwrap().as_u64(),
-      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
   };
   bcc.builder_build(None)?;
   let doc_old_man:serde_json::Value = serde_json::from_slice(&bcc.document_create(None)?)?;
   console_log(&format!("obj_old = {:?}", &doc_old_man));
   let o_doc_id = match extract_body(doc_old_man){
       Some(o) => o.get("document-create-id").unwrap().as_u64(),
-      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id")),
+      None => return bcc.make_error_with_kind(ErrorKinds::BadHttpParams("could not find key document-create-id".to_string())),
   };
   let doc_id = o_doc_id.unwrap();
   bcc.log_info(&format!("doc_id={doc_id}, field_title = {}, field_body={}", field_title.unwrap(), field_body.unwrap()))?;
@@ -258,7 +258,7 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult{
   let body_hash = b.unwrap_or_else(|| json!({}));
   bcc.callback(200, "application/json", part_u8.len())?;
   BitcodeContext::write_stream_auto(id.clone(), "fos", &part_u8)?;
-  bcc.log_info(&format!("part hash = {}, bosy = {}", &part_hash.to_string(), &body_hash.to_string()))?;
+  bcc.log_info(&format!("part hash = {part_hash}, body = {body_hash}"))?;
   bcc.make_success_json(&json!(
       {
           "headers" : "application/json",

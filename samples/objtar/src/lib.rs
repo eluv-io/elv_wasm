@@ -32,7 +32,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let plraw = bcc.q_part_list(obj_id[0].to_string())?;
     let s = match from_utf8(&plraw) {
         Ok(v) => v.to_string(),
-        Err(_e) => return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid("Part list not available err =")),
+        Err(e) => return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid(format!("Part list not available err = {e}"))),
     };
     let pl:QPartList = serde_json::from_str(&s)?;
 
@@ -49,14 +49,14 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let usz = part.size.try_into()?;
         let data:ReadResult = serde_json::from_slice(&bcc.read_stream(stream_wm.stream_id.clone(), usz)?)?;
         zip.start_file(part.hash.clone(), FileOptions::default())?;
-        BitcodeContext::log(&format!("zip starting {} part size = {usz} \n", part.hash.clone()));
+        BitcodeContext::log(&format!("zip starting {} part size = {usz}", part.hash.clone()));
         let b64_decoded = decode(&data.result)?;
         zip.write_all(&b64_decoded)?;
     }
 
     let zip_res = match zip.finish(){
         Ok(z) => z.into_inner(),
-        Err(e) => return bcc.make_error_with_error(elvwasm::ErrorKinds::Invalid("zip failed to finish"), e),
+        Err(e) => return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid(format!("zip failed to finish error = {e}"))),
     };
 
     bcc.callback(200, "application/zip", zip_res.len())?;

@@ -174,7 +174,7 @@ impl IndexerConfig{
         let mut field_configs: Vec<FieldConfig> = Vec::new();
         let flds = match indexer_arguments_val["fields"].as_object(){
             Some(x) => x,
-            None => return Err(ErrorKinds::NotExist("fields is not available in index").into())
+            None => return Err(ErrorKinds::NotExist("fields is not available in index".to_string()).into())
         };
         for (field_name, field_value) in flds {
             field_configs.push(FieldConfig {
