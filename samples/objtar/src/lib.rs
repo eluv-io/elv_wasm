@@ -8,7 +8,6 @@ extern crate base64;
 #[macro_use(defer)] extern crate scopeguard;
 
 use std::convert::TryInto;
-use std::fmt::Error;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, QPartList, NewStreamResult, BitcodeContext, ReadResult};
 use serde_json::{json};
@@ -66,7 +65,15 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         Some(x) => x,
         None => vqhot,
     };
-    let bw = BufWriter::with_capacity(1000000, FabricWriter::new(bcc));
+    const DEF_CAP:usize = 1000000;
+    let buf_cap = match qp.get("buffer_capacity"){
+         Some(x) => {
+            BitcodeContext::log(&format!("new capacity of {x:?} set"));
+            x[0].parse().unwrap_or(DEF_CAP)
+         },
+        None => DEF_CAP,
+    };
+    let bw = BufWriter::with_capacity(buf_cap, FabricWriter::new(bcc));
 
     let plraw = bcc.q_part_list(obj_id[0].to_string())?;
     let s = match from_utf8(&plraw) {
