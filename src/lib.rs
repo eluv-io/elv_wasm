@@ -67,7 +67,17 @@ extern crate wapc_guest as guest;
 #[macro_use(defer)] extern crate scopeguard;
 
 pub mod bccontext;
+pub mod bccontext_struct;
+pub mod bccontext_error;
+pub mod bccontext_core;
+pub mod bccontext_ext;
+
 pub use self::bccontext::*;
+pub use self::bccontext_struct::*;
+pub use self::bccontext_error::*;
+pub use self::bccontext_core::*;
+pub use self::bccontext_ext::*;
+
 
 //use guest::console_log;
 
@@ -214,7 +224,7 @@ mod tests {
     use super::*;
     use serde_json::*;
     pub use self::bccontext::*;
-    pub use self::bccontext::{QList};
+    pub use self::bccontext_struct::{QList};
 
     fn handler_for_test(bcc: & mut BitcodeContext) -> CallResult{
       bcc.make_success("DONE")

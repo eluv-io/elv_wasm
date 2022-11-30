@@ -25,7 +25,7 @@ struct FabricWriter<'a>{
 impl<'a> FabricWriter<'a>{
     fn new(bcc:&'a BitcodeContext, sz: usize) -> FabricWriter<'a>{
         FabricWriter{
-            bcc :bcc,
+            bcc,
             size:sz
         }
     }
@@ -44,6 +44,7 @@ impl<'a> std::io::Write for FabricWriter<'a>{
     }
 
     fn flush(&mut self) -> Result<(), std::io::Error>{
+        // Nothing to flush.  The BufWriter will handle its buffer independant using writes
         Ok(())
     }
 }
@@ -76,7 +77,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         Some(x) => x,
         None => vqhot,
     };
-    const DEF_CAP:usize = 1000000;
+    const DEF_CAP:usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity"){
          Some(x) => {
             BitcodeContext::log(&format!("new capacity of {x:?} set"));
