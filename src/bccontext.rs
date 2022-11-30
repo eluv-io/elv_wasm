@@ -158,6 +158,12 @@ pub struct WritePartResult {
     pub written: usize,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct SystemTimeResult {
+    pub time: u64,
+}
+
+
 
 /// Bitcode representation of a full content listing given an optional filter
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -485,6 +491,12 @@ impl<'a> BitcodeContext {
         );
         self.call_function("QFinalizeContent", msg, "core")
     }
+
+    pub fn q_system_time(&'a self) -> CallResult {
+        let msg = json!({});
+        self.call_function("SystemTime", msg, "core")
+    }
+
 
     /// q_modify_content enables edit on the implicit content of the context
     /// # Returns
