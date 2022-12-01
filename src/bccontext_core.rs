@@ -13,6 +13,9 @@ use std::str;
 
 use guest::CallResult;
 
+#[cfg(doc)]
+use crate::{QRef, QPart, QList, QPartInfo};
+
 impl<'a> BitcodeContext {
     // CORE functions
 
