@@ -1,4 +1,4 @@
-module qluvio/hello
+module qluvio/test_wapc
 
 go 1.19
 

@@ -10,6 +10,7 @@ func main() {
 	wapc.RegisterFunctions(wapc.Functions{
 		"echo":      echo,
 		"factorial": factorial,
+		"crash_div": crash_div,
 	})
 }
 
@@ -30,4 +31,11 @@ func factorial(bi []byte) ([]byte, error) {
 	}
 	s1 := strconv.FormatUint(factVal, 10)
 	return []byte(s1), nil
+}
+
+func crash_div(bi []byte) ([]byte, error) {
+	i := 0
+	_ = 5000 / i
+
+	return nil, nil
 }
