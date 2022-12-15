@@ -234,7 +234,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         h = Some(host)
     }
 
-    h.unwrap().call("_jpc", &serde_json::to_vec(unsafe{&QFAB.fab.clone().unwrap().call}).unwrap())?;
+    h.unwrap().call("_JPC", &serde_json::to_vec(unsafe{&QFAB.fab.clone().unwrap().call}).unwrap())?;
     Ok(())
 }
 

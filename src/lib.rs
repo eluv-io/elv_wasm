@@ -140,7 +140,7 @@ macro_rules! implement_bitcode_module {
     #[no_mangle]
     pub extern "C" fn wapc_init() {
       register_handlers!($handler_name, $handler_func $(, $more_lit, $more)*);
-      register_function("_jpc", jpc);
+      register_function("_JPC", jpc);
       panic::set_hook(Box::new(hook_impl));
     }
   }

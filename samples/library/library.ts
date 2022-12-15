@@ -22,7 +22,7 @@ import {
   // This must be present in the entry file.
 export function __guest_call(operation_size: usize, payload_size: usize): bool {
   registerHandler("image", doImage)
-  register("_jpc", _jpc)
+  register("_JPC", _jpc)
   return handleCall(operation_size, payload_size);
 }
 

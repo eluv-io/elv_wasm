@@ -14,7 +14,7 @@ import {
   } from "../include/bitcode-context";
 
 
-  register("_jpc", _jpc)
+  register("_JPC", _jpc)
   registerHandler("proxy", doProxy)
 
 
