@@ -22,9 +22,15 @@ jobs:
           toolchain: nightly-2022-11-16
           default: true
           override: true
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+      - uses: Integralist/setup-tinygo@v1.0.0
+        with:
+          tinygo-version: 0.26.0
       - name: PreReqs
         run: rustup target add wasm32-unknown-unknown
       - name: Build
-        run: cargo build --target wasm32-unknown-unknown --release --workspace        
+        run: cargo build --target wasm32-unknown-unknown --release --workspace
       - name: Run tests
         run: cargo test --verbose
