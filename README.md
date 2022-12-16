@@ -22,6 +22,12 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 rustup default nightly
 ```
 
+### Install Tinygo
+```
+wget https://github.com/tinygo-org/tinygo/releases/download/v0.26.0/tinygo_0.26.0_amd64.deb
+sudo dpkg -i tinygo_0.26.0_amd64.deb
+```
+
 ## Building
 
 
