@@ -1,6 +1,7 @@
 package main
 
 import (
+	b64 "encoding/base64"
 	"strconv"
 
 	wapc "github.com/wapc/wapc-guest-tinygo"
@@ -8,9 +9,10 @@ import (
 
 func main() {
 	wapc.RegisterFunctions(wapc.Functions{
-		"echo":      echo,
-		"factorial": factorial,
-		"crash_div": crash_div,
+		"echo":         echo,
+		"factorial":    factorial,
+		"crash_div":    crash_div,
+		"memory_check": memory_check,
 	})
 }
 
@@ -38,4 +40,9 @@ func crash_div(bi []byte) ([]byte, error) {
 	_ = 5000 / i
 
 	return nil, nil
+}
+
+func memory_check(bi []byte) ([]byte, error) {
+	s := b64.StdEncoding.EncodeToString(bi)
+	return wapc.HostCall("foo", "", "", []byte(s))
 }
