@@ -216,7 +216,7 @@ impl<'a> BitcodeContext {
     /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
     ///  Returns the checksum as hex-encoded string
     pub fn close_stream(&'a self, sid: String) -> CallResult {
-        self.call_function("CloseStream", serde_json::Value::String(sid), "ctx")
+        self.call_function("CloseStream", json!({"stream_id" : sid}), "ctx")
     }
 
     /// new_stream creates a new fabric bitcode stream.

@@ -104,7 +104,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
             let res = bcc.new_stream()?;
             let stream_wm: NewStreamResult = serde_json::from_slice(&res)?;
             defer!{
-                BitcodeContext::log(&format!("Closing watermark stream {}", &stream_wm.stream_id));
+                BitcodeContext::log(&format!("Closing part stream {}", &stream_wm.stream_id));
                 let _ = bcc.close_stream(stream_wm.stream_id.clone());
             }
             let _wprb = bcc.write_part_to_stream(stream_wm.stream_id.clone(), part.hash.clone(), bcc.request.q_info.hash.clone(), 0, -1)?;
