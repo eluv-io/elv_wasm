@@ -10,6 +10,7 @@ import (
 func main() {
 	wapc.RegisterFunctions(wapc.Functions{
 		"echo":         echo,
+		"echo_sleep":   echo_sleep,
 		"factorial":    factorial,
 		"crash_div":    crash_div,
 		"memory_check": memory_check,
@@ -17,6 +18,11 @@ func main() {
 }
 
 func echo(bi []byte) ([]byte, error) {
+	return bi, nil
+}
+
+func echo_sleep(bi []byte) ([]byte, error) {
+	wapc.HostCall("sleep", "5000", "", []byte{})
 	return bi, nil
 }
 
