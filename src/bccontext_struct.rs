@@ -228,3 +228,9 @@ pub struct ReadStreamResult {
     pub retval: String,
     pub result: String,
 }
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LROResult {
+    pub lro_handle: String,
+}

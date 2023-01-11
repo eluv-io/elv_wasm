@@ -1,0 +1,22 @@
+[package]
+
+name = "lro"
+version = "0.0.1"
+authors = ["lro <jan.falkin@eluv.io>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/JanFalkin/lro"
+description = "A Rust wasm library"
+workspace = "../.."
+
+[lib]
+name = "lro"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+elvwasm = {path = "../.."}
+wapc = "0.10.1"
+wapc-guest = "0.4.0"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"

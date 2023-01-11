@@ -18,6 +18,8 @@ else
     wasm-gc $1/target/wasm32-unknown-unknown/release/search.wasm $2/bitcode/wasm/search/search.wasm
     wasm-gc $1/target/wasm32-unknown-unknown/release/everything.wasm $2/bitcode/wasm/everything/everything.wasm
     wasm-gc $1/target/wasm32-unknown-unknown/release/objtar.wasm $2/bitcode/wasm/objtar/objtar.wasm
+    wasm-gc $1/target/wasm32-unknown-unknown/release/lro.wasm $2/bitcode/wasm/lro/lro.wasm
+
     cp -u -f $1/target/wasm32-unknown-unknown/release/test_wapc.wasm $2/exeng/tests
 
     wasm-gc $1/samples/library/library.wasm $2/bitcode/wasm/library/library.wasm

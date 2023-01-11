@@ -1,0 +1,10 @@
+{
+  "generator-elv_wasm": {
+    "promptValues": {
+      "name": "lro",
+      "email": "jan.falkin@eluv.io",
+      "license": "MIT",
+      "repoUrl": "https://github.com/JanFalkin/lro"
+    }
+  }
+}
