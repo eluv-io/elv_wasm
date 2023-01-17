@@ -19,7 +19,6 @@ fn main() {
     pbase.push("samples");
     pbase.push("go");
     pbase.push("test_wapc");
-    println!("path={:?}", pbase);
 
     env::set_current_dir(pbase).unwrap();
     execute("tinygo", &["build", "-o", "test_wapc.wasm", "-target=wasi", "-no-debug", "main.go"]);

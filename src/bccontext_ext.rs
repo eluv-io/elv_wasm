@@ -240,4 +240,9 @@ impl<'a> BitcodeContext{
         self.call_function("StartBitcodeLRO", params, "ext")
     }
 
+    pub fn call_external_bitcode(&'a self, function: &str, args: &serde_json::Value, object_hash:&str,code_part_hash:&str) -> CallResult {
+        let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
+        self.call_function("CallExternalBitcode", params, "ext")
+    }
+
 }

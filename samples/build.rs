@@ -18,7 +18,7 @@ fn main() {
     let mut pbase = env::current_dir().unwrap();
     pbase.push("go");
     pbase.push("test_wapc");
-    println!("path={:?}", pbase);
+    println!("path={pbase:?}");
 
     env::set_current_dir(pbase).unwrap();
     execute("tinygo", &["build", "-o", "test_wapc.wasm", "-target=wasi", "-no-debug", "main.go"]);

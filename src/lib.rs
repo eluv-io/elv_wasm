@@ -58,8 +58,6 @@
     *target/debug/mock ./samples/target/wasm32-unknown-unknown/debug/deps/rproxy.wasm ./samples/fabric.json*
 */
 
-#![feature(arbitrary_enum_discriminant)]
-
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
@@ -287,9 +285,9 @@ mod tests {
               let mut res_json:serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&k).unwrap();
               let mut err_json:serde_json::Map<String, serde_json::Value> = serde_json::from_value(res_json["error"].take()).unwrap();
               println!("{:?}", err_json);
-              assert_eq!(err_json["op"], 11);
+              assert_eq!(err_json["op"], 2);
               let err_json_data:serde_json::Map<String, serde_json::Value> = serde_json::from_value(err_json["data"].take()).unwrap();
-              assert_eq!(err_json_data["op"], 11);
+              assert_eq!(err_json_data["op"], 2);
             },
             Err(err) => {
               panic!("failed test_http err = {:?}", err);
@@ -399,7 +397,7 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
   let json_params: Request = match serde_json::from_str(input_string){
     Ok(m) => {m},
     Err(err) => {
-      return make_json_error(ErrorKinds::BadHttpParams(format!("parse failed for http error = {err}")), ID_NOT_CALCULATED_YET);
+      return make_json_error(ErrorKinds::Invalid(format!("parse failed for http error = {err}")), ID_NOT_CALCULATED_YET);
     }
   };
 

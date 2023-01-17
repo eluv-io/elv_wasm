@@ -61,11 +61,28 @@ pub struct WritePartResult {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct CreatePartResult {
+    pub qphash: String,
+    pub size:i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SystemTimeResult {
     pub time: u64,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct ExternalCallResult {
+    pub function_return: serde_json::Value,
+    pub fout: String,
+    pub format: String,
+}
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct FinalizeCallResult {
+    pub qid: String,
+    pub qhash: String,
+}
 
 /// Bitcode representation of a full content listing given an optional filter
 #[derive(Serialize, Deserialize, Clone, Debug)]
