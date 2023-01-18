@@ -136,3 +136,4 @@ fn do_img<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
           "result" : 0,
       }), &bcc.request.id)
 }
+

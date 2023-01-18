@@ -61,9 +61,8 @@ impl<'a> BitcodeContext {
         if len != usize::MAX {
             actual_len = len
         }
-        let v = serde_json::json!(src[..actual_len]);
-        let jv = &serde_json::to_vec(&v)?;
-        host_call(&self.request.id, stream, "Write", jv)
+        BitcodeContext::log(&format!("in write_stream len = {actual_len}"));
+        host_call(&self.request.id, stream, "Write", src)
     }
 
     /// write_stream writes a u8 slice to a fabric stream
@@ -244,10 +243,7 @@ impl<'a> BitcodeContext {
     /// *  `hash_or_token` : hash for the content containing the file
     ///
     pub fn q_download_file(&'a mut self, path: &str, hash_or_token: &str) -> CallResult {
-        elv_console_log(&format!(
-            "q_download_file path={} token={}",
-            path, hash_or_token
-        ));
+        elv_console_log(&format!("q_download_file path={path} token={hash_or_token}"));
         let strm = self.new_stream()?;
         let strm_json: serde_json::Value = serde_json::from_slice(&strm)?;
         let sid = strm_json["stream_id"].to_string();

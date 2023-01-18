@@ -12,7 +12,6 @@ use elvwasm::{implement_bitcode_module, jpc, register_handler, QPartList, NewStr
 use serde_json::{json};
 use std::io::{Write, BufWriter, ErrorKind,SeekFrom};
 use std::str::from_utf8;
-use base64::decode;
 use flate2::write::{GzEncoder};
 
 implement_bitcode_module!("tar", do_tar_from_obj);
@@ -114,7 +113,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
             header.set_size(usz as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
-            let b64_decoded = decode(&data.result)?;
+            let b64_decoded = &base64::decode(&data.result)?;
             a.append_data(&mut header, part.hash.clone(), b64_decoded.as_slice())?;
         }
         a.finish()?;
