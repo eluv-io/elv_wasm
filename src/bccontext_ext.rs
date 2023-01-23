@@ -241,7 +241,14 @@ impl<'a> BitcodeContext{
     }
 
     pub fn call_external_bitcode(&'a self, function: &str, args: &serde_json::Value, object_hash:&str,code_part_hash:&str) -> CallResult {
-        let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
+        let params = json!({
+            "jpc" : "1.0",
+            "id" : self.request.id,
+            "method" : format!("/{function}"),
+            "params" : args,
+            "qinfo" : self.request.q_info.clone(),
+        });
+        let params = json!({ "function": function,  "params" : params, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         self.call_function("CallExternalBitcode", params, "ext")
     }
 

@@ -526,15 +526,15 @@ mod tests{
     }
 
     impl wapc::WebAssemblyEngineProvider for WasmerHolder{
-        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>{
+        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error + 'static>>{
             Ok(())
         }
-        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + Send + Sync>>{
+        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + 'static>>{
             //.instance.store().engine.
             //self._instance.
             Ok(0)
         }
-        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>{
+        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + 'static>>{
             Ok(())
         }
     }
