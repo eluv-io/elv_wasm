@@ -4,7 +4,7 @@ description = "Contains and collects the bitcode extension API for the Eluvio co
 homepage = "https://eluvio.co/"
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/eluv-io/elv_wasm"
+repository = "https://github.com/eluv-io/elv-wasm"
 readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -1,4 +1,4 @@
-name: Elv_wasm
+name: elv-wasm
 
 on:
   push:
