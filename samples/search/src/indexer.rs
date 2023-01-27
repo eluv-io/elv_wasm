@@ -284,12 +284,12 @@ mod tests{
       pub objects: std::vec::Vec<Object>,
     }
 
-    #[derive(Serialize, Deserialize,  Clone, Debug)]
-    pub struct MockFabric{
-        ctx: Option<FakeContext>,
+    #[derive(Debug)]
+    pub struct MockFabric<'a>{
+        ctx: Option<Box<FakeContext>>,
         fab : Option<RootMockFabric>,
         resp: Vec<u8>,
-        docs: Vec<TestDocument>
+        docs: Vec<TestDocument<'a>>
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -298,7 +298,7 @@ mod tests{
       pub params: serde_json::Map<String, serde_json::Value>
     }
 
-    impl MockFabric{
+    impl<'a> MockFabric<'a>{
         pub fn init(& mut self, path_to_json:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             let file = File::open(path_to_json)?;
             let reader = BufReader::new(file);
@@ -383,7 +383,7 @@ mod tests{
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
         pub fn new_index_builder(&mut self, _dir:&str)-> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>>{
-            self.ctx = Some(FakeContext::new());
+            self.ctx = Some(Box::new(FakeContext::new()));
             Ok(json!("DONE"))
         }
         pub fn archive_index_to_part(&mut self, _dir:&str)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
@@ -466,19 +466,36 @@ mod tests{
                     unsafe{ QFAB.archive_index_to_part("/tmp/foo") }
                 }
                 "BuilderAddTextField" => {
-                    unsafe{
-                        let v:&Value = &serde_json::from_slice(pkg)?;
-                        let t = &mut QFAB.ctx.clone().unwrap();
-                        let s = t.call_jpc("builder".to_string(), "add_text_field".to_string(), v["params"].clone(), true);
-                        elvwasm::make_success_json(&json!({ "http" : { "body" : serde_json::from_slice::<Value>(&s).unwrap()}}), id)
+                        unsafe{
+                            let v:&Value = &serde_json::from_slice(pkg)?;
+                            let optfake = *(match QFAB.ctx.take(){
+                                Some(s) => s,
+                                None => Box::<FakeContext>::new(FakeContext::new()),
+                            });
+                            let nfc = FakeContext{
+                                id : optfake.id.clone(),
+                                buf: optfake.buf.clone(),
+                                ret_len: optfake.ret_len,
+                                dirs: optfake.dirs.to_vec()
+                            };
+                            QFAB.ctx = Some(Box::new(optfake));
+                            let s = nfc.call_jpc("builder".to_string(), "add_text_field".to_string(), v["params"].clone(), true);
+                            elvwasm::make_success_json(&json!({ "http" : { "body" : serde_json::from_slice::<Value>(&s).unwrap()}}), id)
                     }
                 }
                 "BuilderBuild" => {
                     unsafe{
-                        let t = &mut QFAB.ctx.clone().unwrap();
-                        let doc = t.build().unwrap();
+                        let pctx = Box::leak(QFAB.ctx.take().unwrap());
+                        let mf = FakeContext{
+                            id : pctx.id.clone(),
+                            buf: pctx.buf.clone(),
+                            ret_len: pctx.ret_len,
+                            dirs: pctx.dirs.to_vec()
+                        };
+                        let doc = pctx.build(false).unwrap();
                         QFAB.docs.append(vec![doc].as_mut());
-                        elvwasm::make_success_json(&json!({"document-id": t.id}), id)
+                        QFAB.ctx = Some(Box::new(mf));
+                        elvwasm::make_success_json(&json!({"document-id": id}), id)
                     }
                 }
                 "DocumentCreate" => {

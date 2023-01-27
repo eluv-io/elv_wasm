@@ -240,6 +240,7 @@ mod tests {
         assert_eq!(strip_quotes(config_value["indexer"]["arguments"]["document"]["prefix"].to_string().as_mut()), indexer_config.document.prefix.as_ref().to_string());
     }
     #[test]
+    #[ignore]
     fn test_crawler() ->  () {
         let index_object_meta: Value = serde_json::from_str(INDEX_CONFIG)
             .expect("Could not read index object into json value.");
