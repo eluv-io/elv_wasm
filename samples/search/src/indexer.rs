@@ -178,7 +178,7 @@ mod tests{
     use elvwasm::BitcodeContext;
 
 
-    use tantivy_jpc::tests::{FakeContext, TestDocument};
+    use tantivy_jpc::{tests::{FakeContext, TestDocument}};
 
 
     use serde_derive::{Deserialize, Serialize};
@@ -472,11 +472,18 @@ mod tests{
                                 Some(s) => s,
                                 None => Box::<FakeContext>::new(FakeContext::new()),
                             });
+                            let mut newdirs:Vec<tempdir::TempDir> = vec![];
+                            for i in &optfake.dirs{
+                                let p = i.path().to_str().ok_or(ErrorKinds::NotDir("failed to get temnp path".to_string()))?;
+                                let td = tempdir::TempDir::new(p)?;
+                                let mut newdir = vec![td];
+                                newdirs.append(&mut newdir);
+                            }
                             let nfc = FakeContext{
                                 id : optfake.id.clone(),
                                 buf: optfake.buf.clone(),
                                 ret_len: optfake.ret_len,
-                                dirs: optfake.dirs.to_vec()
+                                dirs: newdirs
                             };
                             QFAB.ctx = Some(Box::new(optfake));
                             let s = nfc.call_jpc("builder".to_string(), "add_text_field".to_string(), v["params"].clone(), true);
@@ -486,11 +493,18 @@ mod tests{
                 "BuilderBuild" => {
                     unsafe{
                         let pctx = Box::leak(QFAB.ctx.take().unwrap());
-                        let mf = FakeContext{
+                        let mut newdirs:Vec<tempdir::TempDir> = vec![];
+                        for i in &pctx.dirs{
+                            let p = i.path().to_str().ok_or(ErrorKinds::NotDir("failed to get temnp path".to_string()))?;
+                            let td = tempdir::TempDir::new(p)?;
+                            let mut newdir = vec![td];
+                            newdirs.append(&mut newdir);
+                        }
+                    let mf = FakeContext{
                             id : pctx.id.clone(),
                             buf: pctx.buf.clone(),
                             ret_len: pctx.ret_len,
-                            dirs: pctx.dirs.to_vec()
+                            dirs: newdirs
                         };
                         let doc = pctx.build(false).unwrap();
                         QFAB.docs.append(vec![doc].as_mut());
@@ -543,15 +557,15 @@ mod tests{
     }
 
     impl wapc::WebAssemblyEngineProvider for WasmerHolder{
-        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error + 'static>>{
+        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error +  Send + Sync + 'static>>{
             Ok(())
         }
-        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + 'static>>{
+        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + Send + Sync +'static>>{
             //.instance.store().engine.
             //self._instance.
             Ok(0)
         }
-        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + 'static>>{
+        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>{
             Ok(())
         }
     }

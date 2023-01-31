@@ -15,7 +15,7 @@ use wapc_guest::CallResult;
 #[repr(u8)]
 pub enum ErrorKinds {
     #[error("Other Error : {0}")]
-    Other(String) = 0,
+    Other(String),
     #[error("NotImplemented : {0}")]
     NotImplemented(String),
     #[error("Invalid : {0}")]
