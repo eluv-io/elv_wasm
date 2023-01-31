@@ -6,7 +6,7 @@ use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, E
 
 implement_bitcode_module!("proxy", do_proxy);
 
-fn do_proxy<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
+fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
   let http_p = &bcc.request.params.http;
   let qp = &http_p.query;
   BitcodeContext::log(&format!("In DoProxy hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers));

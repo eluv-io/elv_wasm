@@ -1,3 +1,7 @@
+//! Context core is a logical separation of portions of the BitcodeContext that result in calls to qfab's core interfaces <br>
+//! Most documentation will appear in the BitcodeModule and there is nothing else of interest here
+//! This module is to organize the fabric APIs via a grouping of their corresoding function on the server
+
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
@@ -41,7 +45,7 @@ impl<'a> BitcodeContext {
 
     /// q_list_content calculates a content fabric QList for the context's libid
     /// # Returns
-    /// [Vec<u8>] parseable to [QList]
+    /// [Vec] parseable to [QList]
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -59,7 +63,7 @@ impl<'a> BitcodeContext {
     /// # Arguments
     /// * `qlibid`-    libid to be listed
     /// # Returns
-    /// [Vec<u8>] parseable to [QList]
+    /// [Vec] parseable to [QList]
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -205,7 +209,7 @@ impl<'a> BitcodeContext {
     /// * `path` - string conatining the QFile path
     /// * `hash_or_token` - an optional string with a hash to operate on (defaults to the contexts content)
     /// # Returns
-    /// [Vec<u8>] with undelying json
+    /// [Vec] with undelying json
     /// {"written", written}
     pub fn q_file_to_stream(
         &'a self,
@@ -240,7 +244,7 @@ impl<'a> BitcodeContext {
     /// * `mime` - MIME type of the file
     /// * `size` - size of the file in bytes
     /// # Returns
-    /// [Vec<u8>] parseable to [QPartInfo]
+    /// [Vec] parseable to [QPartInfo]
     pub fn q_create_file_from_stream(
         &'a self,
         stream_id: &str,
@@ -281,7 +285,7 @@ impl<'a> BitcodeContext {
     /// * `qid`-                 id of object to get versions for
     /// * `with_details`-        whether to retrieve additional info (currently content type hash, qlib ID, and size stats)
     /// # Returns
-    /// [Vec<u8>] parseable to [QRef]
+    /// [Vec] parseable to [QRef]
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -541,7 +545,7 @@ impl<'a> BitcodeContext {
     /// * `qssid`- string identifier aquired from [BitcodeContext::q_create_q_state_store]
     /// * `key` - string
     /// # Returns
-    /// [Vec<u8>] containing string value
+    /// [Vec] containing string value
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.qss_get("sid_648nfjfh5666nmjejh", "akey")?;
