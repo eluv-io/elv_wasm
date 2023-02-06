@@ -586,4 +586,5 @@ impl<'a> BitcodeContext {
 
         self.call_function("QSSDelete", j, "core")
     }
+
 }
