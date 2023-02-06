@@ -66,12 +66,14 @@ pub mod bccontext_struct;
 pub mod bccontext_error;
 pub mod bccontext_core;
 pub mod bccontext_ext;
+pub mod bccontext_search;
 
 pub use self::bccontext::*;
 pub use self::bccontext_struct::*;
 pub use self::bccontext_error::*;
 pub use self::bccontext_core::*;
 pub use self::bccontext_ext::*;
+pub use self::bccontext_search::*;
 
 
 //use guest::console_log;

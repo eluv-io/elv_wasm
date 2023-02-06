@@ -472,11 +472,10 @@ mod tests{
                                 Some(s) => s,
                                 None => Box::<FakeContext>::new(FakeContext::new()),
                             });
-                            let mut newdirs:Vec<tempdir::TempDir> = vec![];
+                            let mut newdirs:Vec<String> = vec![];
                             for i in &optfake.dirs{
-                                let p = i.path().to_str().ok_or(ErrorKinds::NotDir("failed to get temnp path".to_string()))?;
-                                let td = tempdir::TempDir::new(p)?;
-                                let mut newdir = vec![td];
+                                let td = tempdir::TempDir::new(i)?;
+                                let mut newdir = vec![td.path().to_str().unwrap().to_string()];
                                 newdirs.append(&mut newdir);
                             }
                             let nfc = FakeContext{
@@ -493,11 +492,10 @@ mod tests{
                 "BuilderBuild" => {
                     unsafe{
                         let pctx = Box::leak(QFAB.ctx.take().unwrap());
-                        let mut newdirs:Vec<tempdir::TempDir> = vec![];
+                        let mut newdirs:Vec<String> = vec![];
                         for i in &pctx.dirs{
-                            let p = i.path().to_str().ok_or(ErrorKinds::NotDir("failed to get temnp path".to_string()))?;
-                            let td = tempdir::TempDir::new(p)?;
-                            let mut newdir = vec![td];
+                            let td = tempdir::TempDir::new(i)?;
+                            let mut newdir = vec![td.path().to_str().unwrap().to_string()];
                             newdirs.append(&mut newdir);
                         }
                     let mf = FakeContext{
@@ -557,15 +555,15 @@ mod tests{
     }
 
     impl wapc::WebAssemblyEngineProvider for WasmerHolder{
-        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error +  Send + Sync + 'static>>{
+        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error + 'static>>{
             Ok(())
         }
-        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + Send + Sync +'static>>{
+        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error +'static>>{
             //.instance.store().engine.
             //self._instance.
             Ok(0)
         }
-        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>{
+        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + 'static>>{
             Ok(())
         }
     }
