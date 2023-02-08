@@ -441,15 +441,6 @@ export class BitcodeContext{
         }
       }
 
-      FFMPEGRun(cmdline:string[]):elv_return_type {
-        let params = new JSON.Obj;
-        let ar = new JSON.Arr();
-        for (let i = 0; i < cmdline.length; i++){
-          ar.push(JSON.from(cmdline[i]));
-        }
-        params.set("stream_params", ar);
-        return this.Call( "FFMPEGRun", params, "ext");
-      }
 
       QueryParams(j_params:JSON.Obj) : Map<string,string>{
         consoleLog("in QueryParams");

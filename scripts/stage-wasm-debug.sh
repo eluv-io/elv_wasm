@@ -13,7 +13,6 @@ then
     echo "Bad number of args"
 else
     cp $1/target/wasm32-unknown-unknown/debug/rproxy.wasm $2/bitcode/wasm/rproxy/rproxy.wasm
-    cp $1/target/wasm32-unknown-unknown/debug/image.wasm $2/bitcode/wasm/image/image.wasm
     cp $1/target/wasm32-unknown-unknown/debug/real_img.wasm $2/bitcode/wasm/image/real_img.wasm
     cp $1/target/wasm32-unknown-unknown/debug/search.wasm $2/bitcode/wasm/search/search.wasm
     cp $1/target/wasm32-unknown-unknown/debug/everything.wasm $2/bitcode/wasm/everything/everything.wasm

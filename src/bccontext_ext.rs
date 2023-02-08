@@ -62,29 +62,6 @@ impl<'a> BitcodeContext{
         "ext"
     );
 
-
-    /// ffmpeg_run - runs ffmpeg server side
-    /// # Arguments
-    /// * `cmdline` - a string array with ffmpeg command line arguments
-    /// - note the ffmpeg command line may reference files opened using new_file_stream.
-    /// eg
-    /// ```
-    ///  fn ffmpeg_run_watermark(bcc:&elvwasm::BitcodeContext, height:&str, input_file:&str, new_file:&str, watermark_file:&str, overlay_x:&str, overlay_y:&str) -> wapc_guest::CallResult{
-    ///     let base_placement = format!("{}:{}",overlay_x,overlay_y);
-    ///     let scale_factor = "[0:v]scale=%SCALE%:-1[bg];[bg][1:v]overlay=%OVERLAY%";
-    ///     let scale_factor = &scale_factor.replace("%SCALE%", height).to_string().replace("%OVERLAY%", &base_placement).to_string();
-    ///     if input_file == "" || watermark_file == "" || new_file == ""{
-    ///       let msg = "parameter validation failed, one file is empty or null";
-    ///       return bcc.make_error(msg);
-    ///     }
-    ///     bcc.ffmpeg_run(["-hide_banner","-nostats","-y","-i", input_file,"-i", watermark_file,"-filter_complex", scale_factor,"-f", "singlejpeg", new_file].to_vec())
-    ///  }
-    /// ```
-    pub fn ffmpeg_run(&'a self, cmdline: Vec<&str>) -> CallResult {
-        let params = json!({ "stream_params": cmdline });
-        self.call_function("FFMPEGRun", params, "ext")
-    }
-
     pub fn start_bitcode_lro(&'a self, function: &str, args: &serde_json::Value) -> CallResult {
         let params = json!({ "function": function,  "args" : args});
         self.call_function("StartBitcodeLRO", params, "ext")

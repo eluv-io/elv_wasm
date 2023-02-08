@@ -124,6 +124,7 @@ fn do_img<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
       BitcodeContext::log("NO WATERMARK!!!");
     }
     let br = img.resize( new_width as u32, height as u32, image::imageops::FilterType::Lanczos3);
+    BitcodeContext::log(&format!("DynImage {:?}", br.bounds()));
     let mut bytes: Vec<u8> = Vec::new();
     let mut encoder = JpegEncoder::new(&mut bytes);
     encoder.encode(&br.to_bytes(), new_width as u32, height as u32, br.color())?;
