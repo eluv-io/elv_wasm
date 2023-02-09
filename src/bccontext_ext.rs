@@ -64,7 +64,7 @@ impl<'a> BitcodeContext{
 
     pub fn start_bitcode_lro(&'a self, function: &str, args: &serde_json::Value) -> CallResult {
         let params = json!({ "function": function,  "args" : args});
-        self.call_function("StartBitcodeLRO", params, "ext")
+        self.call_function("StartBitcodeLRO", params, "lro")
     }
 
 }
