@@ -212,17 +212,35 @@ impl<'a> BitcodeContext {
     }
 
     pub fn call_external_bitcode(&'a self, function: &str, args: &serde_json::Value, object_hash:&str,code_part_hash:&str) -> CallResult {
-        let params = json!({
-            "jpc" : "1.0",
-            "id" : self.request.id,
-            "method" : format!("/{function}"),
-            "params" : args,
-            "qinfo" : self.request.q_info.clone(),
-        });
-        let params = json!({ "function": function,  "params" : params, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
-        self.call_function("CallExternalBitcode", params, "ctx")
+        let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
+        let call_val = serde_json::to_vec(&params)?;
+        let call_str = serde_json::to_string(&params)?;
+
+        elv_console_log(&format!("CALL STRING = {call_str}"));
+        let call_ret_val = host_call(self.request.id.as_str(), "ctx", "CallExternalBitcode", &call_val)?;
+        let j_res: serde_json::Value = serde_json::from_slice(&call_ret_val)?;
+        if !j_res.is_object() {
+            return Ok(call_ret_val);
+        }
+        return match j_res.get("result") {
+            Some(x) => {
+                let r = serde_json::to_vec(&x)?;
+                Ok(r)
+            }
+            None => {
+                match j_res.get("error") {
+                    Some(x) => {
+                        let r = serde_json::to_vec(&x)?;
+                        return Ok(r);
+                    }
+                    None => {
+                        return Ok(call_ret_val);
+                    }
+                };
+            }
+        };
     }
-  
+
 
     /// close_stream closes the fabric stream
     /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)

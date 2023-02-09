@@ -22,7 +22,6 @@ else
 
     cp -u -f $1/target/wasm32-unknown-unknown/release/test_wapc.wasm $2/exeng/tests
 
-    wasm-gc $1/samples/library/library.wasm $2/bitcode/wasm/library/library.wasm
     wasm-gc $1/samples/proxy/proxy.wasm $2/bitcode/wasm/proxy/proxy.wasm
 fi
 
