@@ -211,6 +211,50 @@ impl<'a> BitcodeContext {
         };
     }
 
+    /// call_external_bitcode - enables the calling of fabric api's
+    /// # Arguments
+    /// * `function` - the function to call on the external bitcode
+    /// * `args` -  the argumaents to pass the external function
+    /// * `object_hash`  - the content object containing the external bitcode part
+    /// * `code_part_hash` - the code part for the external bitcode
+    ///
+    /// ```
+    /// use elvwasm::ErrorKinds;
+    /// extern crate wapc_guest as guest;
+    /// use serde_json::{json, Value};
+    /// use std::str;
+    /// use guest::CallResult;
+    /// use elvwasm::ExternalCallResult;
+    ///
+    /// fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
+    ///     let http_p = &bcc.request.params.http;
+    ///     let qp = &http_p.query;
+    ///     let id = &bcc.request.id;
+    ///     let img_hash = &qp.get("img_hash").ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
+    ///     let img_obj= &qp.get("img_obj").ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
+    ///     let tar_hash = &qp.get("tar_hash").ok_or(ErrorKinds::Invalid("tar_hash not present".to_string()))?[0];
+    ///     bcc.log_info(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
+    ///     let params = json!({
+    ///         "http" : {
+    ///             "verb" : "some",
+    ///             "headers": {
+    ///                 "Content-type": [
+    ///                     "application/json"
+    ///                 ]
+    ///             },
+    ///             "path" : "/image/default/assets/birds.jpg",
+    ///             "query" : {
+    ///                 "height" : ["200"],
+    ///             },
+    ///         },
+    ///     });
+    ///     let img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
+    ///     let exr:ExternalCallResult = serde_json::from_slice(&img)?;
+    ///     let imgbits = base64::decode(&exr.fout)?;
+    ///     Ok(imgbits)
+    /// }
+    /// ```
+
     pub fn call_external_bitcode(&'a self, function: &str, args: &serde_json::Value, object_hash:&str,code_part_hash:&str) -> CallResult {
         let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         let call_val = serde_json::to_vec(&params)?;
