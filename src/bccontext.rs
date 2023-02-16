@@ -56,6 +56,9 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// utf8 bytes stream containing json
     /// { "written" : bytes }
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L111)
+    ///
     pub fn write_stream(&'a self, stream: &str, src: &'a [u8], len: usize) -> CallResult {
         let mut actual_len = src.len();
         if len != usize::MAX {
@@ -65,7 +68,7 @@ impl<'a> BitcodeContext {
         host_call(&self.request.id, stream, "Write", src)
     }
 
-    /// write_stream writes a u8 slice to a fabric stream
+    /// write_stream_auto writes a u8 slice to a fabric stream
     /// # Arguments
     /// * `id`-    a unique identifier (can use BitcodeContext's request id)
     /// * `stream`-  the fabric stream to write to [BitcodeContext::new_stream]
@@ -73,6 +76,9 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// utf8 bytes stream containing json
     /// { "written" : bytes }
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/rproxy/src/lib.rs#L31)
+    ///
     pub fn write_stream_auto(id: String, stream: &'a str, src: &'a [u8]) -> CallResult {
         host_call(&id, stream, "Write", src)
     }
@@ -87,6 +93,8 @@ impl<'a> BitcodeContext {
     ///   "return" : { "read" : byte-count-read },
     ///   "result" : "base64 encoded string"
     ///  }
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112)
+    ///
     pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
         let input = vec![0; sz];
         BitcodeContext::log(&format!("imput len = {}", input.len()));
@@ -106,6 +114,9 @@ impl<'a> BitcodeContext {
     /// * `size`-  size of the output contents
     /// # Returns
     /// the checksum as hex-encoded string
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L133)
+    ///
     pub fn callback(&'a self, status: usize, content_type: &str, size: usize) -> CallResult {
         let v = json!(
           {"http" : {
@@ -170,6 +181,8 @@ impl<'a> BitcodeContext {
     /// * `params` - a json block to pass as parameters to the function being called
     /// * `module` - one of {"core", "ctx", "ext"} see [fabric API]
     ///
+    ///  This is the main workhorse function for the invoking of fabric bitcode APIs
+    ///  wherein all the outer wrapper functions merely call this with the appropriate json parameters
     pub fn call_function(
         &'a self,
         fn_name: &str,
@@ -217,6 +230,8 @@ impl<'a> BitcodeContext {
     /// * `args` -  the argumaents to pass the external function
     /// * `object_hash`  - the content object containing the external bitcode part
     /// * `code_part_hash` - the code part for the external bitcode
+    ///
+    ///   [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L101)
     ///
     /// ```
     /// use elvwasm::ErrorKinds;
@@ -289,6 +304,9 @@ impl<'a> BitcodeContext {
     /// close_stream closes the fabric stream
     /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
     ///  Returns the checksum as hex-encoded string
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L109)
+    ///
     pub fn close_stream(&'a self, sid: String) -> CallResult {
         self.call_function("CloseStream", json!({"stream_id" : sid}), "ctx")
     }
