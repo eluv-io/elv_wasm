@@ -14,7 +14,7 @@ extern crate image;
 use image::GenericImageView;
 use image::{jpeg::JpegEncoder, error::{DecodingError, ImageFormatHint}};
 
-use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, ReadStreamResult};
+use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, ReadStreamResult, WriteResult};
 
 implement_bitcode_module!("crawl", do_crawl, "proxy", do_proxy, "image", do_img);
 
@@ -37,13 +37,6 @@ pub struct ImageWatermark{
   #[serde(default)]
   pub image_watermark : WatermarkJson
 }
-
-#[derive(Serialize, Deserialize,  Clone, Debug)]
-pub struct WriteResult{
-  #[serde(default)]
-  pub written : usize
-}
-
 fn parse_asset(path:&str)-> String{
     let mut pos:Vec<&str> = path.split('/').collect();
     if pos.len() > 2{

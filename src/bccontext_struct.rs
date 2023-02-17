@@ -192,6 +192,13 @@ pub struct QPartInfo {
     pub part: QPart,
 }
 
+#[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct WriteResult{
+  #[serde(default)]
+  pub written : usize
+}
+
+
 /// Bitcode representation of a incomming client request
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Request {

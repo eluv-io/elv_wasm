@@ -18,7 +18,7 @@ use std::str;
 use guest::CallResult;
 
 #[cfg(doc)]
-use crate::{QRef, QPart, QList, QPartInfo};
+use crate::{QRef, QPart, QList, QPartInfo, QPartList,WriteResult,CreatePartResult};
 
 impl<'a> BitcodeContext {
     // CORE functions
@@ -31,6 +31,10 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// utf8 bytes stream containing json
     /// { "qid" : "idObj", "qwtoken" : "writeToken"}
+    ///
+    /// # Returns
+    /// * slice of [u8]
+    ///
     pub fn q_create_content(
         &'a self,
         qtype: &str,
@@ -55,6 +59,9 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
+    /// # Returns
+    /// * slice of [u8]
+    ///
     pub fn q_list_content(&'a self) -> CallResult {
         self.call_function("QListContent", json!({}), "core")
     }
@@ -73,6 +80,9 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
+    /// # Returns
+    /// * slice of [u8]
+    ///
     pub fn q_list_content_for(&'a self, qlibid: &str) -> CallResult {
         let j = json!(
           {
@@ -100,6 +110,11 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
+    /// # Returns
+    /// * slice of [u8]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/external/src/lib.rs#L50)
+    ///
     pub fn q_finalize_content(&'a self, qwtoken: &str) -> CallResult {
         let msg = json!(
           {
@@ -121,6 +136,10 @@ impl<'a> BitcodeContext {
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
     /// ```
+    ///
+    /// # Returns
+    /// * slice of [u8]
+    ///
     pub fn q_commit_content(&'a self, qhash: &str) -> CallResult {
         let msg = json!(
           {
@@ -150,10 +169,22 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
+    /// # Returns
+    /// * slice of [u8]
+    ///
     pub fn q_modify_content(&'a self) -> CallResult {
         self.call_function("QModifyContent", json!({}), "core")
     }
-
+    /// q_part_list returns a list of parts in a given hash
+    /// # Arguments
+    /// * `String`-    object id or hash for the objects parts to be listed
+    ///
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// [QPartList]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L93)
+    ///
     pub fn q_part_list(&'a self, object_id_or_hash: String) -> CallResult {
         self.call_function("QPartList", json!({"object_id_or_hash" : object_id_or_hash}), "core")
     }
@@ -166,7 +197,10 @@ impl<'a> BitcodeContext {
     /// * `qphash` - part hash to write
     /// # Returns
     /// utf8 bytes stream containing json
-    /// { "written" : count-of-bytes-written }
+    /// [WriteResult]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L110)
+    ///
     pub fn write_part_to_stream(
         &'a self,
         stream_id: String,
@@ -194,7 +228,10 @@ impl<'a> BitcodeContext {
     /// * `stream_id`- the stream to write [BitcodeContext::new_stream]
     /// # Returns
     /// utf8 bytes stream containing json
-    /// { "qphash" : "newPartHash", "size" : SizeOfPart}
+    /// [CreatePartResult]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/external/src/lib.rs#L48)
+    ///
     pub fn q_create_part_from_stream(&'a self, qwtoken: &str, stream_id: &str) -> CallResult {
         let msg = json!({
           "qwtoken" : qwtoken,
@@ -209,8 +246,11 @@ impl<'a> BitcodeContext {
     /// * `path` - string conatining the QFile path
     /// * `hash_or_token` - an optional string with a hash to operate on (defaults to the contexts content)
     /// # Returns
-    /// [Vec] with undelying json
-    /// {"written", written}
+    /// utf8 bytes stream containing json
+    /// [WriteResult]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/real-img/src/lib.rs#L57)
+    ///
     pub fn q_file_to_stream(
         &'a self,
         stream_id: &str,

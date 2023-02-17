@@ -36,7 +36,7 @@ impl<'a> BitcodeContext{
     /// in a directory on the local node.
     /// # Arguments
     /// * `content_hash` : &str the content object hash
-    /// * `part_hash` : &str the part hash returned from [archive_index_to_part]
+    /// * `part_hash` : &str the part hash returned from [BitcodeContext::archive_index_to_part]
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L190)
     ///

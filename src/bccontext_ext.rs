@@ -55,13 +55,28 @@ impl<'a> BitcodeContext{
         ///   bcc.proxy_http(Some(v))
         /// }
         /// ```
+        ///
         /// # Returns
         /// * slice of [u8]
+        ///
+        /// [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/rproxy/src/lib.rs#L26)
+        ///
         proxy_http,
         "ProxyHttp",
         "ext"
     );
 
+    /// start_bitcode_lro initiates a long running operation on the fabric.  Currently the lro implementation
+    /// constrains the callback to be in the same bitcode module as the initiator.
+    /// # Arguments
+    /// * `function` : &str the function to call in the current bitcode module
+    /// * `args` : JSON value containing the arguments to pass the callback
+    ///
+    /// # Returns
+    /// * slice of [u8]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/lro/src/lib.rs#L16)
+    ///
     pub fn start_bitcode_lro(&'a self, function: &str, args: &serde_json::Value) -> CallResult {
         let params = json!({ "function": function,  "args" : args});
         self.call_function("StartBitcodeLRO", params, "lro")
