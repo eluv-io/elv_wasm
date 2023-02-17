@@ -10,6 +10,14 @@ rust-version = "1.56.0"
 license = "Apache-2.0"
 keywords = ["eluvio", "content fabric"]
 categories = ["api-bindings", "wasm"]
+exclude = [
+    "samples/*",
+    "scripts/*",
+    "build.rs",
+    ".gitignore",
+    ".github/*",
+    "doc.tpl"
+]
 
 [lib]
 crate-type = ["rlib", "cdylib"]
