@@ -173,7 +173,7 @@ impl<'a> BitcodeContext {
     /// * slice of [u8]
     ///
     pub fn q_modify_content(&'a self) -> CallResult {
-        self.call_function("QModifyContent", json!({}), "core")
+        self.call_function("QModifyContent", json!({"meta" : {}, "qtype" : ""}), "core")
     }
     /// q_part_list returns a list of parts in a given hash
     /// # Arguments

@@ -46,6 +46,15 @@ impl<'a> BitcodeContext {
         self.call_function("Log", json!({"level" : "INFO", "msg" : s}), "ctx")
     }
 
+    pub fn convert<'b, T>(&'a self, cr:&'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>> where T: serde::Deserialize<'b>,{
+        match cr {
+            Ok(r) => {
+                let tr:T = serde_json::from_slice(&r)?;
+                Ok(tr)
+            },
+            Err(e) => Err(Box::new(ErrorKinds::Invalid(e.to_string()))),
+        }
+    }
 
     /// write_stream writes a u8 slice of specified length to a fabric stream
     /// # Arguments

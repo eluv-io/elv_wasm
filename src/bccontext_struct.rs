@@ -59,6 +59,11 @@ pub struct ReadResult {
 pub struct WritePartResult {
     pub written: usize,
 }
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct CreateResult {
+    pub qid: String,
+    pub qwtoken:String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CreatePartResult {
@@ -197,6 +202,13 @@ pub struct WriteResult{
   #[serde(default)]
   pub written : usize
 }
+
+#[derive(Serialize, Deserialize,  Clone, Debug)]
+pub struct ModifyResult{
+  #[serde(default)]
+  pub qwtoken : String,
+}
+
 
 
 /// Bitcode representation of a incomming client request
