@@ -49,8 +49,7 @@ impl<'a> BitcodeContext {
     pub fn convert<'b, T>(&'a self, cr:&'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>> where T: serde::Deserialize<'b>,{
         match cr {
             Ok(r) => {
-                let tr:T = serde_json::from_slice(&r)?;
-                Ok(tr)
+                Ok(serde_json::from_slice(&r)?)
             },
             Err(e) => Err(Box::new(ErrorKinds::Invalid(e.to_string()))),
         }

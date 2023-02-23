@@ -101,15 +101,14 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let mut a = tar::Builder::new(zip);
         let time_cur:SystemTimeResult = serde_json::from_slice(&bcc.q_system_time()?)?;
         for part in pl.part_list.parts {
-            let res = bcc.new_stream()?;
-            let stream_wm: NewStreamResult = serde_json::from_slice(&res)?;
+            let stream_wm: NewStreamResult = bcc.convert(&bcc.new_stream())?;
             defer!{
                 BitcodeContext::log(&format!("Closing part stream {}", &stream_wm.stream_id));
                 let _ = bcc.close_stream(stream_wm.stream_id.clone());
             }
             let _wprb = bcc.write_part_to_stream(stream_wm.stream_id.clone(), part.hash.clone(), bcc.request.q_info.hash.clone(), 0, -1)?;
             let usz = part.size.try_into()?;
-            let data:ReadResult = serde_json::from_slice(&bcc.read_stream(stream_wm.stream_id.clone(), usz)?)?;
+            let data:ReadResult = bcc.convert(&bcc.read_stream(stream_wm.stream_id.clone(), usz))?;
             let mut header = tar::Header::new_gnu();
             header.set_size(usz as u64);
             header.set_cksum();

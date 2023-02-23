@@ -323,15 +323,15 @@ pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
   };
 }
 
-#[cfg(not(test))]
-fn elv_console_log(s:&str){
+//#[cfg(not(test))]
+pub fn elv_console_log(s:&str){
   console_log(s)
 }
 
-#[cfg(test)]
-fn elv_console_log(s:&str){
-  println!("{}", s)
-}
+// #[cfg(test)]
+// pub fn elv_console_log(s:&str){
+//   println!("{}", s)
+// }
 
 const ID_NOT_CALCULATED_YET:&str = "id not yet calculated";
 
@@ -372,11 +372,17 @@ fn do_bitcode(json_params:  Request) -> CallResult{
     }
     None => {
       let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: None, return_buffer: vec![]};
+      let id = bcc.request.id.clone();
       let l = Box::leak(Box::new(bcc));
       unsafe{
         v_leaks.push(Box::from_raw(l));
       }
-      (cm_handler.hf)(l)
+      match (cm_handler.hf)(l){
+        Ok(o) => Ok(o),
+        Err(e) => {
+          make_json_error(ErrorKinds::Other(e.to_string()),&id)
+        },
+      }
     }
   }
 }

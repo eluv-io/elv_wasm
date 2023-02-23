@@ -9,6 +9,7 @@ use thiserror::Error;
 use serde_json::json;
 use serde_derive::{Serialize};
 use wapc_guest::CallResult;
+use crate::elv_console_log;
 
 
 #[derive(Error, Debug, Clone, Serialize)]
@@ -40,17 +41,6 @@ pub enum ErrorKinds {
     BadHttpParams(String),
 }
 
-#[cfg(not(test))]
-fn elv_console_log(s: &str) {
-    use wapc_guest::console_log;
-    console_log(s)
-}
-
-#[cfg(test)]
-fn elv_console_log(s: &str) {
-    println!("{}", s)
-}
-
 fn discriminant(v: &ErrorKinds) -> u8 {
     unsafe { *(v as *const ErrorKinds as *const u8) }
 }
@@ -58,7 +48,6 @@ fn discriminant(v: &ErrorKinds) -> u8 {
 /// # Arguments
 /// * `err`- the error to be translated to a response
 pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
-    elv_console_log(&format!("error={err}"));
     let msg = json!(
       {
         "error" :  {
@@ -74,8 +63,8 @@ pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
       }
     );
     let vr = serde_json::to_vec(&msg)?;
-    let out = std::str::from_utf8(&vr)?;
-    elv_console_log(&format!("returning a test {out}"));
+    // let out = std::str::from_utf8(&vr)?;
+    // elv_console_log(&format!("returning a test {out}"));
     Ok(vr)
 }
 
