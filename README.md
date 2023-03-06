@@ -10,6 +10,11 @@ export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || pr
 
 nvm install 14.7.0
 ```
+### Install Assemblyscript
+
+```
+npm i assemblyscript
+```
 
 ### Install Rust and add nightly toolchain and wasm32 targets
 
