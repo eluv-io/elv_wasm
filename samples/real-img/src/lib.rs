@@ -3,6 +3,7 @@ extern crate serde_json;
 #[macro_use(defer)] extern crate scopeguard;
 use std::collections::HashMap;
 
+use base64::Engine;
 use serde_json::json;
 use serde_derive::{Deserialize, Serialize};
 use elvwasm::{ErrorKinds};
@@ -11,6 +12,7 @@ use elvwasm::{ErrorKinds};
 extern crate image;
 use image::GenericImageView;
 use image::{jpeg::JpegEncoder, error::{DecodingError, ImageFormatHint}};
+use base64::engine::{general_purpose};
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, ReadStreamResult, WriteResult};
 
@@ -61,17 +63,15 @@ fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext, stream_id:&str, asset_p
     Ok(v) => v,
     Err(x) => return Err(image::ImageError::IoError(std::io::Error::new(std::io::ErrorKind::NotFound,x)))
   };
-  bcc.log_info(&format!("written = {}", &written.written));
   let read_data: ReadStreamResult = match bcc.convert(&bcc.read_stream(stream_id.to_owned(), written.written)){
     Ok(v) => v,
     Err(x) => return Err(image::ImageError::IoError(std::io::Error::new(std::io::ErrorKind::NotFound,x)))
   };
   let base = read_data.result;
-  let buffer = match base64::decode(base){
+  let buffer = match general_purpose::STANDARD.decode(base){
     Ok(v) => v,
     Err(x) => return Err(image::ImageError::Decoding(DecodingError::from_format_hint(ImageFormatHint::Name(format!("{x}")))))
   };
-  bcc.log_info(&format!("bytes read = {}", read_data.retval));
   image::load_from_memory_with_format(&buffer, image::ImageFormat::Jpeg)
 }
 
@@ -82,7 +82,6 @@ fn do_img<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.log_info(&format!("offering = {:?} asset_path = {} http_path= {}", &offering_json, &asset_path, &http_p.path))?;
     let stream_main: NewStreamResult = bcc.convert(&bcc.new_stream())?;
     defer!{
-      bcc.log_info("Closing main stream");
       let _ = bcc.close_stream(stream_main.stream_id.clone());
     }
     let img = &mut fab_file_to_image(&bcc, &stream_main.stream_id, &asset_path)?;
@@ -99,12 +98,11 @@ fn do_img<>(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let res = bcc.new_stream()?;
         let stream_wm: NewStreamResult = serde_json::from_slice(&res)?;
         defer!{
-          bcc.log_info(&format!("Closing watermark stream {}", &stream_wm.stream_id));
           let _ = bcc.close_stream(stream_wm.stream_id.clone());
         }
         let wm_filename = match offering_json.image_watermark.image.get("/"){
-            Some(f) => f.as_str().ok_or(ErrorKinds::Invalid(format!("Invalid link type")))?,
-            None => return Err(Box::new(ErrorKinds::Invalid(format!("Invalid link type, no link provided")))),
+            Some(f) => f.as_str().ok_or(ErrorKinds::Invalid("Invalid link type".to_string()))?,
+            None => return Err(Box::new(ErrorKinds::Invalid("Invalid link type, no link provided".to_string()))),
         };
         bcc.log_info(&format!("watermark image {}", &wm_filename[7..]))?;
         let wm = fab_file_to_image(&bcc, &stream_wm.stream_id, &wm_filename[7..])?;
