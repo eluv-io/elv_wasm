@@ -13,6 +13,8 @@ use snailquote::unescape;
 extern crate image;
 use image::GenericImageView;
 use image::{jpeg::JpegEncoder, error::{DecodingError, ImageFormatHint}};
+use base64::Engine;
+use base64::engine::{general_purpose};
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, ReadStreamResult, WriteResult};
 
@@ -76,7 +78,7 @@ fn fab_file_to_image(bcc: &&mut elvwasm::BitcodeContext, stream_id:&str, asset_p
     Err(x) => return Err(image::ImageError::IoError(std::io::Error::new(std::io::ErrorKind::NotFound,x)))
   };
   let base = read_data.result;
-  let buffer = match base64::decode(base){
+  let buffer = match general_purpose::STANDARD.decode(base){
     Ok(v) => v,
     Err(x) => return Err(image::ImageError::Decoding(DecodingError::from_format_hint(ImageFormatHint::Name(format!("{x}")))))
   };

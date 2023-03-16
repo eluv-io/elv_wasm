@@ -16,12 +16,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@assemblyscript/loader": "^0.18.32",
+    "@assemblyscript/loader": "^0.19.3",
     "asc": "^2.0.3"
   },
   "devDependencies": {
     "@as-pect/cli": "^6.1.1",
-    "assemblyscript": "^0.18.32",
+    "assemblyscript": "^0.19.3",
     "assemblyscript-json": "github:eluv-io/assemblyscript-json"
   }
 }
