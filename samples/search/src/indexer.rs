@@ -165,6 +165,7 @@ mod tests{
     extern crate snailquote;
     extern crate tempdir;
     use std::sync::{Arc};
+    use base64::{Engine};
     use elvwasm::ErrorKinds;
     use tempdir::TempDir;
     use std::fs::File;
@@ -177,6 +178,7 @@ mod tests{
     use std::collections::HashMap;
     use serde_json::Value;
     use elvwasm::BitcodeContext;
+    use base64::{engine::{general_purpose}};
 
 
     use tantivy_jpc::{tests::{FakeContext, TestDocument}};
@@ -303,7 +305,6 @@ mod tests{
         pub fn init(& mut self, path_to_json:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             let file = File::open(path_to_json)?;
             let reader = BufReader::new(file);
-
             // Read the JSON contents of the file as an instance of `User`.
             let json_rep:RootMockFabric = serde_json::from_reader(reader)?;
             self.fab = Some(json_rep);
@@ -374,13 +375,13 @@ mod tests{
         pub fn proxy_http(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
             println!("in ProxyHttp");
             let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
-            let enc = base64::encode(to_encode);
+            let enc = general_purpose::STANDARD.encode(to_encode);
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
         pub fn callback(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
             println!("in callback");
             let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
-            let enc = base64::encode(to_encode);
+            let enc = general_purpose::STANDARD.encode(to_encode);
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
         pub fn new_index_builder(&mut self, _dir:&str)-> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>>{

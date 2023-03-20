@@ -24,16 +24,12 @@ use guest::CallResult;
 #[derive(Debug, Clone, Default)]
 pub struct BitcodeContext {
     pub request: Request,
-    pub return_buffer: Vec<u8>,
-    pub index_temp_dir: Option<String>,
 }
 
 impl<'a> BitcodeContext {
     pub fn new(request: Request) -> BitcodeContext {
         BitcodeContext {
             request,
-            return_buffer: vec![],
-            index_temp_dir: None,
         }
     }
 

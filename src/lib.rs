@@ -371,7 +371,7 @@ fn do_bitcode(json_params:  Request) -> CallResult{
       }
     }
     None => {
-      let bcc = BitcodeContext{request: json_params.clone(), index_temp_dir: None, return_buffer: vec![]};
+      let bcc = BitcodeContext{request: json_params.clone()};
       let id = bcc.request.id.clone();
       let l = Box::leak(Box::new(bcc));
       unsafe{
