@@ -8,7 +8,7 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{BitcodeContext};
+use crate::BitcodeContext;
 
 use serde_json::json;
 
@@ -18,19 +18,21 @@ use std::str;
 use guest::CallResult;
 
 #[cfg(doc)]
-use crate::{QRef, QPart, QList, QPartInfo, QPartList,WriteResult,CreatePartResult};
+use crate::{CreatePartResult, QList, QPart, QPartInfo, QPartList, QRef, WriteResult};
 
 impl<'a> BitcodeContext {
     // CORE functions
 
     /// q_create_content creates a new content object locally.  The content will have a write token but will
-    /// not be comitted to the fabric until a calls to Finalize and commit are made
+    /// not be comitted to the fabric until calls to finalize and commit are made
     /// # Arguments
     /// * `qtype`-   a hash for the content type. Can also be "builtin" for built in bitcode
     /// * `meta`-    a HashMap containing the initial meta data for the object to be set at '/'
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "qid" : "idObj", "qwtoken" : "writeToken"}
+    /// ```
     ///
     /// # Returns
     /// * slice of [u8]
@@ -49,7 +51,7 @@ impl<'a> BitcodeContext {
 
     /// q_list_content calculates a content fabric QList for the context's libid
     /// # Returns
-    /// [Vec] parseable to [QList]
+    /// slice of u8 parseable to [QList]
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -59,8 +61,6 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_list_content(&'a self) -> CallResult {
         self.call_function("QListContent", json!({}), "core")
@@ -70,8 +70,9 @@ impl<'a> BitcodeContext {
     /// # Arguments
     /// * `qlibid`-    libid to be listed
     /// # Returns
-    /// [Vec] parseable to [QList]
+    /// slice of u8 parseable to [QList]
     /// e.g.
+    /// REVIEW: These examples should be updated. At the very least, use serde_json::from_slice
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_list_content_for(&bcc.request.q_info.qlib_id)?;
@@ -80,8 +81,6 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_list_content_for(&'a self, qlibid: &str) -> CallResult {
         let j = json!(
@@ -98,7 +97,9 @@ impl<'a> BitcodeContext {
     /// * `qwtoken` - a write token to finalize
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "qid" : "idObj", "qhash" : "newHash"}
+    /// ```
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -110,8 +111,6 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/external/src/lib.rs#L50)
     ///
@@ -124,6 +123,7 @@ impl<'a> BitcodeContext {
         self.call_function("QFinalizeContent", msg, "core")
     }
 
+    // REVIEW: What does it mean that this returns nil? How does that parse?
     /// q_commit_content finalizes a given write token
     /// # Arguments
     /// * `qhash` - a finalized hash
@@ -136,9 +136,6 @@ impl<'a> BitcodeContext {
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
     /// ```
-    ///
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_commit_content(&'a self, qhash: &str) -> CallResult {
         let msg = json!(
@@ -154,11 +151,12 @@ impl<'a> BitcodeContext {
         self.call_function("SystemTime", msg, "core")
     }
 
-
     /// q_modify_content enables edit on the implicit content of the context
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "qwtoken" : "writeTokenForEdit"}
+    /// ```
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -169,24 +167,27 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_modify_content(&'a self) -> CallResult {
         self.call_function("QModifyContent", json!({"meta" : {}, "qtype" : ""}), "core")
     }
+
     /// q_part_list returns a list of parts in a given hash
     /// # Arguments
     /// * `String`-    object id or hash for the objects parts to be listed
     ///
     /// # Returns
-    /// utf8 bytes stream containing json
+    /// utf8 bytes containing json
     /// [QPartList]
     ///
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L93)
     ///
     pub fn q_part_list(&'a self, object_id_or_hash: String) -> CallResult {
-        self.call_function("QPartList", json!({"object_id_or_hash" : object_id_or_hash}), "core")
+        self.call_function(
+            "QPartList",
+            json!({ "object_id_or_hash": object_id_or_hash }),
+            "core",
+        )
     }
 
     /// write_part_to_stream writes the content of a part to to a fabric stream
@@ -196,8 +197,7 @@ impl<'a> BitcodeContext {
     /// * `len`-  length of part to write
     /// * `qphash` - part hash to write
     /// # Returns
-    /// utf8 bytes stream containing json
-    /// [WriteResult]
+    /// utf8 bytes stream containing json [WriteResult]
     ///
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L110)
     ///
@@ -626,5 +626,4 @@ impl<'a> BitcodeContext {
 
         self.call_function("QSSDelete", j, "core")
     }
-
 }

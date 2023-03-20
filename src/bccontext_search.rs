@@ -4,13 +4,13 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{BitcodeContext, implement_ext_func};
+use crate::{implement_ext_func, BitcodeContext};
 
+use guest::CallResult;
 use serde_json::{json, Value};
 use std::str;
-use guest::CallResult;
 
-impl<'a> BitcodeContext{
+impl<'a> BitcodeContext {
     /// new_index_builder Creates a new index builder
     /// storing the resultant blob in a fabric part and returning the part hash in the body of an http response
     ///
@@ -18,8 +18,9 @@ impl<'a> BitcodeContext{
     ///
     pub fn new_index_builder(&'a mut self, _v: serde_json::Value) -> CallResult {
         let method = "NewIndexBuilder";
-        let vp = json!({});
-        let impl_result = self.call_function(method, vp, "search")?;
+        // REVIEW: Tiny tiny thing, but I prefer just inlining the empty params if the name is not
+        // meaningful
+        let impl_result = self.call_function(method, json!({}), "search")?;
         let id = self.request.id.clone();
         self.make_success_bytes(&impl_result, &id)
     }
@@ -29,8 +30,8 @@ impl<'a> BitcodeContext{
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L121)
     ///
-    pub fn archive_index_to_part(&'a self, dir:&str) -> CallResult {
-        self.call_function("ArchiveIndexToPart", json!({"directory" : dir}), "search")
+    pub fn archive_index_to_part(&'a self, dir: &str) -> CallResult {
+        self.call_function("ArchiveIndexToPart", json!({ "directory": dir }), "search")
     }
     /// restore_index_from_part Extract the part using the supplied part hash restore an archived tantivy index locating the resultant
     /// in a directory on the local node.
@@ -40,8 +41,12 @@ impl<'a> BitcodeContext{
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L190)
     ///
-    pub fn restore_index_from_part(&'a self, content_hash:&str, part_hash:&str) -> CallResult {
-        self.call_function("RestoreIndexFromPart", json!({"content-hash" : content_hash, "part-hash": part_hash}), "search")
+    pub fn restore_index_from_part(&'a self, content_hash: &str, part_hash: &str) -> CallResult {
+        self.call_function(
+            "RestoreIndexFromPart",
+            json!({"content-hash" : content_hash, "part-hash": part_hash}),
+            "search",
+        )
     }
 
     /// query_parser_parse_query Queries the index using the assoicated index query context
@@ -49,8 +54,8 @@ impl<'a> BitcodeContext{
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/searcher.rs#L32)
     ///
-    pub fn query_parser_parse_query(&'a self, query:&str) -> CallResult {
-        self.call_function("QueryParserParseQuery", json!({"query" : query}), "search")
+    pub fn query_parser_parse_query(&'a self, query: &str) -> CallResult {
+        self.call_function("QueryParserParseQuery", json!({ "query": query }), "search")
     }
 
     implement_ext_func!(
@@ -104,7 +109,6 @@ impl<'a> BitcodeContext{
         "BuilderCreateIndex",
         "search"
     );
-
 
     implement_ext_func!(
         /// document_create create a new document for a given Index
@@ -228,5 +232,4 @@ impl<'a> BitcodeContext{
         "QueryParserSearch",
         "search"
     );
-
 }

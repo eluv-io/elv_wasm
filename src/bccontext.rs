@@ -4,10 +4,10 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{Request, Response, FileStream, FileStreamSize};
 use crate::{elv_console_log, make_json_error, ErrorKinds};
+use crate::{FileStream, FileStreamSize, Request, Response};
 
-use serde_json::json;
+use serde_json::{json, Value};
 
 use std::fmt::Debug;
 
@@ -37,20 +37,27 @@ impl<'a> BitcodeContext {
         }
     }
 
-
-    pub fn log(s: &str){
+    // REVIEW: Why does log redirect to the host console_log, but log_info call into (what seems to be) the fabric's logger?
+    // Seems like they should either both go to console or both go to fabric
+    pub fn log(s: &str) {
         console_log(s);
     }
 
-    pub fn log_info(&'a self, s: &str) -> CallResult{
+    pub fn log_info(&'a self, s: &str) -> CallResult {
         self.call_function("Log", json!({"level" : "INFO", "msg" : s}), "ctx")
     }
 
-    pub fn convert<'b, T>(&'a self, cr:&'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>> where T: serde::Deserialize<'b>,{
+    // REVIEW: Why does this method exist on the bitcode context? It seems more appropriate to have
+    // this just be a general method called `convert_call_result` or something
+    pub fn convert<'b, T>(
+        &'a self,
+        cr: &'b CallResult,
+    ) -> Result<T, Box<dyn std::error::Error + Sync + Send>>
+    where
+        T: serde::Deserialize<'b>,
+    {
         match cr {
-            Ok(r) => {
-                Ok(serde_json::from_slice(r)?)
-            },
+            Ok(r) => Ok(serde_json::from_slice(r)?),
             Err(e) => Err(Box::new(ErrorKinds::Invalid(e.to_string()))),
         }
     }
@@ -63,11 +70,16 @@ impl<'a> BitcodeContext {
     /// * `len` -  length of the slice to write
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "written" : bytes }
+    /// ```
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L111)
     ///
-    pub fn write_stream(&'a self, stream: &str, src: &'a [u8], len: usize) -> CallResult {
+    /// REVIEW: It doesn't seems like the len argument actually changes what gets written. I think that this function should be either:
+    /// - fixed so that it only writes len bytes out of src (but its still quite clunky, because it takes a slice reference the caller should just slice before writing)
+    /// - remove the len argument, and get rid of write_stream_auto as they are now the same thing
+    pub fn write_stream(&self, stream: &str, src: &[u8], len: usize) -> CallResult {
         let mut actual_len = src.len();
         if len != usize::MAX {
             actual_len = len
@@ -83,7 +95,9 @@ impl<'a> BitcodeContext {
     /// * `src`-  a u8 slice to write
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "written" : bytes }
+    /// ```
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/rproxy/src/lib.rs#L31)
     ///
@@ -91,21 +105,25 @@ impl<'a> BitcodeContext {
         host_call(&id, stream, "Write", src)
     }
 
-    /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
+    /// read_stream reads usize bytes from a fabric stream returning a u8 slice
     /// # Arguments
     /// * `stream_to_read`-  the fabric stream to read from
     /// * `sz`-  usize size of bytes
     /// # Returns
-    /// utf8 bytes stream containing json
+    /// a call result containing a utf8-encoded json bytes in the format
+    /// ```json
     /// {
     ///   "return" : { "read" : byte-count-read },
     ///   "result" : "base64 encoded string"
     ///  }
+    /// ```
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112)
     ///
     pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
+        // REVIEW: Does the length of the empty vector matter here? If so, it seems like there is a better
+        // way to do this, as this input vec is not used in constructing the output
         let input = vec![0; sz];
-        BitcodeContext::log(&format!("imput len = {}", input.len()));
+        BitcodeContext::log(&format!("input len = {}", input.len()));
         host_call(
             self.request.id.as_str(),
             stream_to_read.as_str(),
@@ -125,6 +143,9 @@ impl<'a> BitcodeContext {
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L133)
     ///
+    /// REVIEW: I'm still somewhat confused on what this does after reading the example.
+    /// What is the "output stream"? Is that documented somewhere? Does this just tell the fabric
+    /// that I wrote something somewhere?
     pub fn callback(&'a self, status: usize, content_type: &str, size: usize) -> CallResult {
         let v = json!(
           {"http" : {
@@ -140,14 +161,18 @@ impl<'a> BitcodeContext {
         self.call_function(method, v, "ctx")
     }
 
+    // REVIEW: Maybe name this `make_success_string` to differentiate from `make_success_json`?
     pub fn make_success(&'a self, msg: &str) -> CallResult {
         let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
+        // REVIEW: Why are you converting string -> vec<u8> -> string? Why not just output msg?
         let v = serde_json::to_vec(&js_ret)?;
         let out = std::str::from_utf8(&v)?;
         elv_console_log(&format!("returning : {out}"));
         Ok(v)
     }
 
+    // REVIEW: Why does this one have id as an argument? If it is an associated method with this
+    // bitcode context, it should only ever use this bitcode context's id.
     pub fn make_success_json(&'a self, msg: &serde_json::Value, id: &str) -> CallResult {
         let js_ret = json!({
           "result" : msg,
@@ -160,6 +185,15 @@ impl<'a> BitcodeContext {
         Ok(v)
     }
 
+    // REVIEW: Similar comments as above. Also, these three functions can definitely be
+    // consolidated. They only differ in message construction
+    pub fn make_success_bytes(&'a self, msg: &[u8], id: &str) -> CallResult {
+        let res: serde_json::Value = serde_json::from_slice(msg)?;
+        let js_ret = json!({"jpc":"1.0", "id": id, "result" : res});
+        let v = serde_json::to_vec(&js_ret)?;
+        Ok(v)
+    }
+
     pub fn make_error(&'a self, msg: &'static str) -> CallResult {
         make_json_error(ErrorKinds::Invalid(msg.to_string()), &self.request.id)
     }
@@ -168,25 +202,21 @@ impl<'a> BitcodeContext {
         make_json_error(kind, &self.request.id)
     }
 
+    // REVIEW: This is unused, and also doesn't make use of the error
     pub fn make_error_with_error<T>(&'a self, kind: ErrorKinds, _err: T) -> CallResult {
         make_json_error(kind, &self.request.id)
     }
 
-    pub fn make_success_bytes(&'a self, msg: &[u8], id: &str) -> CallResult {
-        let res: serde_json::Value = serde_json::from_slice(msg)?;
-        let js_ret = json!({"jpc":"1.0", "id": id, "result" : res});
-        let v = serde_json::to_vec(&js_ret)?;
-        Ok(v)
-    }
-
-
-    pub fn call(&'a self, ns: &str, op: &str, msg: &[u8]) -> CallResult {
+    // REVIEW: What is this for? It's unused, and the arguments are not super helpful. Seems like an outdated version of call_function?
+    pub fn call(&self, ns: &str, op: &str, msg: &[u8]) -> CallResult {
         host_call(self.request.id.as_str(), ns, op, msg)
     }
+
     /// call_function - enables the calling of fabric api's
     /// # Arguments
     /// * `fn_name` - the fabric api to call e.g. QCreateFileFromStream
     /// * `params` - a json block to pass as parameters to the function being called
+    /// REVIEW: What is the link below supposed to be to?
     /// * `module` - one of {"core", "ctx", "ext"} see [fabric API]
     ///
     ///  This is the main workhorse function for the invoking of fabric bitcode APIs
@@ -205,9 +235,9 @@ impl<'a> BitcodeContext {
             params,
         };
         let call_val = serde_json::to_vec(response)?;
-        let call_str = serde_json::to_string(response)?;
-
-        elv_console_log(&format!("CALL STRING = {call_str}"));
+        // REVIEW: IMO rust's debug formatting is better suited to this than using serde_json again,
+        // but this is more of a personal preference thing
+        elv_console_log(&format!("CALL STRING = {:?}", response));
         let call_ret_val = host_call(self.request.id.as_str(), module, fn_name, &call_val)?;
         let j_res: serde_json::Value = serde_json::from_slice(&call_ret_val)?;
         if !j_res.is_object() {
@@ -225,6 +255,8 @@ impl<'a> BitcodeContext {
                         return Ok(r);
                     }
                     None => {
+                        // REVIEW: Should this really return ok in that case? When would this
+                        // happen, to have neither a result or error
                         return Ok(call_ret_val);
                     }
                 };
@@ -254,7 +286,7 @@ impl<'a> BitcodeContext {
     ///     let qp = &http_p.query;
     ///     let id = &bcc.request.id;
     ///     let img_hash = &qp.get("img_hash").ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
-    ///     let img_obj= &qp.get("img_obj").ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
+    ///     let img_obj= &qp.get("img_obj").ok_or(ErrorKinds::Invalid("img_obj not present".to_string()))?[0];
     ///     let tar_hash = &qp.get("tar_hash").ok_or(ErrorKinds::Invalid("tar_hash not present".to_string()))?[0];
     ///     bcc.log_info(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
     ///     let params = json!({
@@ -278,13 +310,24 @@ impl<'a> BitcodeContext {
     /// }
     /// ```
 
-    pub fn call_external_bitcode(&'a self, function: &str, args: &serde_json::Value, object_hash:&str,code_part_hash:&str) -> CallResult {
+    pub fn call_external_bitcode(
+        &'a self,
+        function: &str,
+        args: &serde_json::Value,
+        object_hash: &str,
+        code_part_hash: &str,
+    ) -> CallResult {
         let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         let call_val = serde_json::to_vec(&params)?;
         let call_str = serde_json::to_string(&params)?;
 
         elv_console_log(&format!("CALL STRING = {call_str}"));
-        let call_ret_val = host_call(self.request.id.as_str(), "ctx", "CallExternalBitcode", &call_val)?;
+        let call_ret_val = host_call(
+            self.request.id.as_str(),
+            "ctx",
+            "CallExternalBitcode",
+            &call_val,
+        )?;
         let j_res: serde_json::Value = serde_json::from_slice(&call_ret_val)?;
         if !j_res.is_object() {
             return Ok(call_ret_val);
@@ -308,49 +351,68 @@ impl<'a> BitcodeContext {
         };
     }
 
-
     /// close_stream closes the fabric stream
-    /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
-    ///  Returns the checksum as hex-encoded string
+    /// - stream:    the stream id (see [`new_file_stream`](Self::new_file_stream) or [`new_stream`](Self::new_stream))
+    /// # Returns
+    /// the checksum as hex-encoded string
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L109)
     ///
-    pub fn close_stream(&'a self, sid: String) -> CallResult {
-        self.call_function("CloseStream", json!({"stream_id" : sid}), "ctx")
+    pub fn close_stream(&'a self, stream: String) -> CallResult {
+        self.call_function("CloseStream", json!({ "stream_id": stream }), "ctx")
     }
 
+    // REVIEW: What does it mean for this to be a 'fabric bitcode stream'? Is this different than in
+    // other places where it is called a 'fabric stream'? What are the stream semantics (does writing
+    // notify the receiver, is it bidirectional, etc). These things should be visible from this doc (and the one below)
+    // Also, it might be nice to have this function actually handle the call result for the user. So
+    // the (simplified) signature and docstring would look more like
+    //
+    // Create a new stream, and either return the stream_id upon success or an error
+    // pub fn new_stream(&'a self) -> Result<String, ErrorType> {}
     /// new_stream creates a new fabric bitcode stream.
     /// # Returns
-    /// * output [u8] of format `{"stream_id" : id}` where id is a string
+    /// * output \[u8\] of format `{"stream_id" : id}` where id is a string
     pub fn new_stream(&'a self) -> CallResult {
         let v = json!({});
         self.call_function("NewStream", v, "ctx")
     }
 
     /// new_file_stream creates a new fabric file
-    /// output [u8] of format where id and path are strings
+    /// # Returns
+    /// utf8-encoded JSON bytes formatted like the below. id and path are strings.
+    /// ```json
     /// {
     ///   "stream_id": id,
-    ///   "file_name": path
+    ///   "file_name": path,
     /// }
+    /// ```
     pub fn new_file_stream(&'a self) -> CallResult {
         let v = json!({});
         self.call_function("NewFileStream", v, "ctx")
     }
 
-    /// q_download_file : downloads the file stored  at the fabric file location path for some content
+    /// q_download_file : downloads the file stored at the fabric file location path for some content
     /// # Arguments
     /// *  `path` : fabric file location in the content
     /// *  `hash_or_token` : hash for the content containing the file
     ///
     pub fn q_download_file(&'a mut self, path: &str, hash_or_token: &str) -> CallResult {
-        elv_console_log(&format!("q_download_file path={path} token={hash_or_token}"));
-        let strm = self.new_stream()?;
-        let strm_json: serde_json::Value = serde_json::from_slice(&strm)?;
-        let sid = strm_json["stream_id"].to_string();
-        if sid.is_empty() {
-            return self.make_error_with_kind(ErrorKinds::IO(format!("Unable to find stream_id {sid}")));
+        elv_console_log(&format!(
+            "q_download_file path={path} token={hash_or_token}"
+        ));
+        let strm_bytes = self.new_stream()?;
+        let strm_json: serde_json::Value = serde_json::from_slice(&strm_bytes)?["stream_id"];
+        // REVIEW: This didn't correctly handle a failure of stream id parsing. Indexing into the
+        // map will return serde_json::value::Value::Null if it doesn't exist, which serializes to
+        // "null", which isn't empty
+        // Actually, after reading further this should maybe use a struct similar to FileStream?
+        // REVIEW: Should this close the stream?
+        if strm_json.is_null() {
+            return self
+                .make_error_with_kind(ErrorKinds::IO(format!("Unable to create new stream")));
         }
+        let sid = strm_json.to_string();
         let j = json!({
           "stream_id" : sid,
           "path" : path,
@@ -358,23 +420,30 @@ impl<'a> BitcodeContext {
         });
 
         let v: serde_json::Value = match self.call_function("QFileToStream", j, "core") {
-            Err(e) => return self.make_error_with_kind(ErrorKinds::NotExist(format!("QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"))),
+            Err(e) => {
+                return self.make_error_with_kind(ErrorKinds::NotExist(format!(
+                    "QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"
+                )))
+            }
+            // REVIEW: Why use `unwrap_or_default` here? It seems to make more sense to error if we
+            // cannot parse the file
             Ok(e) => serde_json::from_slice(&e).unwrap_or_default(),
         };
 
-        let jtemp = v.to_string();
-        elv_console_log(&format!("json={jtemp}"));
-        let written = v["written"].as_u64().unwrap_or_default();
+        elv_console_log(&format!("json={}", v.to_string()));
+        let written_opt = v["written"].as_u64();
 
-        if written != 0 {
-            return self.read_stream(sid, written as usize);
+        match written_opt {
+            Some(written) => self.read_stream(sid, written as usize),
+            None => self.make_error_with_kind(ErrorKinds::NotExist(format!(
+                "wrote 0 bytes, sid={sid} path={path}, hot={hash_or_token}"
+            ))),
         }
-        self.make_error_with_kind(ErrorKinds::NotExist(format!("wrote 0 bytes, sid={sid} path={path}, hot={hash_or_token}")))
     }
 
     /// q_upload_file : uploads the input data and stores it at the fabric file location as filetype mime
     /// # Arguments
-    /// * `qwt` : a fabric write token
+    /// *  `qwt` : a fabric write token
     /// *  `input_data` : a slice of u8 data
     /// *  `path` : fabric file location
     /// *  `mime` : MIME type to store the data as (eg gif)
@@ -397,6 +466,8 @@ impl<'a> BitcodeContext {
             input_data.len(),
         )?;
         let written_map: HashMap<String, String> = serde_json::from_slice(&ret_s)?;
+        // REVIEW: Should this really just create a file with size 0 if we fail to parse? Seems like
+        // it should just fail instead
         let i: i32 = written_map["written"].parse().unwrap_or(0);
         let j = json!({
           "qwtoken" : qwt,
@@ -410,17 +481,18 @@ impl<'a> BitcodeContext {
         self.call_function(method, j, "core")
     }
 
+    // REVIEW: Seems a bit 'rustier' to make this return Option<usize>, so that we can differentiate
+    // the errors or other things. Or maybe even a Result<Option<usize>, ErrorOfSomeType> so we can
+    // distinguish transport/parsing errors from streams that are not open from open streams with 0 bytes
     /// file_stream_size computes the current size of a fabric file stream given its stream name
-    ///     filename : the name of the file steam.  See new_file_stream.
+    ///     filename : the name of the file steam.  See [`new_file_stream`](Self::new_file_stream).
     pub fn file_stream_size(&'a self, filename: &str) -> usize {
         elv_console_log("file_stream_size");
         let ret: Vec<u8> =
             match self.call_function("FileStreamSize", json!({ "file_name": filename }), "ctx") {
                 Ok(m) => m,
                 Err(_e) => {
-                    let j: FileStreamSize = serde_json::from_value(json!({"file_size" : 0}))
-                        .unwrap_or(FileStreamSize { file_size: 0 });
-                    return j.file_size;
+                    return 0;
                 }
             };
 
@@ -435,4 +507,10 @@ impl<'a> BitcodeContext {
             }
         }
     }
+}
+
+#[test]
+fn null_json_isnt_empty() {
+    println!("{}", Value::Null.to_string());
+    println!("{}", Value::Null.to_string().is_empty());
 }

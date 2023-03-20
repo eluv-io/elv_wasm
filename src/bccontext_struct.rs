@@ -4,10 +4,14 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
+use guest::CallResult;
 use serde_derive::{Deserialize, Serialize};
-use std::fmt::Debug;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::str;
+
+// REVIEW: In general, I really like using structs here to represent things and make serializing a
+// lot nicer :)
 
 /// Q is a bitcode representation of an individual piece of content from the fabric
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -22,18 +26,18 @@ pub struct Q {
     #[serde(default)]
     pub meta: serde_json::Value,
     #[serde(default)]
-    pub size_stats:SizeStats,
+    pub size_stats: SizeStats,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct SizeStats{
-	pub parts:i32,
+pub struct SizeStats {
+    pub parts: i32,
     #[serde(default)]
-	pub size:String,
-    pub size_bytes:i64,
+    pub size: String,
+    pub size_bytes: i64,
 }
 
-/// Bitcode representation of a fabric size error
+/// Bitcode representation of a fabric side error
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QError {
     pub error: String,
@@ -62,13 +66,13 @@ pub struct WritePartResult {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CreateResult {
     pub qid: String,
-    pub qwtoken:String,
+    pub qwtoken: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CreatePartResult {
     pub qphash: String,
-    pub size:i64,
+    pub size: i64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -97,6 +101,20 @@ pub struct QList {
     pub contents: Vec<QRef>,
     #[serde(default)]
     pub errors: Vec<QError>,
+}
+
+/// REVIEW: One thing that would be really nice to do for a lot of these structs is to implement an
+/// automatic way to get them out of a callresult, or get an error. I'll do it for this one above
+/// just as an example. Then, you can write code like the below. It will be much nicer for consumers
+/// of this library.
+/// ```
+/// let qlist: elv_wasm::QList = call_result.try_into()?;
+/// ```
+impl TryFrom<CallResult> for QList {
+    type Error = Box<dyn std::error::error + Sync + Send>;
+    fn from(cr: CallResult) -> Result<QList, Error> {
+        serde_json::from_slice(&cr?)
+    }
 }
 
 /// Bitcode representation of a fabric FileStream
@@ -188,7 +206,7 @@ pub struct QPartListContents {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QPartList {
-    pub part_list: QPartListContents
+    pub part_list: QPartListContents,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -197,21 +215,19 @@ pub struct QPartInfo {
     pub part: QPart,
 }
 
-#[derive(Serialize, Deserialize,  Clone, Debug)]
-pub struct WriteResult{
-  #[serde(default)]
-  pub written : usize
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct WriteResult {
+    #[serde(default)]
+    pub written: usize,
 }
 
-#[derive(Serialize, Deserialize,  Clone, Debug)]
-pub struct ModifyResult{
-  #[serde(default)]
-  pub qwtoken : String,
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ModifyResult {
+    #[serde(default)]
+    pub qwtoken: String,
 }
 
-
-
-/// Bitcode representation of a incomming client request
+/// Bitcode representation of a incoming client request
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Request {
     pub id: String,
@@ -225,9 +241,10 @@ pub struct Request {
 /// Bitcode representation of a request back to the fabric as a consequnce of processing the request
 /// In order for bitcode to respond to a primary request from a client, the bitcode must gather info
 /// from the fabric for processing.  This structure represents the data to such a call.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Response {
     pub jpc: String,
+    // REVIEW: I don't think there's any need here to rename params to params
     #[serde(rename = "params")]
     pub params: serde_json::Value,
     pub id: String,
@@ -264,7 +281,6 @@ pub struct ReadStreamResult {
     pub retval: String,
     pub result: String,
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LROResult {

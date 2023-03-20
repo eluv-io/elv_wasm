@@ -4,13 +4,11 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-
-use thiserror::Error;
-use serde_json::json;
-use serde_derive::{Serialize};
-use wapc_guest::CallResult;
 use crate::elv_console_log;
-
+use serde_derive::Serialize;
+use serde_json::json;
+use thiserror::Error;
+use wapc_guest::CallResult;
 
 #[derive(Error, Debug, Clone, Serialize)]
 #[repr(u8)]
@@ -46,7 +44,8 @@ fn discriminant(v: &ErrorKinds) -> u8 {
 }
 /// make_json_error translates the bitcode [ErrorKinds] to an error response to the client
 /// # Arguments
-/// * `err`- the error to be translated to a response
+/// * `err` - the error to be translated to a response
+/// * `id` - the jpc request id
 pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
     let msg = json!(
       {
@@ -63,11 +62,11 @@ pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
       }
     );
     let vr = serde_json::to_vec(&msg)?;
+    // FEEDBACK: This block could probably use a 'debug' or 'test' build flag or something. Or should be removed instead of just being commented out
     // let out = std::str::from_utf8(&vr)?;
     // elv_console_log(&format!("returning a test {out}"));
     Ok(vr)
 }
-
 
 pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
     let js_ret = json!({
@@ -75,9 +74,9 @@ pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
       "jpc" : "1.0",
       "id"  : id,
     });
+    // REVIEW: why does this go Value -> vec -> string instead of just doing msg.to_string()?
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
-    elv_console_log(&format!("returning : {out}" ));
+    elv_console_log(&format!("returning : {out}"));
     Ok(v)
 }
-
