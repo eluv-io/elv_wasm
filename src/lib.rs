@@ -59,22 +59,22 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate wapc_guest as guest;
-#[macro_use(defer)] extern crate scopeguard;
+#[macro_use(defer)]
+extern crate scopeguard;
 
 pub mod bccontext;
-pub mod bccontext_struct;
-pub mod bccontext_error;
 pub mod bccontext_core;
+pub mod bccontext_error;
 pub mod bccontext_ext;
 pub mod bccontext_search;
+pub mod bccontext_struct;
 
 pub use self::bccontext::*;
-pub use self::bccontext_struct::*;
-pub use self::bccontext_error::*;
 pub use self::bccontext_core::*;
+pub use self::bccontext_error::*;
 pub use self::bccontext_ext::*;
 pub use self::bccontext_search::*;
-
+pub use self::bccontext_struct::*;
 
 //use guest::console_log;
 
@@ -87,15 +87,14 @@ use lazy_static::lazy_static;
 use std::sync::Mutex;
 
 #[derive(Clone)]
-struct HandlerData<'a>{
-  pub hf:HandlerFunction<'a>,
-  pub req:Option<BitcodeContext>,
+struct HandlerData<'a> {
+    pub hf: HandlerFunction<'a>,
+    pub req: Option<BitcodeContext>,
 }
 
 lazy_static! {
-  static ref CALLMAP: Mutex<HashMap<String, HandlerData<'static>>> = Mutex::new(HashMap::new());
+    static ref CALLMAP: Mutex<HashMap<String, HandlerData<'static>>> = Mutex::new(HashMap::new());
 }
-
 
 #[macro_export]
 macro_rules! register_handlers {
@@ -106,7 +105,6 @@ macro_rules! register_handlers {
     register_handlers!($( $more_name, $more_func ),* );
   }
 }
-
 
 /// This macro delivers the required initializtion of the eluvio wasm module
 /// In addition the macro also registers a handler of the form
@@ -149,87 +147,91 @@ macro_rules! implement_bitcode_module {
 mod tests {
 
     macro_rules! output_raw_pointers {
-      ($raw_ptr:ident, $raw_len:ident) => {
-            unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
-      }
+        ($raw_ptr:ident, $raw_len:ident) => {
+            unsafe {
+                std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len))
+                    .unwrap_or("unable to convert")
+            }
+        };
     }
 
     #[no_mangle]
-    pub extern "C" fn __console_log(ptr: *const u8, len: usize){
-      let out_str = output_raw_pointers!(ptr,len);
-      println!("console output : {}", out_str);
+    pub extern "C" fn __console_log(ptr: *const u8, len: usize) {
+        let out_str = output_raw_pointers!(ptr, len);
+        println!("console output : {}", out_str);
     }
     #[no_mangle]
     pub extern "C" fn __host_call(
-      bd_ptr: *const u8,
-      bd_len: usize,
-      ns_ptr: *const u8,
-      ns_len: usize,
-      op_ptr: *const u8,
-      op_len: usize,
-      ptr: *const u8,
-      len: usize,
-      ) -> usize {
+        bd_ptr: *const u8,
+        bd_len: usize,
+        ns_ptr: *const u8,
+        ns_len: usize,
+        op_ptr: *const u8,
+        op_len: usize,
+        ptr: *const u8,
+        len: usize,
+    ) -> usize {
         let out_bd = output_raw_pointers!(bd_ptr, bd_len);
         let out_ns = output_raw_pointers!(ns_ptr, ns_len);
         let out_op = output_raw_pointers!(op_ptr, op_len);
         let out_ptr = output_raw_pointers!(ptr, len);
-        println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
+        println!(
+            "host call bd = {} ns = {} op = {}, ptr={}",
+            out_bd, out_ns, out_op, out_ptr
+        );
         0
     }
     #[no_mangle]
-    pub extern "C" fn __host_response(ptr: *const u8){
-      println!("host __host_response ptr = {:?}", ptr);
+    pub extern "C" fn __host_response(ptr: *const u8) {
+        println!("host __host_response ptr = {:?}", ptr);
     }
 
     #[no_mangle]
-    pub extern "C" fn __host_response_len() -> usize{
-      println!("host __host_response_len");
-      0
+    pub extern "C" fn __host_response_len() -> usize {
+        println!("host __host_response_len");
+        0
     }
 
     #[no_mangle]
-    pub extern "C" fn __host_error_len() -> usize{
-      println!("host __host_error_len");
-      0
+    pub extern "C" fn __host_error_len() -> usize {
+        println!("host __host_error_len");
+        0
     }
 
     #[no_mangle]
-    pub extern "C" fn __host_error(ptr: *const u8){
-      println!("host __host_error ptr = {:?}", ptr);
+    pub extern "C" fn __host_error(ptr: *const u8) {
+        println!("host __host_error ptr = {:?}", ptr);
     }
 
     #[no_mangle]
-    pub extern "C" fn __guest_response(ptr: *const u8, len: usize){
-      let out_resp = output_raw_pointers!(ptr,len);
-      println!("host  __guest_response ptr = {}", out_resp);
+    pub extern "C" fn __guest_response(ptr: *const u8, len: usize) {
+        let out_resp = output_raw_pointers!(ptr, len);
+        println!("host  __guest_response ptr = {}", out_resp);
     }
 
     #[no_mangle]
-    pub extern "C" fn __guest_error(ptr: *const u8, len: usize){
-      let out_error = output_raw_pointers!(ptr,len);
-      println!("host  __guest_error ptr = {}", out_error);
+    pub extern "C" fn __guest_error(ptr: *const u8, len: usize) {
+        let out_error = output_raw_pointers!(ptr, len);
+        println!("host  __guest_error ptr = {}", out_error);
     }
 
     #[no_mangle]
-    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8){
-      println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
-
+    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8) {
+        println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
     }
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
+    pub use self::bccontext::*;
+    pub use self::bccontext_struct::QList;
     use super::*;
     use serde_json::*;
-    pub use self::bccontext::*;
-    pub use self::bccontext_struct::{QList};
 
-    fn handler_for_test(bcc: & mut BitcodeContext) -> CallResult{
-      bcc.make_success("DONE")
+    fn handler_for_test(bcc: &mut BitcodeContext) -> CallResult {
+        bcc.make_success("DONE")
     }
 
-
     #[test]
-    fn test_basic_http(){
+    fn test_basic_http() {
         register_handler("testing", handler_for_test);
         let test_json = json!({
           "id" : "dummydummy",
@@ -246,86 +248,80 @@ mod tests {
             "type" : "some_type",
           },
         });
-        match serde_json::to_vec(&test_json){
-          Ok(x) => {
-            let res = jpc(&x);
-            match res{
-              Ok(_) => {
-              },
-              Err(err) => {
-                panic!("failed test_http err = {:?}", err);
-              }
+        match serde_json::to_vec(&test_json) {
+            Ok(x) => {
+                let res = jpc(&x);
+                match res {
+                    Ok(_) => {}
+                    Err(err) => {
+                        panic!("failed test_http err = {:?}", err);
+                    }
+                }
             }
-          },
-          Err(err) =>{
-            panic!("failed test_http err = {:?}", err);
-          }
+            Err(err) => {
+                panic!("failed test_http err = {:?}", err);
+            }
         };
     }
 
     #[test]
-    fn test_basic_http_failure(){
-      register_handler("test_handler", handler_for_test);
-      // path missing
-      let test_json = json!({
-        "id" : "dummydummy",
-        "jpc" : "1.0",
-        "method" : "GET",
-        "params" : {
-          "http" : {
-          },
-        },
-      });
-      match serde_json::to_vec(&test_json){
-        Ok(x) => {
-          let res = jpc(&x);
-          match res{
-            Ok(k) => {
-              let mut res_json:serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&k).unwrap();
-              let mut err_json:serde_json::Map<String, serde_json::Value> = serde_json::from_value(res_json["error"].take()).unwrap();
-              println!("{:?}", err_json);
-              assert_eq!(err_json["op"], 2);
-              let err_json_data:serde_json::Map<String, serde_json::Value> = serde_json::from_value(err_json["data"].take()).unwrap();
-              assert_eq!(err_json_data["op"], 2);
+    fn test_basic_http_failure() {
+        register_handler("test_handler", handler_for_test);
+        // path missing
+        let test_json = json!({
+          "id" : "dummydummy",
+          "jpc" : "1.0",
+          "method" : "GET",
+          "params" : {
+            "http" : {
             },
-            Err(err) => {
-              panic!("failed test_http err = {:?}", err);
+          },
+        });
+        match serde_json::to_vec(&test_json) {
+            Ok(x) => {
+                let res = jpc(&x);
+                match res {
+                    Ok(k) => {
+                        let mut res_json: serde_json::Map<String, serde_json::Value> =
+                            serde_json::from_slice(&k).unwrap();
+                        let mut err_json: serde_json::Map<String, serde_json::Value> =
+                            serde_json::from_value(res_json["error"].take()).unwrap();
+                        println!("{:?}", err_json);
+                        assert_eq!(err_json["op"], 2);
+                        let err_json_data: serde_json::Map<String, serde_json::Value> =
+                            serde_json::from_value(err_json["data"].take()).unwrap();
+                        assert_eq!(err_json_data["op"], 2);
+                    }
+                    Err(err) => {
+                        panic!("failed test_http err = {:?}", err);
+                    }
+                }
             }
-          }
-        },
-        Err(err) =>{
-          panic!("failed test_http err = {:?}", err);
-        }
-      };
-  }
+            Err(err) => {
+                panic!("failed test_http err = {:?}", err);
+            }
+        };
+    }
 }
 
-
-
-
-
 type HandlerFunction<'a> = fn(bcc: &'a mut BitcodeContext) -> CallResult;
-
 
 /// register_handler adjusts the global static call map to associate a bitcode module with a path
 /// this map is used by jpc to implement bitcode calls
 #[no_mangle]
 pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
-  let hd = HandlerData{
-    hf:h,
-    req: None,
-  };
-  match CALLMAP.lock().as_mut(){
-    Ok(x) => {x.insert(name.to_string(),hd);},
-    Err(e) => {
-      elv_console_log(&format!("MutexGuard unable to aquire lock, error = {e}" ))
-    },
-  };
+    let hd = HandlerData { hf: h, req: None };
+    match CALLMAP.lock().as_mut() {
+        Ok(x) => {
+            x.insert(name.to_string(), hd);
+        }
+        Err(e) => elv_console_log(&format!("MutexGuard unable to aquire lock, error = {e}")),
+    };
 }
 
 //#[cfg(not(test))]
-pub fn elv_console_log(s:&str){
-  console_log(s)
+pub fn elv_console_log(s: &str) {
+    console_log(s)
 }
 
 // #[cfg(test)]
@@ -333,58 +329,66 @@ pub fn elv_console_log(s:&str){
 //   println!("{}", s)
 // }
 
-const ID_NOT_CALCULATED_YET:&str = "id not yet calculated";
+const ID_NOT_CALCULATED_YET: &str = "id not yet calculated";
 
-fn do_bitcode(json_params:  Request) -> CallResult{
-  elv_console_log("Parameters parsed");
-  let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
-  elv_console_log(&format!("splitpath={split_path:?}"));
+fn do_bitcode(json_params: Request) -> CallResult {
+    elv_console_log("Parameters parsed");
+    let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
+    elv_console_log(&format!("splitpath={split_path:?}"));
 
-  let mut v_leaks:Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
+    let mut v_leaks: Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
 
-  let cm = match CALLMAP.lock(){
-    Ok(c) => c,
-    Err(e) => return make_json_error(ErrorKinds::BadHttpParams(format!("unable to gain access to callmap: error = {e}")), ID_NOT_CALCULATED_YET),
-  };
-  // let mut element = 1;
-  // if json_params.method == "content"{
-  //   element = 0;
-  // }
-  let mut bind = cm.get(split_path[1]).into_iter();
-  let cm_handler = match bind.find(|mut _x| true).as_mut(){
-    Some(b) => b.to_owned(),
-    None => return Err(Box::new(ErrorKinds::Invalid(format!("handler not found {}", split_path[1])))),
-  };
-  match cm_handler.req{
-    Some(f) => {
-      let id = f.request.id.to_string();
-      let bcc = Box::new(f);
-      let l = Box::leak(bcc);
-      unsafe{
-        v_leaks.push(Box::from_raw(l));
-      }
-      match (cm_handler.hf)(l){
-        Ok(o) => Ok(o),
+    let cm = match CALLMAP.lock() {
+        Ok(c) => c,
         Err(e) => {
-          make_json_error(ErrorKinds::Other(e.to_string()), &id)
-        },
-      }
+            return make_json_error(
+                ErrorKinds::BadHttpParams(format!("unable to gain access to callmap: error = {e}")),
+                ID_NOT_CALCULATED_YET,
+            )
+        }
+    };
+    // let mut element = 1;
+    // if json_params.method == "content"{
+    //   element = 0;
+    // }
+    let mut bind = cm.get(split_path[1]).into_iter();
+    let cm_handler = match bind.find(|mut _x| true).as_mut() {
+        Some(b) => b.to_owned(),
+        None => {
+            return Err(Box::new(ErrorKinds::Invalid(format!(
+                "handler not found {}",
+                split_path[1]
+            ))))
+        }
+    };
+    match cm_handler.req {
+        Some(f) => {
+            let id = f.request.id.to_string();
+            let bcc = Box::new(f);
+            let l = Box::leak(bcc);
+            unsafe {
+                v_leaks.push(Box::from_raw(l));
+            }
+            match (cm_handler.hf)(l) {
+                Ok(o) => Ok(o),
+                Err(e) => make_json_error(ErrorKinds::Other(e.to_string()), &id),
+            }
+        }
+        None => {
+            let bcc = BitcodeContext {
+                request: json_params.clone(),
+            };
+            let id = bcc.request.id.clone();
+            let l = Box::leak(Box::new(bcc));
+            unsafe {
+                v_leaks.push(Box::from_raw(l));
+            }
+            match (cm_handler.hf)(l) {
+                Ok(o) => Ok(o),
+                Err(e) => make_json_error(ErrorKinds::Other(e.to_string()), &id),
+            }
+        }
     }
-    None => {
-      let bcc = BitcodeContext{request: json_params.clone()};
-      let id = bcc.request.id.clone();
-      let l = Box::leak(Box::new(bcc));
-      unsafe{
-        v_leaks.push(Box::from_raw(l));
-      }
-      match (cm_handler.hf)(l){
-        Ok(o) => Ok(o),
-        Err(e) => {
-          make_json_error(ErrorKinds::Other(e.to_string()),&id)
-        },
-      }
-    }
-  }
 }
 
 /// jpc is the main entry point into a wasm bitcode for the web assembly procedure calls
@@ -396,18 +400,19 @@ fn do_bitcode(json_params:  Request) -> CallResult{
 ///   * return results to the caller
 #[no_mangle]
 pub fn jpc(_msg: &[u8]) -> CallResult {
-  elv_console_log("In jpc");
-  let input_string = str::from_utf8(_msg)?;
-  elv_console_log(&format!("parameters = {input_string}"));
-  let json_params: Request = match serde_json::from_str(input_string){
-    Ok(m) => {m},
-    Err(err) => {
-      return make_json_error(ErrorKinds::Invalid(format!("parse failed for http error = {err}")), ID_NOT_CALCULATED_YET);
-    }
-  };
+    elv_console_log("In jpc");
+    let input_string = str::from_utf8(_msg)?;
+    elv_console_log(&format!("parameters = {input_string}"));
+    let json_params: Request = match serde_json::from_str(input_string) {
+        Ok(m) => m,
+        Err(err) => {
+            return make_json_error(
+                ErrorKinds::Invalid(format!("parse failed for http error = {err}")),
+                ID_NOT_CALCULATED_YET,
+            );
+        }
+    };
 
-  elv_console_log("Request parsed");
-  do_bitcode(json_params)
+    elv_console_log("Request parsed");
+    do_bitcode(json_params)
 }
-
-

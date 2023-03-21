@@ -8,7 +8,7 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{BitcodeContext};
+use crate::BitcodeContext;
 
 use serde_json::json;
 
@@ -18,7 +18,7 @@ use std::str;
 use guest::CallResult;
 
 #[cfg(doc)]
-use crate::{QRef, QPart, QList, QPartInfo, QPartList,WriteResult,CreatePartResult};
+use crate::{CreatePartResult, QList, QPart, QPartInfo, QPartList, QRef, WriteResult};
 
 impl<'a> BitcodeContext {
     // CORE functions
@@ -154,7 +154,6 @@ impl<'a> BitcodeContext {
         self.call_function("SystemTime", msg, "core")
     }
 
-
     /// q_modify_content enables edit on the implicit content of the context
     /// # Returns
     /// utf8 bytes stream containing json
@@ -186,7 +185,11 @@ impl<'a> BitcodeContext {
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L93)
     ///
     pub fn q_part_list(&'a self, object_id_or_hash: String) -> CallResult {
-        self.call_function("QPartList", json!({"object_id_or_hash" : object_id_or_hash}), "core")
+        self.call_function(
+            "QPartList",
+            json!({ "object_id_or_hash": object_id_or_hash }),
+            "core",
+        )
     }
 
     /// write_part_to_stream writes the content of a part to to a fabric stream
@@ -626,5 +629,4 @@ impl<'a> BitcodeContext {
 
         self.call_function("QSSDelete", j, "core")
     }
-
 }

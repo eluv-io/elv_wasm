@@ -4,8 +4,8 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{Request, Response, FileStream, FileStreamSize};
 use crate::{elv_console_log, make_json_error, ErrorKinds};
+use crate::{FileStream, FileStreamSize, Request, Response};
 
 use serde_json::json;
 
@@ -28,25 +28,26 @@ pub struct BitcodeContext {
 
 impl<'a> BitcodeContext {
     pub fn new(request: Request) -> BitcodeContext {
-        BitcodeContext {
-            request,
-        }
+        BitcodeContext { request }
     }
 
-
-    pub fn log(s: &str){
+    pub fn log(s: &str) {
         console_log(s);
     }
 
-    pub fn log_info(&'a self, s: &str) -> CallResult{
+    pub fn log_info(&'a self, s: &str) -> CallResult {
         self.call_function("Log", json!({"level" : "INFO", "msg" : s}), "ctx")
     }
 
-    pub fn convert<'b, T>(&'a self, cr:&'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>> where T: serde::Deserialize<'b>,{
+    pub fn convert<'b, T>(
+        &'a self,
+        cr: &'b CallResult,
+    ) -> Result<T, Box<dyn std::error::Error + Sync + Send>>
+    where
+        T: serde::Deserialize<'b>,
+    {
         match cr {
-            Ok(r) => {
-                Ok(serde_json::from_slice(r)?)
-            },
+            Ok(r) => Ok(serde_json::from_slice(r)?),
             Err(e) => Err(Box::new(ErrorKinds::Invalid(e.to_string()))),
         }
     }
@@ -175,7 +176,6 @@ impl<'a> BitcodeContext {
         Ok(v)
     }
 
-
     pub fn call(&'a self, ns: &str, op: &str, msg: &[u8]) -> CallResult {
         host_call(self.request.id.as_str(), ns, op, msg)
     }
@@ -274,13 +274,24 @@ impl<'a> BitcodeContext {
     /// }
     /// ```
 
-    pub fn call_external_bitcode(&'a self, function: &str, args: &serde_json::Value, object_hash:&str,code_part_hash:&str) -> CallResult {
+    pub fn call_external_bitcode(
+        &'a self,
+        function: &str,
+        args: &serde_json::Value,
+        object_hash: &str,
+        code_part_hash: &str,
+    ) -> CallResult {
         let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         let call_val = serde_json::to_vec(&params)?;
         let call_str = serde_json::to_string(&params)?;
 
         elv_console_log(&format!("CALL STRING = {call_str}"));
-        let call_ret_val = host_call(self.request.id.as_str(), "ctx", "CallExternalBitcode", &call_val)?;
+        let call_ret_val = host_call(
+            self.request.id.as_str(),
+            "ctx",
+            "CallExternalBitcode",
+            &call_val,
+        )?;
         let j_res: serde_json::Value = serde_json::from_slice(&call_ret_val)?;
         if !j_res.is_object() {
             return Ok(call_ret_val);
@@ -304,7 +315,6 @@ impl<'a> BitcodeContext {
         };
     }
 
-
     /// close_stream closes the fabric stream
     /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
     ///  Returns the checksum as hex-encoded string
@@ -312,7 +322,7 @@ impl<'a> BitcodeContext {
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L109)
     ///
     pub fn close_stream(&'a self, sid: String) -> CallResult {
-        self.call_function("CloseStream", json!({"stream_id" : sid}), "ctx")
+        self.call_function("CloseStream", json!({ "stream_id": sid }), "ctx")
     }
 
     /// new_stream creates a new fabric bitcode stream.
@@ -340,12 +350,15 @@ impl<'a> BitcodeContext {
     /// *  `hash_or_token` : hash for the content containing the file
     ///
     pub fn q_download_file(&'a mut self, path: &str, hash_or_token: &str) -> CallResult {
-        elv_console_log(&format!("q_download_file path={path} token={hash_or_token}"));
+        elv_console_log(&format!(
+            "q_download_file path={path} token={hash_or_token}"
+        ));
         let strm = self.new_stream()?;
         let strm_json: serde_json::Value = serde_json::from_slice(&strm)?;
         let sid = strm_json["stream_id"].to_string();
         if sid.is_empty() {
-            return self.make_error_with_kind(ErrorKinds::IO(format!("Unable to find stream_id {sid}")));
+            return self
+                .make_error_with_kind(ErrorKinds::IO(format!("Unable to find stream_id {sid}")));
         }
         let j = json!({
           "stream_id" : sid,
@@ -354,7 +367,11 @@ impl<'a> BitcodeContext {
         });
 
         let v: serde_json::Value = match self.call_function("QFileToStream", j, "core") {
-            Err(e) => return self.make_error_with_kind(ErrorKinds::NotExist(format!("QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"))),
+            Err(e) => {
+                return self.make_error_with_kind(ErrorKinds::NotExist(format!(
+                    "QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"
+                )))
+            }
             Ok(e) => serde_json::from_slice(&e).unwrap_or_default(),
         };
 
@@ -365,7 +382,9 @@ impl<'a> BitcodeContext {
         if written != 0 {
             return self.read_stream(sid, written as usize);
         }
-        self.make_error_with_kind(ErrorKinds::NotExist(format!("wrote 0 bytes, sid={sid} path={path}, hot={hash_or_token}")))
+        self.make_error_with_kind(ErrorKinds::NotExist(format!(
+            "wrote 0 bytes, sid={sid} path={path}, hot={hash_or_token}"
+        )))
     }
 
     /// q_upload_file : uploads the input data and stores it at the fabric file location as filetype mime

@@ -2,11 +2,9 @@
 
 use serde_derive::{Deserialize, Serialize};
 
-use serde_json::{Value};
+use elvwasm::ErrorKinds;
+use serde_json::Value;
 use std::{cmp::min, error::Error};
-use elvwasm::{ErrorKinds};
-
-
 
 // Used to represent values in prefix path
 #[derive(Clone, PartialEq, Eq)]
@@ -87,16 +85,18 @@ impl Prefix {
                 is_match = true;
                 elem = Some(prefix_1.get(i).clone());
             } else if *prefix_1.get(i) == PrefixValue::ObjectItemAny && prefix_2.get(i).is_key() {
-                    is_match = true;
-                    elem = Some(prefix_2.get(i).clone());
-                } else if *prefix_2.get(i) == PrefixValue::ObjectItemAny && prefix_1.get(i).is_key() {
-                    is_match = true;
-                    elem = Some(prefix_1.get(i).clone());
-                }
+                is_match = true;
+                elem = Some(prefix_2.get(i).clone());
+            } else if *prefix_2.get(i) == PrefixValue::ObjectItemAny && prefix_1.get(i).is_key() {
+                is_match = true;
+                elem = Some(prefix_1.get(i).clone());
+            }
             if !is_match {
                 break;
             }
-            if let Some(e) = elem { common_prefix.push(e) }
+            if let Some(e) = elem {
+                common_prefix.push(e)
+            }
         }
         Prefix {
             prefix: common_prefix,
@@ -134,13 +134,13 @@ pub struct Crawler {
 pub struct CrawlResult {
     //mdregistry, statistics, sorted_ids, sorted_hashes, raised_exceptions
     pub(crate) mdregistry: serde_json::map::Map<String, Value>,
-    pub(crate) stats:  serde_json::map::Map<String, Value>,
-    pub(crate) sorted_ids:  Vec<String>,
-    pub(crate) sorted_hashes:  Vec<String>,
+    pub(crate) stats: serde_json::map::Map<String, Value>,
+    pub(crate) sorted_ids: Vec<String>,
+    pub(crate) sorted_hashes: Vec<String>,
 }
 
 #[derive(Deserialize, Clone)]
-pub struct IndexerConfig<> {
+pub struct IndexerConfig {
     #[serde(rename = "type")]
     pub(crate) indexer_type: Box<String>,
     pub(crate) document: FabricDocument,
@@ -148,16 +148,20 @@ pub struct IndexerConfig<> {
     pub(crate) fabric: FabricConfig,
 }
 
-impl Crawler{
-    pub fn new(iurl:&str) -> Crawler{
-        Crawler { inception_url: iurl.to_string() }
+impl Crawler {
+    pub fn new(iurl: &str) -> Crawler {
+        Crawler {
+            inception_url: iurl.to_string(),
+        }
     }
-    pub fn crawl(&self, _config:IndexerConfig) -> Result<CrawlResult, Box<dyn Error + Send + Sync>>{
+    pub fn crawl(
+        &self,
+        _config: IndexerConfig,
+    ) -> Result<CrawlResult, Box<dyn Error + Send + Sync>> {
         Ok(CrawlResult::default())
     }
 }
-impl IndexerConfig{
-
+impl IndexerConfig {
     /**
      * Given a string representing the JSON index config, returns
      * and IndexerConfig value with proper fields filled out.
@@ -172,9 +176,13 @@ impl IndexerConfig{
         let fabric_config_val: &Value = &config_value["fabric"];
         let indexer_arguments_val = &indexer_config_val["arguments"];
         let mut field_configs: Vec<FieldConfig> = Vec::new();
-        let flds = match indexer_arguments_val["fields"].as_object(){
+        let flds = match indexer_arguments_val["fields"].as_object() {
             Some(x) => x,
-            None => return Err(ErrorKinds::NotExist("fields is not available in index".to_string()).into())
+            None => {
+                return Err(
+                    ErrorKinds::NotExist("fields is not available in index".to_string()).into(),
+                )
+            }
         };
         for (field_name, field_value) in flds {
             field_configs.push(FieldConfig {
@@ -185,7 +193,7 @@ impl IndexerConfig{
             });
         }
         Ok(IndexerConfig {
-            fabric:serde_json::from_value(fabric_config_val.clone())?,
+            fabric: serde_json::from_value(fabric_config_val.clone())?,
             indexer_type: serde_json::from_value(indexer_config_val["type"].clone())?,
             document: serde_json::from_value(indexer_arguments_val["document"].clone())?,
             fields: field_configs,
@@ -206,17 +214,16 @@ pub struct FieldConfig {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use test_utils::test_metadata::INDEX_CONFIG;
-    use serde_json::json;
+    use crate::Indexer;
     use elvwasm::{BitcodeContext, Request};
+    use serde_json::json;
     use std::collections::hash_map::RandomState;
     use std::collections::HashMap;
-    use crate::Indexer;
+    use test_utils::test_metadata::INDEX_CONFIG;
 
-    fn strip_quotes(s :&mut str) -> String{
+    fn strip_quotes(s: &mut str) -> String {
         s.replacen("\"", "", 2)
     }
-
 
     #[test]
     fn test_parse_index_config() -> () {
@@ -229,26 +236,48 @@ mod tests {
         /* Assert that indexer_config fields are correctly filled out. */
         assert_eq!(22, indexer_config.fields.len());
         assert_eq!("string", indexer_config.fields[0].field_type);
-        assert_eq!(vec!["site_map.searchables.*.asset_metadata.asset_type"], indexer_config.fields[0].paths);
-        assert_eq!(json!({ "stats": { "histogram": true } }), indexer_config.fields[0].options);
+        assert_eq!(
+            vec!["site_map.searchables.*.asset_metadata.asset_type"],
+            indexer_config.fields[0].paths
+        );
+        assert_eq!(
+            json!({ "stats": { "histogram": true } }),
+            indexer_config.fields[0].options
+        );
         assert_eq!("asset_type", indexer_config.fields[0].name);
         assert_eq!("metadata-text", indexer_config.indexer_type.as_ref());
-        assert_eq!("ilib4M649Yi6tCTWpXgxch4i9RJvv4BQ", indexer_config.fabric.root.library);
-        assert_eq!("iq__VjLkBkswLMrai3CfCUJtUfhWmZy", indexer_config.fabric.root.content);
+        assert_eq!(
+            "ilib4M649Yi6tCTWpXgxch4i9RJvv4BQ",
+            indexer_config.fabric.root.library
+        );
+        assert_eq!(
+            "iq__VjLkBkswLMrai3CfCUJtUfhWmZy",
+            indexer_config.fabric.root.content
+        );
         assert_eq!(vec!["/offerings/*"], indexer_config.fabric.policy.paths);
-        assert_eq!(indexer_config.document.prefix.as_ref().to_string() , "/".to_string());
-        assert_eq!(strip_quotes(config_value["indexer"]["arguments"]["document"]["prefix"].to_string().as_mut()), indexer_config.document.prefix.as_ref().to_string());
+        assert_eq!(
+            indexer_config.document.prefix.as_ref().to_string(),
+            "/".to_string()
+        );
+        assert_eq!(
+            strip_quotes(
+                config_value["indexer"]["arguments"]["document"]["prefix"]
+                    .to_string()
+                    .as_mut()
+            ),
+            indexer_config.document.prefix.as_ref().to_string()
+        );
     }
     #[test]
     #[ignore]
-    fn test_crawler() ->  () {
+    fn test_crawler() -> () {
         let index_object_meta: Value = serde_json::from_str(INDEX_CONFIG)
             .expect("Could not read index object into json value.");
         let config_value: &Value = &index_object_meta["indexer"]["config"];
         let indexer_config: IndexerConfig = IndexerConfig::parse_index_config(config_value)
             .expect("Could not parse indexer config.");
         let new_id = "id123".to_string();
-        let req = &Request{
+        let req = &Request {
             id: new_id.clone(),
             jpc: "1.0".to_string(),
             method: "foo".to_string(),
@@ -263,16 +292,26 @@ mod tests {
                     client_ip: "localhost".to_string(),
                     self_url: "localhost".to_string(),
                     proto: "".to_string(),
-                    host: "somehost.com".to_string()
-                }
+                    host: "somehost.com".to_string(),
+                },
             },
-            q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
+            q_info: elvwasm::QInfo {
+                hash: "hqp_123".to_string(),
+                id: new_id,
+                qlib_id: "libfoo".to_string(),
+                qtype: "hq_423234".to_string(),
+                write_token: "tqw_5555".to_string(),
+            },
         };
         let mut bcc = BitcodeContext::new(req.clone());
-        let idx = Indexer::new(&mut bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
+        let idx = Indexer::new(
+            &mut bcc,
+            indexer_config.document.prefix.as_ref().to_string(),
+            indexer_config.fields.clone(),
+        )
+        .expect("failed to create index");
         assert_eq!(&idx.fields.len(), &indexer_config.fields.len());
         let crawler = Crawler::new("");
         crawler.crawl(indexer_config).unwrap();
-
     }
 }

@@ -5,8 +5,8 @@ extern crate thiserror;
 extern crate wapc_guest as guest;
 
 use serde_derive::{Deserialize, Serialize};
-use std::fmt::Debug;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::str;
 
 /// Q is a bitcode representation of an individual piece of content from the fabric
@@ -22,15 +22,15 @@ pub struct Q {
     #[serde(default)]
     pub meta: serde_json::Value,
     #[serde(default)]
-    pub size_stats:SizeStats,
+    pub size_stats: SizeStats,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct SizeStats{
-	pub parts:i32,
+pub struct SizeStats {
+    pub parts: i32,
     #[serde(default)]
-	pub size:String,
-    pub size_bytes:i64,
+    pub size: String,
+    pub size_bytes: i64,
 }
 
 /// Bitcode representation of a fabric size error
@@ -62,13 +62,13 @@ pub struct WritePartResult {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CreateResult {
     pub qid: String,
-    pub qwtoken:String,
+    pub qwtoken: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CreatePartResult {
     pub qphash: String,
-    pub size:i64,
+    pub size: i64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -188,7 +188,7 @@ pub struct QPartListContents {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QPartList {
-    pub part_list: QPartListContents
+    pub part_list: QPartListContents,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -197,19 +197,17 @@ pub struct QPartInfo {
     pub part: QPart,
 }
 
-#[derive(Serialize, Deserialize,  Clone, Debug)]
-pub struct WriteResult{
-  #[serde(default)]
-  pub written : usize
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct WriteResult {
+    #[serde(default)]
+    pub written: usize,
 }
 
-#[derive(Serialize, Deserialize,  Clone, Debug)]
-pub struct ModifyResult{
-  #[serde(default)]
-  pub qwtoken : String,
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ModifyResult {
+    #[serde(default)]
+    pub qwtoken: String,
 }
-
-
 
 /// Bitcode representation of a incomming client request
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -264,7 +262,6 @@ pub struct ReadStreamResult {
     pub retval: String,
     pub result: String,
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LROResult {

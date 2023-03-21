@@ -1,18 +1,22 @@
 #![allow(dead_code, clippy::box_collection)]
 
-use crate::{utils::extract_body, crawler};
+use crate::{crawler, utils::extract_body};
 
 use elvwasm::{BitcodeContext, ErrorKinds};
 use serde_json::{json, Value};
-use std::{error::Error, collections::HashMap};
+use std::{collections::HashMap, error::Error};
 
 pub struct Indexer {
     pub filepath: String,
-    pub fields: Vec<crawler::FieldConfig>
+    pub fields: Vec<crawler::FieldConfig>,
 }
 
 impl Indexer {
-    pub fn new(bcc: &mut BitcodeContext, filepath: String, fields: Vec<crawler::FieldConfig>) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
+    pub fn new(
+        bcc: &mut BitcodeContext,
+        filepath: String,
+        fields: Vec<crawler::FieldConfig>,
+    ) -> Result<Indexer, Box<dyn Error + Send + Sync>> {
         // Read request
         let http_p = &bcc.request.params.http;
         let query_params = &http_p.query;
@@ -42,7 +46,11 @@ impl Indexer {
         Ok(Indexer { filepath, fields })
     }
 
-    fn add_field_to_schema(bcc: &BitcodeContext, field_config: &crawler::FieldConfig) -> Result<(), Box<dyn Error + Send + Sync>>{ //TODO: Add support for other fields.
+    fn add_field_to_schema(
+        bcc: &BitcodeContext,
+        field_config: &crawler::FieldConfig,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        //TODO: Add support for other fields.
         let input_data;
         match field_config.field_type.as_str() {
             "text" => {
@@ -89,15 +97,23 @@ impl Indexer {
 
 struct Writer<'a> {
     bcc: &'a BitcodeContext,
-    fields: HashMap<String, crawler::FieldConfig>
+    fields: HashMap<String, crawler::FieldConfig>,
 }
 
 impl<'a> Writer<'a> {
-    pub fn new(bcc: &'a BitcodeContext, fields: HashMap<String, crawler::FieldConfig>) -> Writer<'a>{
+    pub fn new(
+        bcc: &'a BitcodeContext,
+        fields: HashMap<String, crawler::FieldConfig>,
+    ) -> Writer<'a> {
         Writer { bcc, fields }
     }
 
-    pub fn index(&self, uid: &String, data: &Value, fields: &Value) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
+    pub fn index(
+        &self,
+        uid: &String,
+        data: &Value,
+        fields: &Value,
+    ) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
         assert!(fields.is_object());
 
         let response_vec = self.bcc.document_create(None)?;
@@ -147,65 +163,66 @@ impl<'a> Writer<'a> {
     }
 }
 
- // The following are mearly intended to verify internal consistency.  There are no actual calls made
+// The following are mearly intended to verify internal consistency.  There are no actual calls made
 // but the tests verify that the json parsing of the http message is correct
 #[cfg(test)]
-mod tests{
+mod tests {
+    extern crate tantivy_jpc;
     extern crate wapc;
     extern crate wapc_guest as guest;
-    extern crate tantivy_jpc;
 
     extern crate wasmer;
 
     extern crate base64;
+    extern crate json_dotpath;
     extern crate serde;
     extern crate serde_derive;
     extern crate serde_json;
-    extern crate json_dotpath;
     extern crate snailquote;
     extern crate tempdir;
-    use std::sync::{Arc};
-    use base64::{Engine};
+    use crate::crawler;
+    use base64::engine::general_purpose;
+    use base64::Engine;
+    use elvwasm::BitcodeContext;
     use elvwasm::ErrorKinds;
-    use tempdir::TempDir;
+    use elvwasm::Request;
+    use json_dotpath::DotPaths;
+    use serde_json::Value;
+    use std::collections::hash_map::RandomState;
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::BufReader;
-    use json_dotpath::DotPaths;
+    use std::sync::Arc;
+    use tempdir::TempDir;
     use test_utils::test_metadata::INDEX_CONFIG;
-    use elvwasm::Request;
-    use std::collections::hash_map::RandomState;
-    use crate::{crawler};
-    use std::collections::HashMap;
-    use serde_json::Value;
-    use elvwasm::BitcodeContext;
-    use base64::{engine::{general_purpose}};
 
-
-    use tantivy_jpc::{tests::{FakeContext, TestDocument}};
-
+    use tantivy_jpc::tests::{FakeContext, TestDocument};
 
     use serde_derive::{Deserialize, Serialize};
 
-    pub static mut QFAB: MockFabric = MockFabric{
-        fab : None,
+    pub static mut QFAB: MockFabric = MockFabric {
+        fab: None,
         ctx: None,
         resp: vec![],
-        docs: vec![]
+        docs: vec![],
     };
 
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
-              unsafe { std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len)).unwrap_or("unable to convert")}
-        }
-      }
+            unsafe {
+                std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len))
+                    .unwrap_or("unable to convert")
+            }
+        };
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __console_log(ptr: *const u8, len: usize){
-        let out_str = output_raw_pointers!(ptr,len);
+    #[no_mangle]
+    pub extern "C" fn __console_log(ptr: *const u8, len: usize) {
+        let out_str = output_raw_pointers!(ptr, len);
         println!("console output : {}", out_str);
-      }
-      #[no_mangle]
-      pub extern "C" fn __host_call(
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_call(
         bd_ptr: *const u8,
         bd_len: usize,
         ns_ptr: *const u8,
@@ -214,358 +231,412 @@ mod tests{
         op_len: usize,
         ptr: *const u8,
         len: usize,
-        ) -> usize {
-          let out_bd = output_raw_pointers!(bd_ptr, bd_len);
-          let out_ns = output_raw_pointers!(ns_ptr, ns_len);
-          let out_op = output_raw_pointers!(op_ptr, op_len);
-          let out_ptr = output_raw_pointers!(ptr, len);
-          println!("host call bd = {} ns = {} op = {}, ptr={}", out_bd, out_ns, out_op, out_ptr);
-          let v = MockFabric::host_callback(0, out_bd, out_ns, out_op, out_ptr.as_bytes()).expect("host callback failed");
-          unsafe{QFAB.resp = v;}
-          1
-      }
-      #[no_mangle]
-      pub extern "C" fn __host_response(ptr: *mut u8){
+    ) -> usize {
+        let out_bd = output_raw_pointers!(bd_ptr, bd_len);
+        let out_ns = output_raw_pointers!(ns_ptr, ns_len);
+        let out_op = output_raw_pointers!(op_ptr, op_len);
+        let out_ptr = output_raw_pointers!(ptr, len);
+        println!(
+            "host call bd = {} ns = {} op = {}, ptr={}",
+            out_bd, out_ns, out_op, out_ptr
+        );
+        let v = MockFabric::host_callback(0, out_bd, out_ns, out_op, out_ptr.as_bytes())
+            .expect("host callback failed");
+        unsafe {
+            QFAB.resp = v;
+        }
+        1
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_response(ptr: *mut u8) {
         println!("host __host_response ptr = {:?}", ptr);
-        unsafe{std::ptr::copy(QFAB.resp.as_ptr(), ptr, QFAB.resp.len())}
-      }
+        unsafe { std::ptr::copy(QFAB.resp.as_ptr(), ptr, QFAB.resp.len()) }
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __host_response_len() -> usize{
+    #[no_mangle]
+    pub extern "C" fn __host_response_len() -> usize {
         println!("host __host_response_len");
-        unsafe{QFAB.resp.len()}
-      }
+        unsafe { QFAB.resp.len() }
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __host_error_len() -> usize{
+    #[no_mangle]
+    pub extern "C" fn __host_error_len() -> usize {
         println!("host __host_error_len");
         0
-      }
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __host_error(ptr: *const u8){
+    #[no_mangle]
+    pub extern "C" fn __host_error(ptr: *const u8) {
         println!("host __host_error ptr = {:?}", ptr);
-      }
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __guest_response(ptr: *const u8, len: usize){
-        let out_resp = output_raw_pointers!(ptr,len);
+    #[no_mangle]
+    pub extern "C" fn __guest_response(ptr: *const u8, len: usize) {
+        let out_resp = output_raw_pointers!(ptr, len);
         println!("host  __guest_response ptr = {}", out_resp);
-      }
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __guest_error(ptr: *const u8, len: usize){
-        let out_error = output_raw_pointers!(ptr,len);
+    #[no_mangle]
+    pub extern "C" fn __guest_error(ptr: *const u8, len: usize) {
+        let out_error = output_raw_pointers!(ptr, len);
         println!("host  __guest_error ptr = {}", out_error);
-      }
+    }
 
-      #[no_mangle]
-      pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8){
+    #[no_mangle]
+    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8) {
         println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
-
-      }
+    }
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct RootMockFabric {
-      pub library:Library,
-      pub call:serde_json::Value,
+        pub library: Library,
+        pub call: serde_json::Value,
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct Object {
-      pub hash: String,
-      pub id: String,
-      pub qlib_id: String,
-      #[serde(rename = "type")]
-      pub qtype: String,
-      pub write_token: String,
-      pub meta : serde_json::Map<String, serde_json::Value>
+        pub hash: String,
+        pub id: String,
+        pub qlib_id: String,
+        #[serde(rename = "type")]
+        pub qtype: String,
+        pub write_token: String,
+        pub meta: serde_json::Map<String, serde_json::Value>,
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct Library {
-      pub id: String,
-      pub objects: std::vec::Vec<Object>,
+        pub id: String,
+        pub objects: std::vec::Vec<Object>,
     }
 
     #[derive(Debug)]
-    pub struct MockFabric<'a>{
+    pub struct MockFabric<'a> {
         ctx: Option<Box<FakeContext>>,
-        fab : Option<RootMockFabric>,
+        fab: Option<RootMockFabric>,
         resp: Vec<u8>,
-        docs: Vec<TestDocument<'a>>
+        docs: Vec<TestDocument<'a>>,
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct JPCRequest {
-      pub jpc: String,
-      pub params: serde_json::Map<String, serde_json::Value>
+        pub jpc: String,
+        pub params: serde_json::Map<String, serde_json::Value>,
     }
 
-    impl<'a> MockFabric<'a>{
-        pub fn init(& mut self, path_to_json:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    impl<'a> MockFabric<'a> {
+        pub fn init(
+            &mut self,
+            path_to_json: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             let file = File::open(path_to_json)?;
             let reader = BufReader::new(file);
             // Read the JSON contents of the file as an instance of `User`.
-            let json_rep:RootMockFabric = serde_json::from_reader(reader)?;
+            let json_rep: RootMockFabric = serde_json::from_reader(reader)?;
             self.fab = Some(json_rep);
-            return Ok("DONE".as_bytes().to_vec())
+            return Ok("DONE".as_bytes().to_vec());
         }
-        pub fn write_stream(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn write_stream(
+            &self,
+            _json_rep: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             println!("in WriteStream");
             Ok("Not Implemented".as_bytes().to_vec())
         }
-        pub fn sqmd_delete(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn sqmd_delete(
+            &self,
+            json_rep: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             println!("in SQMD delete");
-            let j:JPCRequest = serde_json::from_str(json_rep)?;
+            let j: JPCRequest = serde_json::from_str(json_rep)?;
             let path = j.params["path"].to_string();
-            if  !path.is_empty(){
+            if !path.is_empty() {
                 let mut fab = self.fab.clone().unwrap();
                 let p = &snailquote::unescape(&path).unwrap();
-                let pp:String = p.chars().map(|x| match x {
-                    '/' => '.',
-                    _ => x
-                }).collect();
-                fab.library.objects[0].meta.dot_remove(&pp[1..])?;//{
-                return Ok("DONE".as_bytes().to_vec())
-            }else{
+                let pp: String = p
+                    .chars()
+                    .map(|x| match x {
+                        '/' => '.',
+                        _ => x,
+                    })
+                    .collect();
+                fab.library.objects[0].meta.dot_remove(&pp[1..])?; //{
+                return Ok("DONE".as_bytes().to_vec());
+            } else {
                 println!("failed to find path argument");
             }
             Ok("FAILED".as_bytes().to_vec())
         }
-        pub fn sqmd_set(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn sqmd_set(
+            &self,
+            json_rep: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             println!("in SQMD set");
-            let j:JPCRequest = serde_json::from_str(json_rep)?;
+            let j: JPCRequest = serde_json::from_str(json_rep)?;
             let path = j.params["path"].to_string();
             let meta = j.params["meta"].to_string();
-            if !path.is_empty(){
+            if !path.is_empty() {
                 let mut fab = self.fab.clone().unwrap();
                 let p = &snailquote::unescape(&path).unwrap();
-                let pp:String = p.chars().map(|x| match x {
-                    '/' => '.',
-                    _ => x
-                }).collect();
+                let pp: String = p
+                    .chars()
+                    .map(|x| match x {
+                        '/' => '.',
+                        _ => x,
+                    })
+                    .collect();
                 fab.library.objects[0].meta.dot_set(&pp[1..], meta)?;
-                return Ok("DONE".as_bytes().to_vec())
-
-            }else{
+                return Ok("DONE".as_bytes().to_vec());
+            } else {
                 println!("failed to find path argument");
             }
             Ok("FAILED".as_bytes().to_vec())
         }
-        pub fn sqmd_get(&self, json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn sqmd_get(
+            &self,
+            json_rep: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             println!("in SQMD get");
-            let j:JPCRequest = serde_json::from_str(json_rep)?;
+            let j: JPCRequest = serde_json::from_str(json_rep)?;
             let path = j.params["path"].to_string();
-            if !path.is_empty(){
+            if !path.is_empty() {
                 let fab = self.fab.clone().unwrap();
                 let p = &snailquote::unescape(&path).unwrap();
-                let pp:String = p.chars().map(|x| match x {
-                    '/' => '.',
-                    _ => x
-                }).collect();
-                let gotten:Option<serde_json::Value> = fab.library.objects[0].meta.dot_get(&pp[1..])?;
+                let pp: String = p
+                    .chars()
+                    .map(|x| match x {
+                        '/' => '.',
+                        _ => x,
+                    })
+                    .collect();
+                let gotten: Option<serde_json::Value> =
+                    fab.library.objects[0].meta.dot_get(&pp[1..])?;
                 let ret = gotten.unwrap();
                 println!("sqmd_get returning = {}", ret);
-                return Ok(ret.to_string().as_bytes().to_vec())
-            }else{
+                return Ok(ret.to_string().as_bytes().to_vec());
+            } else {
                 println!("failed to find path argument");
             }
             Ok("FAILED".as_bytes().to_vec())
         }
-        pub fn proxy_http(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn proxy_http(
+            &self,
+            _json_rep: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             println!("in ProxyHttp");
             let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
             let enc = general_purpose::STANDARD.encode(to_encode);
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
-        pub fn callback(&self, _json_rep:&str) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn callback(
+            &self,
+            _json_rep: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             println!("in callback");
             let to_encode = r#"{"url" : {"type" : "application/json"}} "#.as_bytes();
             let enc = general_purpose::STANDARD.encode(to_encode);
             Ok(format!(r#"{{"result": "{}"}}"#, enc).as_bytes().to_vec())
         }
-        pub fn new_index_builder(&mut self, _dir:&str)-> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn new_index_builder(
+            &mut self,
+            _dir: &str,
+        ) -> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>> {
             self.ctx = Some(Box::new(FakeContext::new()));
             Ok(json!("DONE"))
         }
-        pub fn archive_index_to_part(&mut self, _dir:&str)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn archive_index_to_part(
+            &mut self,
+            _dir: &str,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn builder_add_text_field(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn builder_add_text_field(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn builder_build(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn builder_build(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn document_create(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn document_create(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn document_add_text(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn document_add_text(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn document_create_index(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn document_create_index(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn index_create_writer(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn index_create_writer(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn index_writer_create_document(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn index_writer_create_document(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn index_writer_commit(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn index_writer_commit(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn index_reader_builder_create(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn index_reader_builder_create(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn reader_builder_query_parser_create(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn reader_builder_query_parser_create(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn query_parser_for_index(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn query_parser_for_index(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn query_parser_parse_query(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn query_parser_parse_query(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn query_parser_search(&mut self)-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn query_parser_search(
+            &mut self,
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             Ok("DONE".as_bytes().to_vec())
         }
-        pub fn host_callback(i_cb:u64, id:&str, context:&str, method:&str, pkg:&[u8])-> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>{
+        pub fn host_callback(
+            i_cb: u64,
+            id: &str,
+            context: &str,
+            method: &str,
+            pkg: &[u8],
+        ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
             let s_pkg = std::str::from_utf8(pkg)?;
-            println!("In host callback, values i_cb = {} id = {} method = {} context = {}, pkg = {}", i_cb, id,method,context, s_pkg);
+            println!(
+                "In host callback, values i_cb = {} id = {} method = {} context = {}, pkg = {}",
+                i_cb, id, method, context, s_pkg
+            );
             match method {
-                "SQMDGet" =>{
-                   unsafe{ QFAB.sqmd_get(s_pkg) }
-                }
+                "SQMDGet" => unsafe { QFAB.sqmd_get(s_pkg) },
                 "TempDir" => {
-                   let td = tempdir::TempDir::new("qbitcode")?;
-                   let dir = td.path().to_str().unwrap();
-                   let v = json!({"directory" : dir });
-                   elvwasm::make_success_json(&v, id)
+                    let td = tempdir::TempDir::new("qbitcode")?;
+                    let dir = td.path().to_str().unwrap();
+                    let v = json!({ "directory": dir });
+                    elvwasm::make_success_json(&v, id)
                 }
-                "SQMDSet" =>{
-                    unsafe{ QFAB.sqmd_set(s_pkg) }
-                 }
-                "SQMDDelete" =>{
-                    unsafe{ QFAB.sqmd_delete(s_pkg) }
-                 }
-                "Write" => {
-                    unsafe{ QFAB.write_stream(s_pkg) }
-                }
-                "Callback" => {
-                    unsafe{ QFAB.callback(s_pkg) }
-                }
-                "ProxyHttp" => {
-                    unsafe{ QFAB.proxy_http(s_pkg) }
-                }
-                "NewIndexBuilder" => {
-                    unsafe{
-                        let v = QFAB.new_index_builder(s_pkg)?;
-                        elvwasm::make_success_json(&v, id)
+                "SQMDSet" => unsafe { QFAB.sqmd_set(s_pkg) },
+                "SQMDDelete" => unsafe { QFAB.sqmd_delete(s_pkg) },
+                "Write" => unsafe { QFAB.write_stream(s_pkg) },
+                "Callback" => unsafe { QFAB.callback(s_pkg) },
+                "ProxyHttp" => unsafe { QFAB.proxy_http(s_pkg) },
+                "NewIndexBuilder" => unsafe {
+                    let v = QFAB.new_index_builder(s_pkg)?;
+                    elvwasm::make_success_json(&v, id)
+                },
+                "ArchiveIndexToPart" => unsafe { QFAB.archive_index_to_part("/tmp/foo") },
+                "BuilderAddTextField" => unsafe {
+                    let v: &Value = &serde_json::from_slice(pkg)?;
+                    let optfake = *(match QFAB.ctx.take() {
+                        Some(s) => s,
+                        None => Box::<FakeContext>::new(FakeContext::new()),
+                    });
+                    let mut newdirs: Vec<TempDir> = vec![];
+                    for i in &optfake.dirs {
+                        let td = tempdir::TempDir::new(i.path().to_str().unwrap())?;
+                        let mut newdir = vec![td];
+                        newdirs.append(&mut newdir);
                     }
-                }
-                "ArchiveIndexToPart" => {
-                    unsafe{ QFAB.archive_index_to_part("/tmp/foo") }
-                }
-                "BuilderAddTextField" => {
-                        unsafe{
-                            let v:&Value = &serde_json::from_slice(pkg)?;
-                            let optfake = *(match QFAB.ctx.take(){
-                                Some(s) => s,
-                                None => Box::<FakeContext>::new(FakeContext::new()),
-                            });
-                            let mut newdirs:Vec<TempDir> = vec![];
-                            for i in &optfake.dirs{
-                                let td = tempdir::TempDir::new(i.path().to_str().unwrap())?;
-                                let mut newdir = vec![td];
-                                newdirs.append(&mut newdir);
-                            }
-                            let nfc = FakeContext{
-                                id : optfake.id.clone(),
-                                buf: optfake.buf.clone(),
-                                ret_len: optfake.ret_len,
-                                dirs: newdirs
-                            };
-                            QFAB.ctx = Some(Box::new(optfake));
-                            let s = nfc.call_jpc("builder".to_string(), "add_text_field".to_string(), v["params"].clone(), true);
-                            elvwasm::make_success_json(&json!({ "http" : { "body" : serde_json::from_slice::<Value>(&s).unwrap()}}), id)
+                    let nfc = FakeContext {
+                        id: optfake.id.clone(),
+                        buf: optfake.buf.clone(),
+                        ret_len: optfake.ret_len,
+                        dirs: newdirs,
+                    };
+                    QFAB.ctx = Some(Box::new(optfake));
+                    let s = nfc.call_jpc(
+                        "builder".to_string(),
+                        "add_text_field".to_string(),
+                        v["params"].clone(),
+                        true,
+                    );
+                    elvwasm::make_success_json(
+                        &json!({ "http" : { "body" : serde_json::from_slice::<Value>(&s).unwrap()}}),
+                        id,
+                    )
+                },
+                "BuilderBuild" => unsafe {
+                    let pctx = Box::leak(QFAB.ctx.take().unwrap());
+                    let mut newdirs: Vec<TempDir> = vec![];
+                    for i in &pctx.dirs {
+                        let td = tempdir::TempDir::new(i.path().to_str().unwrap())?;
+                        let mut newdir = vec![td];
+                        newdirs.append(&mut newdir);
                     }
-                }
-                "BuilderBuild" => {
-                    unsafe{
-                        let pctx = Box::leak(QFAB.ctx.take().unwrap());
-                        let mut newdirs:Vec<TempDir> = vec![];
-                        for i in &pctx.dirs{
-                            let td = tempdir::TempDir::new(i.path().to_str().unwrap())?;
-                            let mut newdir = vec![td];
-                            newdirs.append(&mut newdir);
-                        }
-                    let mf = FakeContext{
-                            id : pctx.id.clone(),
-                            buf: pctx.buf.clone(),
-                            ret_len: pctx.ret_len,
-                            dirs: newdirs
-                        };
-                        let doc = pctx.build(false).unwrap();
-                        QFAB.docs.append(vec![doc].as_mut());
-                        QFAB.ctx = Some(Box::new(mf));
-                        elvwasm::make_success_json(&json!({"document-id": id}), id)
-                    }
-                }
-                "DocumentCreate" => {
-                    unsafe{ QFAB.document_create() }
-                }
-                "DocumentAddText" => {
-                    unsafe{ QFAB.document_add_text() }
-                }
-                "DocumentCreateIndex" => {
-                    unsafe{ QFAB.document_create_index() }
-                }
-                "IndexCreateWriter" => {
-                    unsafe{ QFAB.index_create_writer() }
-                }
-                "IndexWriterAddDocument" => {
-                    unsafe{ QFAB.index_writer_create_document() }
-                }
-                "IndexWriterCommit" => {
-                    unsafe{ QFAB.index_writer_commit() }
-                }
-                "IndexReaderBuilderCreate" => {
-                    unsafe{ QFAB.index_reader_builder_create() }
-                }
-                "ReaderBuilderQueryParserCreate" => {
-                    unsafe{ QFAB.reader_builder_query_parser_create() }
-                }
-                "QueryParserForIndex" => {
-                    unsafe{ QFAB.query_parser_for_index()}
-                }
-                "QueryParserParseQuery" => {
-                    unsafe{ QFAB.query_parser_parse_query()}
-                }
-                "QueryParserSearch" => {
-                    unsafe{ QFAB.query_parser_search()}
-                }
-                _ => {
-                    Err(Box::new(ErrorKinds::NotExist(format!("Method not handled name={method}"))))
-                }
+                    let mf = FakeContext {
+                        id: pctx.id.clone(),
+                        buf: pctx.buf.clone(),
+                        ret_len: pctx.ret_len,
+                        dirs: newdirs,
+                    };
+                    let doc = pctx.build(false).unwrap();
+                    QFAB.docs.append(vec![doc].as_mut());
+                    QFAB.ctx = Some(Box::new(mf));
+                    elvwasm::make_success_json(&json!({ "document-id": id }), id)
+                },
+                "DocumentCreate" => unsafe { QFAB.document_create() },
+                "DocumentAddText" => unsafe { QFAB.document_add_text() },
+                "DocumentCreateIndex" => unsafe { QFAB.document_create_index() },
+                "IndexCreateWriter" => unsafe { QFAB.index_create_writer() },
+                "IndexWriterAddDocument" => unsafe { QFAB.index_writer_create_document() },
+                "IndexWriterCommit" => unsafe { QFAB.index_writer_commit() },
+                "IndexReaderBuilderCreate" => unsafe { QFAB.index_reader_builder_create() },
+                "ReaderBuilderQueryParserCreate" => unsafe {
+                    QFAB.reader_builder_query_parser_create()
+                },
+                "QueryParserForIndex" => unsafe { QFAB.query_parser_for_index() },
+                "QueryParserParseQuery" => unsafe { QFAB.query_parser_parse_query() },
+                "QueryParserSearch" => unsafe { QFAB.query_parser_search() },
+                _ => Err(Box::new(ErrorKinds::NotExist(format!(
+                    "Method not handled name={method}"
+                )))),
             }
         }
     }
 
-    struct WasmerHolder{
-        _instance:wasmer::Instance
+    struct WasmerHolder {
+        _instance: wasmer::Instance,
     }
 
-    impl wapc::WebAssemblyEngineProvider for WasmerHolder{
-        fn init(&mut self, _host: Arc<wapc::ModuleState>) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>{
+    impl wapc::WebAssemblyEngineProvider for WasmerHolder {
+        fn init(
+            &mut self,
+            _host: Arc<wapc::ModuleState>,
+        ) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
             Ok(())
         }
-        fn call(&mut self, _op_length: i32, _msg_length: i32) -> std::result::Result<i32, Box<dyn std::error::Error + Send + Sync +'static>>{
+        fn call(
+            &mut self,
+            _op_length: i32,
+            _msg_length: i32,
+        ) -> std::result::Result<i32, Box<dyn std::error::Error + Send + Sync + 'static>> {
             //.instance.store().engine.
             //self._instance.
             Ok(0)
         }
-        fn replace(&mut self, _bytes: &[u8]) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync+ 'static>>{
+        fn replace(
+            &mut self,
+            _bytes: &[u8],
+        ) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
             Ok(())
         }
     }
@@ -576,10 +647,11 @@ mod tests{
         let index_object_meta: Value = serde_json::from_str(INDEX_CONFIG)
             .expect("Could not read index object into json value.");
         let config_value: &Value = &index_object_meta["indexer"]["config"];
-        let indexer_config: crawler::IndexerConfig = crawler::IndexerConfig::parse_index_config(config_value)
-            .expect("Could not parse indexer config.");
+        let indexer_config: crawler::IndexerConfig =
+            crawler::IndexerConfig::parse_index_config(config_value)
+                .expect("Could not parse indexer config.");
         let new_id = "id123".to_string();
-        let req = &Request{
+        let req = &Request {
             id: new_id.clone(),
             jpc: "1.0".to_string(),
             method: "foo".to_string(),
@@ -594,15 +666,25 @@ mod tests{
                     client_ip: "localhost".to_string(),
                     self_url: "localhost".to_string(),
                     proto: "".to_string(),
-                    host: "somehost.com".to_string()
-                }
+                    host: "somehost.com".to_string(),
+                },
             },
-            q_info: elvwasm::QInfo { hash: "hqp_123".to_string(), id: new_id, qlib_id: "libfoo".to_string(), qtype: "hq_423234".to_string(), write_token: "tqw_5555".to_string() }
+            q_info: elvwasm::QInfo {
+                hash: "hqp_123".to_string(),
+                id: new_id,
+                qlib_id: "libfoo".to_string(),
+                qtype: "hq_423234".to_string(),
+                write_token: "tqw_5555".to_string(),
+            },
         };
         let mut bcc = BitcodeContext::new(req.clone());
-        let idx = Indexer::new(&mut bcc, indexer_config.document.prefix.as_ref().to_string(), indexer_config.fields.clone()).expect("failed to create index");
+        let idx = Indexer::new(
+            &mut bcc,
+            indexer_config.document.prefix.as_ref().to_string(),
+            indexer_config.fields.clone(),
+        )
+        .expect("failed to create index");
         assert_eq!(&idx.fields.len(), &indexer_config.fields.len());
-
     }
 }
 

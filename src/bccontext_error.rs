@@ -4,13 +4,11 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-
-use thiserror::Error;
-use serde_json::json;
-use serde_derive::{Serialize};
-use wapc_guest::CallResult;
 use crate::elv_console_log;
-
+use serde_derive::Serialize;
+use serde_json::json;
+use thiserror::Error;
+use wapc_guest::CallResult;
 
 #[derive(Error, Debug, Clone, Serialize)]
 #[repr(u8)]
@@ -68,7 +66,6 @@ pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
     Ok(vr)
 }
 
-
 pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
     let js_ret = json!({
       "result" : msg,
@@ -77,7 +74,6 @@ pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
     });
     let v = serde_json::to_vec(&js_ret)?;
     let out = std::str::from_utf8(&v)?;
-    elv_console_log(&format!("returning : {out}" ));
+    elv_console_log(&format!("returning : {out}"));
     Ok(v)
 }
-

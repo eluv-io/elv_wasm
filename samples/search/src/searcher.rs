@@ -1,12 +1,14 @@
-use elvwasm::{BitcodeContext};
+use elvwasm::BitcodeContext;
 use wapc_guest::CallResult;
-
 
 pub fn content_query(bcc: &mut BitcodeContext) -> CallResult {
     let searcher = Searcher { bcc };
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    BitcodeContext::log(&format!("In content_query hash={} headers={:#?} query params={qp:#?}",&bcc.request.q_info.hash, &http_p.headers));
+    BitcodeContext::log(&format!(
+        "In content_query hash={} headers={:#?} query params={qp:#?}",
+        &bcc.request.q_info.hash, &http_p.headers
+    ));
     searcher.query(qp["query"][0].as_str())?;
     Ok(Vec::new())
 }
@@ -16,8 +18,6 @@ struct Searcher<'a> {
 }
 
 impl<'a> Searcher<'a> {
-
-
     fn query(&self, query_str: &str) -> CallResult {
         // let hash_part_id_vec = self
         //     .bcc
@@ -27,7 +27,9 @@ impl<'a> Searcher<'a> {
 
         self.bcc.reader_builder_query_parser_create(None)?;
 
-        self.bcc.query_parser_for_index(Some(serde_json::from_str(r#"{ "fields" : ["title", "body"] } }"#)?))?;
+        self.bcc.query_parser_for_index(Some(serde_json::from_str(
+            r#"{ "fields" : ["title", "body"] } }"#,
+        )?))?;
 
         self.bcc.query_parser_parse_query(query_str)?;
 

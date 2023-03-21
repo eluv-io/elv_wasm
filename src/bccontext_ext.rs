@@ -4,11 +4,11 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{BitcodeContext};
+use crate::BitcodeContext;
 
+use guest::CallResult;
 use serde_json::{json, Value};
 use std::str;
-use guest::CallResult;
 
 #[macro_export]
 macro_rules! implement_ext_func {
@@ -32,7 +32,7 @@ macro_rules! implement_ext_func {
     }
   }
 
-impl<'a> BitcodeContext{
+impl<'a> BitcodeContext {
     implement_ext_func!(
         /// proxy_http proxies an http request in case of CORS issues
         /// # Arguments
@@ -81,5 +81,4 @@ impl<'a> BitcodeContext{
         let params = json!({ "function": function,  "args" : args});
         self.call_function("StartBitcodeLRO", params, "lro")
     }
-
 }

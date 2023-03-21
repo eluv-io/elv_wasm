@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
 use petgraph::graph::{Graph, NodeIndex};
-use petgraph::visit::{EdgeRef};
+use petgraph::visit::EdgeRef;
 use petgraph::Directed;
 use petgraph::EdgeDirection::{Incoming, Outgoing};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::collections::{HashMap};
 
 // FilterDAG represent the automata to filter hierarchical paths
 struct FilterDAG {
@@ -84,9 +84,7 @@ struct LinkScanner {
 
 impl LinkScanner {
     pub fn _new(_filter_dag: FilterDAG) -> LinkScanner {
-        LinkScanner {
-            _filter_dag,
-        }
+        LinkScanner { _filter_dag }
     }
 
     fn is_valid_field_type(field_type: &Value) -> bool {
@@ -182,9 +180,7 @@ struct _DictScanner {
 
 impl _DictScanner {
     pub fn _new(filter_dag: FilterDAG) -> _DictScanner {
-        _DictScanner {
-            filter_dag,
-        }
+        _DictScanner { filter_dag }
     }
 
     pub fn _scanner<'a, 'b>(
