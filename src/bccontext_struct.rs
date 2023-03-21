@@ -8,6 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str;
+use wapc_guest::CallResult;
 
 /// Q is a bitcode representation of an individual piece of content from the fabric
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -55,14 +56,42 @@ pub struct ReadResult {
     pub ret: String,
 }
 
+impl TryFrom<CallResult> for ReadResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<ReadResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WritePartResult {
     pub written: usize,
 }
+
+impl TryFrom<CallResult> for WritePartResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<WritePartResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CreateResult {
     pub qid: String,
     pub qwtoken: String,
+}
+
+impl TryFrom<CallResult> for CreateResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<CreateResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -71,11 +100,28 @@ pub struct CreatePartResult {
     pub size: i64,
 }
 
+impl TryFrom<CallResult> for CreatePartResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<CreatePartResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SystemTimeResult {
     pub time: u64,
 }
 
+impl TryFrom<CallResult> for SystemTimeResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<SystemTimeResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct ExternalCallResult {
     pub function_return: serde_json::Value,
@@ -83,10 +129,28 @@ pub struct ExternalCallResult {
     pub format: String,
 }
 
+impl TryFrom<CallResult> for ExternalCallResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<ExternalCallResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct FinalizeCallResult {
     pub qid: String,
     pub qhash: String,
+}
+
+impl TryFrom<CallResult> for FinalizeCallResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<FinalizeCallResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }
 
 /// Bitcode representation of a full content listing given an optional filter
@@ -99,6 +163,15 @@ pub struct QList {
     pub errors: Vec<QError>,
 }
 
+impl TryFrom<CallResult> for QList {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<QList, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 /// Bitcode representation of a fabric FileStream
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileStream {
@@ -108,10 +181,27 @@ pub struct FileStream {
     pub file_name: String,
 }
 
+impl TryFrom<CallResult> for FileStream {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<FileStream, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
 /// Bitcode representation of the size of a fabric stream
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileStreamSize {
     pub file_size: usize,
+}
+
+impl TryFrom<CallResult> for FileStreamSize {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<FileStreamSize, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }
 
 /// Bitcode representation of the JPC (JSON Procedure Call) parameters from a client request
@@ -178,12 +268,30 @@ pub struct QPart {
     pub size: i64,
 }
 
+impl TryFrom<CallResult> for QPart {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<QPart, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QPartListContents {
     #[serde(default)]
     pub content: Q,
     #[serde(default)]
     pub parts: Vec<QPart>,
+}
+
+impl TryFrom<CallResult> for QPartListContents {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<QPartListContents, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -203,10 +311,27 @@ pub struct WriteResult {
     pub written: usize,
 }
 
+impl TryFrom<CallResult> for WriteResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<WriteResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ModifyResult {
     #[serde(default)]
     pub qwtoken: String,
+}
+impl TryFrom<CallResult> for ModifyResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<ModifyResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }
 
 /// Bitcode representation of a incomming client request
@@ -247,6 +372,15 @@ pub struct NewStreamResult {
     pub stream_id: String,
 }
 
+impl TryFrom<CallResult> for NewStreamResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<NewStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 /// Bitcode representation of a result from read_stream
 /// ```
 /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -263,7 +397,25 @@ pub struct ReadStreamResult {
     pub result: String,
 }
 
+impl TryFrom<CallResult> for ReadStreamResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<ReadStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LROResult {
     pub lro_handle: String,
+}
+
+impl TryFrom<CallResult> for LROResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<LROResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }

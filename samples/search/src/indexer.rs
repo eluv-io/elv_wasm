@@ -20,19 +20,19 @@ impl Indexer {
         // Read request
         let http_p = &bcc.request.params.http;
         let query_params = &http_p.query;
-        BitcodeContext::log(&format!(
+        bcc.log_debug(&format!(
             "In create_index hash={} headers={:#?} query params={query_params:#?}",
             &bcc.request.q_info.hash, &http_p.headers
-        ));
+        ))?;
         let _id = &bcc.request.id;
 
         // Create index in directory
         let mut input_data = json!({
             "directory": "index" //TODO is this correct directory?
         });
-        BitcodeContext::log("before BUILDER");
+        bcc.log_debug("before BUILDER")?;
         bcc.new_index_builder(input_data)?;
-        BitcodeContext::log("NEW INDEX BUILDER");
+        bcc.log_debug("NEW INDEX BUILDER")?;
 
         // Add fields to schema builder
         for field_config in &fields {
@@ -69,7 +69,7 @@ impl Indexer {
                         )))
                     }
                 };
-                BitcodeContext::log("ADDED TEXT FIELD.");
+                bcc.log_debug("ADDED TEXT FIELD.")?;
             }
             "string" => {
                 input_data = json!({
@@ -87,7 +87,7 @@ impl Indexer {
                         )))
                     }
                 };
-                BitcodeContext::log("ADDED STRING FIELD.");
+                bcc.log_debug("ADDED STRING FIELD.")?;
             }
             _ => panic!("unknown field type"),
         }
@@ -528,6 +528,10 @@ mod tests {
             );
             match method {
                 "SQMDGet" => unsafe { QFAB.sqmd_get(s_pkg) },
+                "Log" => {
+                    println!("{pkg:?}");
+                    elvwasm::make_success_json(&json!({}), id)
+                }
                 "TempDir" => {
                     let td = tempdir::TempDir::new("qbitcode")?;
                     let dir = td.path().to_str().unwrap();

@@ -16,7 +16,7 @@ exclude = [
     "build.rs",
     ".gitignore",
     ".github/*",
-    "doc.tpl"
+    "doc.tpl",
 ]
 
 [lib]
@@ -43,8 +43,7 @@ members = [
     "samples/rproxy",
     "samples/real-img",
     "samples/search",
-    "samples/everything",
     "samples/objtar",
     "samples/lro",
     "samples/external",
-    ]
+]

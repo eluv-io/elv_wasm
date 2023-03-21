@@ -9,10 +9,10 @@ implement_bitcode_module!("proxy", do_proxy);
 fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    BitcodeContext::log(&format!(
+    bcc.log_debug(&format!(
         "In DoProxy hash={} headers={:#?} query params={qp:#?}",
         &bcc.request.q_info.hash, &http_p.headers
-    ));
+    ))?;
     let res = bcc.sqmd_get_json("/request_parameters")?;
     let mut meta_str: String = match String::from_utf8(res) {
         Ok(m) => m,
@@ -26,7 +26,7 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         .replace("${API_KEY}", &qp["API_KEY"][0].to_string())
         .replace("${QUERY}", &qp["QUERY"][0].to_string())
         .replace("${CONTEXT}", &qp["CONTEXT"][0].to_string());
-    BitcodeContext::log(&format!("MetaData = {}", &meta_str));
+    bcc.log_debug(&format!("MetaData = {}", &meta_str))?;
     let req: serde_json::Map<String, serde_json::Value> =
         match serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&meta_str) {
             Ok(m) => m,

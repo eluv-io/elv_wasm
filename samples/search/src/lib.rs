@@ -65,7 +65,7 @@ fn extract_body(v: Value) -> Option<Value> {
 //     let id = &bcc.request.id;
 //     let http_p = &bcc.request.params.http;
 //     let qp = &http_p.query;
-//     BitcodeContext::log(&format!("do_search http = {:?}, query params = {:?}", &http_p, &qp));
+//     bcc.log_debug(&format!("do_search http = {:?}, query params = {:?}", &http_p, &qp));
 //     let dir = &qp["directory"][0];
 //     let search_term = &qp["term"][0];
 //     bcc.new_index_builder(json!({"directory" : dir}))?;

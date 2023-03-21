@@ -31,12 +31,20 @@ impl<'a> BitcodeContext {
         BitcodeContext { request }
     }
 
-    pub fn log(s: &str) {
-        console_log(s);
-    }
-
     pub fn log_info(&'a self, s: &str) -> CallResult {
         self.call_function("Log", json!({"level" : "INFO", "msg" : s}), "ctx")
+    }
+
+    pub fn log_debug(&'a self, s: &str) -> CallResult {
+        self.call_function("Log", json!({"level" : "DEBUG", "msg" : s}), "ctx")
+    }
+
+    pub fn log_warn(&'a self, s: &str) -> CallResult {
+        self.call_function("Log", json!({"level" : "WARN", "msg" : s}), "ctx")
+    }
+
+    pub fn log_error(&'a self, s: &str) -> CallResult {
+        self.call_function("Log", json!({"level" : "ERROR", "msg" : s}), "ctx")
     }
 
     pub fn convert<'b, T>(
@@ -69,7 +77,7 @@ impl<'a> BitcodeContext {
         if len != usize::MAX {
             actual_len = len
         }
-        BitcodeContext::log(&format!("in write_stream len = {actual_len}"));
+        self.log_debug(&format!("in write_stream len = {actual_len}"))?;
         host_call(&self.request.id, stream, "Write", src)
     }
 
@@ -102,7 +110,7 @@ impl<'a> BitcodeContext {
     ///
     pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
         let input = vec![0; sz];
-        BitcodeContext::log(&format!("imput len = {}", input.len()));
+        self.log_debug(&format!("imput len = {}", input.len()))?;
         host_call(
             self.request.id.as_str(),
             stream_to_read.as_str(),

@@ -47,25 +47,25 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
     let img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
     let exr: ExternalCallResult = serde_json::from_slice(&img)?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
-    BitcodeContext::log(&format!(
+    bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
         imgbits.len(),
         exr.fout.len()
-    ));
-    BitcodeContext::log(&format!("fout {}", &exr.fout));
+    ))?;
+    bcc.log_debug(&format!("fout {}", &exr.fout))?;
     let stream_img: NewStreamResult = serde_json::from_slice(&bcc.new_stream()?)?;
     defer! {
-        BitcodeContext::log(&format!("Closing part stream {}", &stream_img.stream_id));
+        bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
     bcc.write_stream(&stream_img.stream_id, imgbits, imgbits.len())?;
     let imgpart: CreatePartResult = serde_json::from_slice(
         &bcc.q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)?,
     )?;
-    BitcodeContext::log(&format!(
+    bcc.log_debug(&format!(
         "imgpart hash {} size = {}",
         &imgpart.qphash, imgpart.size
-    ));
+    ))?;
     let fc: FinalizeCallResult =
         serde_json::from_slice(&bcc.q_finalize_content(&bcc.request.q_info.write_token)?)?;
     let tar_params = json!({
@@ -133,25 +133,25 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     let img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
     let exr: ExternalCallResult = serde_json::from_slice(&img)?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
-    BitcodeContext::log(&format!(
+    bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
         imgbits.len(),
         exr.fout.len()
-    ));
-    BitcodeContext::log(&format!("fout {}", &exr.fout));
+    ))?;
+    bcc.log_debug(&format!("fout {}", &exr.fout))?;
     let stream_img: NewStreamResult = serde_json::from_slice(&bcc.new_stream()?)?;
     defer! {
-        BitcodeContext::log(&format!("Closing part stream {}", &stream_img.stream_id));
+        bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
     bcc.write_stream(&stream_img.stream_id, imgbits, imgbits.len())?;
     let imgpart: CreatePartResult = serde_json::from_slice(
         &bcc.q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)?,
     )?;
-    BitcodeContext::log(&format!(
+    bcc.log_debug(&format!(
         "imgpart hash {} size = {}",
         &imgpart.qphash, imgpart.size
-    ));
+    ))?;
     let fc: FinalizeCallResult =
         serde_json::from_slice(&bcc.q_finalize_content(&bcc.request.q_info.write_token)?)?;
     let tar_params = json!({

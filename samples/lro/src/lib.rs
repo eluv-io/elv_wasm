@@ -2,6 +2,8 @@ extern crate elvwasm;
 extern crate serde;
 extern crate serde_json;
 
+use std::convert::TryInto;
+
 use elvwasm::{implement_bitcode_module, jpc, register_handler, LROResult, ModifyResult};
 use serde_json::json;
 
@@ -30,7 +32,7 @@ fn do_lro_callback(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let _qp = &http_p.query;
     bcc.log_info("IN CALLBACK!!!!!!!")?;
-    let mr: ModifyResult = bcc.convert(&bcc.q_modify_content())?;
+    let mr: ModifyResult = bcc.q_modify_content().try_into()?;
     bcc.log_info(&format!("write token = {}", mr.qwtoken))?;
     let id = &bcc.request.id;
     bcc.make_success_json(

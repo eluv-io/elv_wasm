@@ -53,8 +53,9 @@ impl<'a> BitcodeContext {
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-    ///   let res = bcc.q_list_content()?;
-    ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
+    ///   let qlist:elvwasm::QList = bcc.q_list_content().try_into()?;
+    ///   let res = vec![];
+    ///
     ///   // do stuff with the qlist
     ///   Ok(res)
     /// }
@@ -102,11 +103,10 @@ impl<'a> BitcodeContext {
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-    ///   let res = bcc.q_list_content()?;
-    ///   let q:serde_json::Value = serde_json::from_slice(&res).unwrap();
-    ///   let m = q.as_object().unwrap();
-    ///   let id = m["qid"].as_str().unwrap();
-    ///   let hash = m["qhash"].as_str().unwrap();
+    ///   let mr:elvwasm::ModifyResult = bcc.q_modify_content().try_into()?;
+    ///   // ... process content
+    ///   let res = vec![];
+    ///   let hash = bcc.q_finalize_content(&mr.qwtoken)?;
     ///   Ok(res)
     /// }
     /// ```
@@ -161,10 +161,8 @@ impl<'a> BitcodeContext {
     /// e.g.
     /// ```
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-    ///   let res = bcc.q_modify_content()?;
-    ///   let q:serde_json::Value = serde_json::from_slice(&res).unwrap();
-    ///   let m = q.as_object().unwrap();
-    ///   let write_token = m["qwtoken"].as_str().unwrap();
+    ///   let mr:elvwasm::ModifyResult = bcc.q_modify_content().try_into()?;
+    ///   let res = vec![];
     ///   Ok(res)
     /// }
     /// ```

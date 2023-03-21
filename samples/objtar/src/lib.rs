@@ -35,7 +35,9 @@ impl<'a> std::io::Write for FabricWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         match BitcodeContext::write_stream_auto(self.bcc.request.id.clone(), "fos", buf) {
             Ok(s) => {
-                BitcodeContext::log(&format!("Wrote {} bytes", buf.len()));
+                self.bcc
+                    .log_debug(&format!("Wrote {} bytes", buf.len()))
+                    .unwrap_or(vec![]); // to gobble the log result
                 let w: elvwasm::WritePartResult = serde_json::from_slice(&s)?;
                 self.size += w.written;
                 Ok(w.written)
@@ -54,13 +56,19 @@ impl<'a> std::io::Seek for FabricWriter<'a> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
             SeekFrom::Start(s) => {
-                BitcodeContext::log(&format!("SEEK from START {s}"));
+                self.bcc
+                    .log_debug(&format!("SEEK from START {s}"))
+                    .unwrap_or(vec![]);
             }
             SeekFrom::Current(s) => {
-                BitcodeContext::log(&format!("SEEK from CURRENT {s}"));
+                self.bcc
+                    .log_debug(&format!("SEEK from CURRENT {s}"))
+                    .unwrap_or(vec![]);
             }
             SeekFrom::End(s) => {
-                BitcodeContext::log(&format!("SEEK from END {s}"));
+                self.bcc
+                    .log_debug(&format!("SEEK from END {s}"))
+                    .unwrap_or(vec![]);
             }
         }
         Ok(self.size as u64)
@@ -80,7 +88,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     const DEF_CAP: usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity") {
         Some(x) => {
-            BitcodeContext::log(&format!("new capacity of {x:?} set"));
+            bcc.log_debug(&format!("new capacity of {x:?} set"))?;
             x[0].parse().unwrap_or(DEF_CAP)
         }
         None => DEF_CAP,
@@ -107,7 +115,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         for part in pl.part_list.parts {
             let stream_wm: NewStreamResult = bcc.convert(&bcc.new_stream())?;
             defer! {
-                BitcodeContext::log(&format!("Closing part stream {}", &stream_wm.stream_id));
+                bcc.log_debug(&format!("Closing part stream {}", &stream_wm.stream_id)).unwrap_or(vec![]);
                 let _ = bcc.close_stream(stream_wm.stream_id.clone());
             }
             let _wprb = bcc.write_part_to_stream(
@@ -131,7 +139,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let mut finished_writer = a.into_inner()?;
         finished_writer.flush()?;
     }
-    BitcodeContext::log(&format!("Callback size = {}", fw.size));
+    bcc.log_debug(&format!("Callback size = {}", fw.size))?;
     bcc.callback(200, "application/zip", fw.size)?;
 
     bcc.make_success_json(

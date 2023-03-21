@@ -5,10 +5,10 @@ pub fn content_query(bcc: &mut BitcodeContext) -> CallResult {
     let searcher = Searcher { bcc };
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    BitcodeContext::log(&format!(
+    bcc.log_debug(&format!(
         "In content_query hash={} headers={:#?} query params={qp:#?}",
         &bcc.request.q_info.hash, &http_p.headers
-    ));
+    ))?;
     searcher.query(qp["query"][0].as_str())?;
     Ok(Vec::new())
 }
