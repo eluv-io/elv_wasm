@@ -12,6 +12,7 @@ use elvwasm::{
     ExternalCallResult, FinalizeCallResult, NewStreamResult,
 };
 use serde_json::json;
+use std::convert::TryInto;
 
 implement_bitcode_module!("external", do_external, "failme", do_external_fail);
 
@@ -43,8 +44,9 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
             },
         },
     });
-    let img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
-    let exr: ExternalCallResult = serde_json::from_slice(&img)?;
+    let exr: ExternalCallResult = bcc
+        .call_external_bitcode("image", &params, img_obj, img_hash)
+        .try_into()?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
     bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
@@ -52,21 +54,22 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
         exr.fout.len()
     ))?;
     bcc.log_debug(&format!("fout {}", &exr.fout))?;
-    let stream_img: NewStreamResult = serde_json::from_slice(&bcc.new_stream()?)?;
+    let stream_img: NewStreamResult = bcc.new_stream().try_into()?;
     defer! {
         bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
     bcc.write_stream(&stream_img.stream_id, imgbits)?;
-    let imgpart: CreatePartResult = serde_json::from_slice(
-        &bcc.q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)?,
-    )?;
+    let imgpart: CreatePartResult = bcc
+        .q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)
+        .try_into()?;
     bcc.log_debug(&format!(
         "imgpart hash {} size = {}",
         &imgpart.qphash, imgpart.size
     ))?;
-    let fc: FinalizeCallResult =
-        serde_json::from_slice(&bcc.q_finalize_content(&bcc.request.q_info.write_token)?)?;
+    let fc: FinalizeCallResult = bcc
+        .q_finalize_content(&bcc.request.q_info.write_token)
+        .try_into()?;
     let tar_params = json!({
         "http" : {
             "verb" : "some",
@@ -81,12 +84,9 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
             },
         },
     });
-    let exr_tar: ExternalCallResult = serde_json::from_slice(&bcc.call_external_bitcode(
-        "tar",
-        &tar_params,
-        &fc.qhash,
-        tar_hash,
-    )?)?;
+    let exr_tar: ExternalCallResult = bcc
+        .call_external_bitcode("tar", &tar_params, &fc.qhash, tar_hash)
+        .try_into()?;
     let _tarbits = &general_purpose::STANDARD.decode(exr_tar.fout)?;
     let _img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
     bcc.make_success_json(&json!(
@@ -125,8 +125,9 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
             },
         },
     });
-    let img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
-    let exr: ExternalCallResult = serde_json::from_slice(&img)?;
+    let exr: ExternalCallResult = bcc
+        .call_external_bitcode("image", &params, img_obj, img_hash)
+        .try_into()?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
     bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
@@ -134,21 +135,22 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
         exr.fout.len()
     ))?;
     bcc.log_debug(&format!("fout {}", &exr.fout))?;
-    let stream_img: NewStreamResult = serde_json::from_slice(&bcc.new_stream()?)?;
+    let stream_img: NewStreamResult = bcc.new_stream().try_into()?;
     defer! {
         bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
     bcc.write_stream(&stream_img.stream_id, imgbits)?;
-    let imgpart: CreatePartResult = serde_json::from_slice(
-        &bcc.q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)?,
-    )?;
+    let imgpart: CreatePartResult = bcc
+        .q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)
+        .try_into()?;
     bcc.log_debug(&format!(
         "imgpart hash {} size = {}",
         &imgpart.qphash, imgpart.size
     ))?;
-    let fc: FinalizeCallResult =
-        serde_json::from_slice(&bcc.q_finalize_content(&bcc.request.q_info.write_token)?)?;
+    let fc: FinalizeCallResult = bcc
+        .q_finalize_content(&bcc.request.q_info.write_token)
+        .try_into()?;
     let tar_params = json!({
         "http" : {
             "verb" : "some",
@@ -163,12 +165,9 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
             },
         },
     });
-    let exr_tar: ExternalCallResult = serde_json::from_slice(&bcc.call_external_bitcode(
-        "tar",
-        &tar_params,
-        &fc.qhash,
-        tar_hash,
-    )?)?;
+    let exr_tar: ExternalCallResult = bcc
+        .call_external_bitcode("tar", &tar_params, &fc.qhash, tar_hash)
+        .try_into()?;
     let tarbits = &general_purpose::STANDARD.decode(&exr_tar.fout)?;
     bcc.log_info(&format!(
         "fout size = {} tar_ bit len = {}",

@@ -299,6 +299,15 @@ pub struct QPartList {
     pub part_list: QPartListContents,
 }
 
+impl TryFrom<CallResult> for QPartList {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<QPartList, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QPartInfo {
     pub content: Q,

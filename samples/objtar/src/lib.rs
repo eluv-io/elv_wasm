@@ -17,7 +17,6 @@ use elvwasm::{
 use flate2::write::GzEncoder;
 use serde_json::json;
 use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
-use std::str::from_utf8;
 
 implement_bitcode_module!("tar", do_tar_from_obj);
 #[derive(Debug)]
@@ -97,20 +96,11 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     {
         let bw = BufWriter::with_capacity(buf_cap, &mut fw);
 
-        let plraw = bcc.q_part_list(obj_id[0].to_string())?;
-        let s = match from_utf8(&plraw) {
-            Ok(v) => v.to_string(),
-            Err(e) => {
-                return bcc.make_error_with_kind(elvwasm::ErrorKinds::Invalid(format!(
-                    "Part list not available err = {e}"
-                )))
-            }
-        };
-        let pl: QPartList = serde_json::from_str(&s)?;
+        let pl: QPartList = bcc.q_part_list(obj_id[0].to_string()).try_into()?;
 
         let zip = GzEncoder::new(bw, flate2::Compression::default());
         let mut a = tar::Builder::new(zip);
-        let time_cur: SystemTimeResult = serde_json::from_slice(&bcc.q_system_time()?)?;
+        let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
         for part in pl.part_list.parts {
             let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
             defer! {
