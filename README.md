@@ -47,9 +47,9 @@ brew install tinygo
 
 ## Building
 
-If you do not use nightly rust by default, you can add `+nightly` between `cargo` and `build` in order to use nightly rust to build this. Otherwise, the below command suffices.
-
 ### Rust
+
+If you do not use nightly rust by default, you can add `+nightly` between `cargo` and `build` in order to use nightly rust to build this. Otherwise, the below command suffices.
 
 ```shell
 cargo build --target wasm32-unknown-unknown --release --workspace

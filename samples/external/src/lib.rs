@@ -106,7 +106,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
         .ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
     let img_obj = &qp
         .get("img_obj")
-        .ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
+        .ok_or(ErrorKinds::Invalid("img_obj not present".to_string()))?[0];
     let tar_hash = &qp
         .get("tar_hash")
         .ok_or(ErrorKinds::Invalid("tar_hash not present".to_string()))?[0];

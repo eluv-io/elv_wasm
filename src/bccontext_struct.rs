@@ -360,7 +360,6 @@ pub struct Request {
 #[derive(Serialize, Deserialize)]
 pub struct Response {
     pub jpc: String,
-    #[serde(rename = "params")]
     pub params: serde_json::Value,
     pub id: String,
     pub module: String,
