@@ -43,13 +43,10 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let id = &bcc.request.id;
     bcc.callback(200, "application/json", client_response.len())?;
     BitcodeContext::write_stream_auto(id.clone(), "fos", &client_response)?;
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : 0,
-        }),
-        id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : 0,
+    }))
 }

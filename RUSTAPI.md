@@ -43,7 +43,7 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         "headers" : "application/json",
         "body" : "SUCCESS",
         "result" : 0,
-    }), id)
+    }))
 }
 ```
 

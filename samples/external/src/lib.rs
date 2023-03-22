@@ -19,7 +19,6 @@ implement_bitcode_module!("external", do_external, "failme", do_external_fail);
 fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    let id = &bcc.request.id;
     let img_hash = &qp
         .get("img_hash")
         .ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
@@ -90,22 +89,18 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
     )?)?;
     let _tarbits = &general_purpose::STANDARD.decode(exr_tar.fout)?;
     let _img = bcc.call_external_bitcode("image", &params, img_obj, img_hash)?;
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : "complete",
-        }),
-        id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : "complete",
+    }))
 }
 
 #[no_mangle]
 fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    let id = &bcc.request.id;
     let img_hash = &qp
         .get("img_hash")
         .ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
@@ -183,13 +178,10 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     bcc.write_stream("fos", tarbits, tarbits.len())?;
     bcc.callback(200, "application/zip", tarbits.len())?;
 
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : "complete",
-        }),
-        id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : "complete",
+    }))
 }

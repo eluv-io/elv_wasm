@@ -79,7 +79,6 @@ impl<'a> std::io::Seek for FabricWriter<'a> {
 fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    let id = &bcc.request.id;
     let vqhot = &vec![bcc.request.q_info.qhot()];
     let obj_id = match qp.get("object_id_or_hash") {
         Some(x) => x,
@@ -113,7 +112,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let mut a = tar::Builder::new(zip);
         let time_cur: SystemTimeResult = serde_json::from_slice(&bcc.q_system_time()?)?;
         for part in pl.part_list.parts {
-            let stream_wm: NewStreamResult = bcc.convert(&bcc.new_stream())?;
+            let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
             defer! {
                 bcc.log_debug(&format!("Closing part stream {}", &stream_wm.stream_id)).unwrap_or(vec![]);
                 let _ = bcc.close_stream(stream_wm.stream_id.clone());
@@ -126,8 +125,9 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 -1,
             )?;
             let usz = part.size.try_into()?;
-            let data: ReadResult =
-                bcc.convert(&bcc.read_stream(stream_wm.stream_id.clone(), usz))?;
+            let data: ReadResult = bcc
+                .read_stream(stream_wm.stream_id.clone(), usz)
+                .try_into()?;
             let mut header = tar::Header::new_gnu();
             header.set_size(usz as u64);
             header.set_cksum();
@@ -142,13 +142,10 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
     bcc.callback(200, "application/zip", fw.size)?;
 
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/zip",
-            "body" : "SUCCESS",
-            "result" : 0,
-        }),
-        id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/zip",
+        "body" : "SUCCESS",
+        "result" : 0,
+    }))
 }

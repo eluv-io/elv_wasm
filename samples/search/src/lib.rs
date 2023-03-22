@@ -173,17 +173,14 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let b = extract_body(part_hash.clone());
     let body_hash = b.unwrap_or_else(|| json!({}));
     bcc.callback(200, "application/json", part_u8.len())?;
-    BitcodeContext::write_stream_auto(id.clone(), "fos", &part_u8)?;
+    BitcodeContext::write_stream_auto(id, "fos", &part_u8)?;
     bcc.log_info(&format!("part hash = {part_hash}, body = {body_hash}"))?;
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : 0,
-        }),
-        &id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : 0,
+    }))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -268,16 +265,13 @@ fn do_search(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.query_parser_parse_query("Sea")?;
     let res = bcc.query_parser_search(None)?;
     bcc.callback(200, "application/json", res.len())?;
-    BitcodeContext::write_stream_auto(id.clone(), "fos", &res)?;
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : 0,
-        }),
-        &id,
-    )
+    BitcodeContext::write_stream_auto(id, "fos", &res)?;
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : 0,
+    }))
 }
 
 fn do_search_update_new(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
@@ -295,27 +289,22 @@ fn do_search_update_new(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         idx_fields.push(fc_cur);
     }
     let _idx = Indexer::new(bcc, "idx".to_string(), idx_fields)?;
-    let id = &bcc.request.id;
 
     let res_config = bcc.sqmd_get_json("/indexer/config")?;
     let fields_config: Value = serde_json::from_slice(&res_config)?;
     let _indexer_config = crawler::IndexerConfig::parse_index_config(&fields_config)?;
 
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : {"status" : "update complete"},
-        }),
-        id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : {"status" : "update complete"},
+    }))
 }
 
 fn do_search_update(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let _qp = &http_p.query;
-    let id = bcc.request.id.clone();
     let nib_res = serde_json::from_slice(&bcc.new_index_builder(json!({}))?)?;
     let _dir = match extract_body(nib_res) {
         Some(v) => match v.get("dir") {
@@ -380,15 +369,12 @@ fn do_search_update(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     //let v = json!({ "field_name": field, "type": fd.field_type, "stored": true});
     //bcc.builder_add_text_field(v)?;
 
-    bcc.make_success_json(
-        &json!(
-        {
-            "headers" : "application/json",
-            "body" : "SUCCESS",
-            "result" : {"status" : "update complete"},
-        }),
-        &id,
-    )
+    bcc.make_success_json(&json!(
+    {
+        "headers" : "application/json",
+        "body" : "SUCCESS",
+        "result" : {"status" : "update complete"},
+    }))
 }
 
 #[cfg(test)]

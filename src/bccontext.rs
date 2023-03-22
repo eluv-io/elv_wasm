@@ -17,6 +17,16 @@ use std::str;
 use guest::prelude::*;
 use guest::CallResult;
 
+pub fn convert<'b, T>(cr: &'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>>
+where
+    T: serde::Deserialize<'b>,
+{
+    match cr {
+        Ok(r) => Ok(serde_json::from_slice(r)?),
+        Err(e) => Err(Box::new(ErrorKinds::Invalid(e.to_string()))),
+    }
+}
+
 /// This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext
 /// is automatically created during the processing of the http request.  During initialization, all context
 /// data is acquired from the http request.  The BitcodeContext provides 2 way communication to the content fabric.
@@ -45,19 +55,6 @@ impl<'a> BitcodeContext {
 
     pub fn log_error(&'a self, s: &str) -> CallResult {
         self.call_function("Log", json!({"level" : "ERROR", "msg" : s}), "ctx")
-    }
-
-    pub fn convert<'b, T>(
-        &'a self,
-        cr: &'b CallResult,
-    ) -> Result<T, Box<dyn std::error::Error + Sync + Send>>
-    where
-        T: serde::Deserialize<'b>,
-    {
-        match cr {
-            Ok(r) => Ok(serde_json::from_slice(r)?),
-            Err(e) => Err(Box::new(ErrorKinds::Invalid(e.to_string()))),
-        }
     }
 
     /// write_stream writes a u8 slice of specified length to a fabric stream
@@ -146,22 +143,16 @@ impl<'a> BitcodeContext {
     }
 
     pub fn make_success(&'a self, msg: &str) -> CallResult {
-        let js_ret = json!({"jpc":"1.0", "id": self.request.id, "result" : msg});
-        let v = serde_json::to_vec(&js_ret)?;
-        let out = std::str::from_utf8(&v)?;
-        elv_console_log(&format!("returning : {out}"));
-        Ok(v)
+        self.make_success_json(&json!(msg))
     }
 
-    pub fn make_success_json(&'a self, msg: &serde_json::Value, id: &str) -> CallResult {
+    pub fn make_success_json(&'a self, msg: &serde_json::Value) -> CallResult {
         let js_ret = json!({
           "result" : msg,
           "jpc" : "1.0",
-          "id"  : id,
+          "id"  : self.request.id,
         });
         let v = serde_json::to_vec(&js_ret)?;
-        let out = std::str::from_utf8(&v)?;
-        elv_console_log(&format!("returning : {out}"));
         Ok(v)
     }
 
@@ -195,7 +186,7 @@ impl<'a> BitcodeContext {
     ///
     ///  This is the main workhorse function for the invoking of fabric bitcode APIs
     ///  wherein all the outer wrapper functions merely call this with the appropriate json parameters
-    pub fn call_function(
+    pub(crate) fn call_function(
         &'a self,
         fn_name: &str,
         params: serde_json::Value,
