@@ -135,8 +135,7 @@ fn do_img(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     );
     if !offering_json.image_watermark.image.is_empty() {
         bcc.log_info("WATERMARK")?;
-        let res = bcc.new_stream()?;
-        let stream_wm: NewStreamResult = serde_json::from_slice(&res)?;
+        let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
         defer! {
           let _ = bcc.close_stream(stream_wm.stream_id.clone());
         }

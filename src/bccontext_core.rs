@@ -24,16 +24,15 @@ impl<'a> BitcodeContext {
     // CORE functions
 
     /// q_create_content creates a new content object locally.  The content will have a write token but will
-    /// not be comitted to the fabric until a calls to Finalize and commit are made
+    /// not be comitted to the fabric until calls to finalize and commit are made
     /// # Arguments
     /// * `qtype`-   a hash for the content type. Can also be "builtin" for built in bitcode
     /// * `meta`-    a HashMap containing the initial meta data for the object to be set at '/'
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "qid" : "idObj", "qwtoken" : "writeToken"}
-    ///
-    /// # Returns
-    /// * slice of [u8]
+    /// ```
     ///
     pub fn q_create_content(
         &'a self,
@@ -49,9 +48,9 @@ impl<'a> BitcodeContext {
 
     /// q_list_content calculates a content fabric QList for the context's libid
     /// # Returns
-    /// [Vec] parseable to [QList]
+    /// slice of u8 parseable to [QList]
     /// e.g.
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let qlist:elvwasm::QList = bcc.q_list_content().try_into()?;
     ///   let res = vec![];
@@ -60,8 +59,6 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_list_content(&'a self) -> CallResult {
         self.call_function("QListContent", json!({}), "core")
@@ -71,9 +68,9 @@ impl<'a> BitcodeContext {
     /// # Arguments
     /// * `qlibid`-    libid to be listed
     /// # Returns
-    /// [Vec] parseable to [QList]
+    /// slice of u8 parseable to [QList]
     /// e.g.
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_list_content_for(&bcc.request.q_info.qlib_id)?;
     ///   let qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
@@ -81,8 +78,6 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_list_content_for(&'a self, qlibid: &str) -> CallResult {
         let j = json!(
@@ -99,9 +94,10 @@ impl<'a> BitcodeContext {
     /// * `qwtoken` - a write token to finalize
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "qid" : "idObj", "qhash" : "newHash"}
-    /// e.g.
     /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let mr:elvwasm::ModifyResult = bcc.q_modify_content().try_into()?;
     ///   // ... process content
@@ -110,8 +106,6 @@ impl<'a> BitcodeContext {
     ///   Ok(res)
     /// }
     /// ```
-    /// # Returns
-    /// * slice of [u8]
     ///
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/external/src/lib.rs#L50)
     ///
@@ -128,17 +122,15 @@ impl<'a> BitcodeContext {
     /// # Arguments
     /// * `qhash` - a finalized hash
     /// # Returns
-    /// nil
+    /// * slice of [u8] that is empty
     /// e.g.
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_commit_content("hq__jd7sd655fffg7HrF76mHDolzzwe")?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
     /// }
     /// ```
     ///
-    /// # Returns
-    /// * slice of [u8]
     ///
     pub fn q_commit_content(&'a self, qhash: &str) -> CallResult {
         let msg = json!(
@@ -157,9 +149,10 @@ impl<'a> BitcodeContext {
     /// q_modify_content enables edit on the implicit content of the context
     /// # Returns
     /// utf8 bytes stream containing json
+    /// ```json
     /// { "qwtoken" : "writeTokenForEdit"}
-    /// e.g.
     /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let mr:elvwasm::ModifyResult = bcc.q_modify_content().try_into()?;
     ///   let res = vec![];
@@ -177,7 +170,7 @@ impl<'a> BitcodeContext {
     /// * `String`-    object id or hash for the objects parts to be listed
     ///
     /// # Returns
-    /// utf8 bytes stream containing json
+    /// utf8 bytes containing json
     /// [QPartList]
     ///
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L93)
@@ -285,7 +278,7 @@ impl<'a> BitcodeContext {
     /// * `mime` - MIME type of the file
     /// * `size` - size of the file in bytes
     /// # Returns
-    /// [Vec] parseable to [QPartInfo]
+    /// slice of [u8] parseable to [QPartInfo]
     pub fn q_create_file_from_stream(
         &'a self,
         stream_id: &str,
@@ -310,7 +303,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// utf8 bytes stream containing a string with the state store id
     /// e.g.
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_create_q_state_store()?;
     ///   let ssID = std::str::from_utf8(&res)?;
@@ -328,7 +321,7 @@ impl<'a> BitcodeContext {
     /// # Returns
     /// [Vec] parseable to [QRef]
     /// e.g.
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_get_versions("id_someQID", true)?;
     ///   let qVersions:elvwasm::QRef = serde_json::from_str(std::str::from_utf8(&res).unwrap()).unwrap();
@@ -389,7 +382,7 @@ impl<'a> BitcodeContext {
     /// * `val` : serde_json::Value to set
     /// # Returns
     /// * error only no success return
-    /// ```
+    /// ```rust
     /// use serde_json::json;
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_set_json("/some_key", &json!({"foo" : "bar"}))?;
@@ -413,7 +406,7 @@ impl<'a> BitcodeContext {
     /// * `val` : serde_json::Value to merge
     /// # Returns
     /// * error only no success return
-    /// ```
+    /// ```rust
     /// use serde_json::json;
     ///
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
@@ -437,7 +430,7 @@ impl<'a> BitcodeContext {
     /// * `path` : path to the meta data
     /// # Returns
     /// * error only no success return
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_delete_json("/some_key")?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
@@ -458,7 +451,7 @@ impl<'a> BitcodeContext {
     /// * `path` : path to the meta data
     /// # Returns
     /// * nothing only error on failure
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.sqmd_clear_json("/some_key")?; // this will blast some_key and all its descendants
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())
@@ -479,7 +472,7 @@ impl<'a> BitcodeContext {
     /// * `path` : path to the meta data
     /// # Returns
     /// * UTF8 [u8] slice containing json
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json("/some_key")?;
     ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
@@ -497,7 +490,7 @@ impl<'a> BitcodeContext {
     /// * `path` : path to the meta data
     /// # Returns
     /// * UTF8 [u8] slice containing json
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json_resolve("/some_key")?;
     ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
@@ -516,7 +509,7 @@ impl<'a> BitcodeContext {
     /// * `qhash`: hash of external content
     /// # Returns
     /// * UTF8 [u8] slice containing json
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_get_json_external("libid4556", "hq_bad2a1ac0a2923ad85e1489736701c06320242a9", "/some_key")?;
     ///   let mut meta_str: String = String::from_utf8(res.clone())?;
@@ -541,7 +534,7 @@ impl<'a> BitcodeContext {
     /// * `query` : JSONPath query expression
     /// # Returns
     /// * UTF8 [u8] slice containing json
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.sqmd_query("$['some'].value[0].description")?;
     ///   let v:serde_json::Value = serde_json::from_slice(&res.clone()).unwrap();
@@ -559,9 +552,9 @@ impl<'a> BitcodeContext {
     /// * `qssid`- string identifier aquired from [BitcodeContext::q_create_q_state_store]
     /// * `key` - string
     /// * `val` - string value to store
-    /// # Returns
+    /// # [Vec]Returns
     /// Nothing error only
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_create_q_state_store()?;
     ///   let ssID = std::str::from_utf8(&res)?;
@@ -587,7 +580,7 @@ impl<'a> BitcodeContext {
     /// * `key` - string
     /// # Returns
     /// [Vec] containing string value
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.qss_get("sid_648nfjfh5666nmjejh", "akey")?;
     ///   let strVal = std::str::from_utf8(&res)?;
@@ -611,7 +604,7 @@ impl<'a> BitcodeContext {
     /// * `key` - string
     /// # Returns
     /// Nothing error only
-    /// ```
+    /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   bcc.qss_delete("sid_648nfjfh5666nmjejh", "akey")?;
     ///   Ok("SUCCESS".to_owned().as_bytes().to_vec())

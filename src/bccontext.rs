@@ -5,7 +5,7 @@ extern crate thiserror;
 extern crate wapc_guest as guest;
 
 use crate::{make_json_error, ErrorKinds};
-use crate::{FileStream, Request, Response};
+use crate::{FileStream, NewStreamResult, Request, Response};
 
 use serde_json::json;
 
@@ -327,15 +327,19 @@ impl<'a> BitcodeContext {
         self.log_debug(&format!(
             "q_download_file path={path} token={hash_or_token}"
         ))?;
-        let strm = self.new_stream()?;
-        let strm_json: serde_json::Value = serde_json::from_slice(&strm)?;
-        let sid = strm_json["stream_id"].to_string();
-        if sid.is_empty() {
-            return self
-                .make_error_with_kind(ErrorKinds::IO(format!("Unable to find stream_id {sid}")));
+        let stream_main: NewStreamResult = self.new_stream().try_into()?;
+        let sid = stream_main.stream_id.clone();
+        if stream_main.stream_id.is_empty() {
+            return self.make_error_with_kind(ErrorKinds::IO(format!(
+                "Unable to find stream_id {}",
+                &sid
+            )));
+        }
+        defer! {
+            let _ = self.close_stream(sid.clone());
         }
         let j = json!({
-          "stream_id" : sid,
+          "stream_id" : &sid,
           "path" : path,
           "hash_or_token": hash_or_token,
         });
@@ -343,7 +347,8 @@ impl<'a> BitcodeContext {
         let v: serde_json::Value = match self.call_function("QFileToStream", j, "core") {
             Err(e) => {
                 return self.make_error_with_kind(ErrorKinds::NotExist(format!(
-                    "QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"
+                    "QFileToStream failed path={path}, hot={hash_or_token} sid={} e={e}",
+                    stream_main.stream_id
                 )))
             }
             Ok(e) => serde_json::from_slice(&e)?,
@@ -355,10 +360,11 @@ impl<'a> BitcodeContext {
         };
 
         if written != 0 {
-            return self.read_stream(sid, written as usize);
+            return self.read_stream(stream_main.stream_id, written as usize);
         }
         self.make_error_with_kind(ErrorKinds::NotExist(format!(
-            "wrote 0 bytes, sid={sid} path={path}, hot={hash_or_token}"
+            "wrote 0 bytes, sid={} path={path}, hot={hash_or_token}",
+            &stream_main.stream_id
         )))
     }
 
