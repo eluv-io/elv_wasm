@@ -315,26 +315,21 @@ pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
         Ok(x) => {
             x.insert(name.to_string(), hd);
         }
-        Err(e) => elv_console_log(&format!("MutexGuard unable to aquire lock, error = {e}")),
+        Err(e) => console_log(&format!("MutexGuard unable to aquire lock, error = {e}")),
     };
 }
 
-//#[cfg(not(test))]
-pub fn elv_console_log(s: &str) {
-    console_log(s)
+#[cfg(test)]
+pub fn console_log(s: &str) {
+    println!("{}", s)
 }
-
-// #[cfg(test)]
-// pub fn elv_console_log(s:&str){
-//   println!("{}", s)
-// }
 
 const ID_NOT_CALCULATED_YET: &str = "id not yet calculated";
 
 fn do_bitcode(json_params: Request) -> CallResult {
-    elv_console_log("Parameters parsed");
+    console_log("Parameters parsed");
     let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
-    elv_console_log(&format!("splitpath={split_path:?}"));
+    console_log(&format!("splitpath={split_path:?}"));
 
     let mut v_leaks: Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
 
@@ -400,9 +395,9 @@ fn do_bitcode(json_params: Request) -> CallResult {
 ///   * return results to the caller
 #[no_mangle]
 pub fn jpc(_msg: &[u8]) -> CallResult {
-    elv_console_log("In jpc");
+    console_log("In jpc");
     let input_string = str::from_utf8(_msg)?;
-    elv_console_log(&format!("parameters = {input_string}"));
+    console_log(&format!("parameters = {input_string}"));
     let json_params: Request = match serde_json::from_str(input_string) {
         Ok(m) => m,
         Err(err) => {
@@ -413,6 +408,6 @@ pub fn jpc(_msg: &[u8]) -> CallResult {
         }
     };
 
-    elv_console_log("Request parsed");
+    console_log("Request parsed");
     do_bitcode(json_params)
 }

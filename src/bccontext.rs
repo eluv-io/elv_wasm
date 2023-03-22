@@ -4,8 +4,8 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{elv_console_log, make_json_error, ErrorKinds};
-use crate::{FileStream, FileStreamSize, Request, Response};
+use crate::{make_json_error, ErrorKinds};
+use crate::{FileStream, Request, Response};
 
 use serde_json::json;
 
@@ -179,9 +179,7 @@ impl<'a> BitcodeContext {
             params,
         };
         let call_val = serde_json::to_vec(response)?;
-        let call_str = serde_json::to_string(response)?;
 
-        elv_console_log(&format!("CALL STRING = {call_str}"));
         let call_ret_val = host_call(self.request.id.as_str(), module, fn_name, &call_val)?;
         let j_res: serde_json::Value = serde_json::from_slice(&call_ret_val)?;
         if !j_res.is_object() {
@@ -261,9 +259,7 @@ impl<'a> BitcodeContext {
     ) -> CallResult {
         let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         let call_val = serde_json::to_vec(&params)?;
-        let call_str = serde_json::to_string(&params)?;
 
-        elv_console_log(&format!("CALL STRING = {call_str}"));
         let call_ret_val = host_call(
             self.request.id.as_str(),
             "ctx",
@@ -328,9 +324,9 @@ impl<'a> BitcodeContext {
     /// *  `hash_or_token` : hash for the content containing the file
     ///
     pub fn q_download_file(&'a mut self, path: &str, hash_or_token: &str) -> CallResult {
-        elv_console_log(&format!(
+        self.log_debug(&format!(
             "q_download_file path={path} token={hash_or_token}"
-        ));
+        ))?;
         let strm = self.new_stream()?;
         let strm_json: serde_json::Value = serde_json::from_slice(&strm)?;
         let sid = strm_json["stream_id"].to_string();
@@ -350,12 +346,13 @@ impl<'a> BitcodeContext {
                     "QFileToStream failed path={path}, hot={hash_or_token} sid={sid} e={e}"
                 )))
             }
-            Ok(e) => serde_json::from_slice(&e).unwrap_or_default(),
+            Ok(e) => serde_json::from_slice(&e)?,
         };
 
-        let jtemp = v.to_string();
-        elv_console_log(&format!("json={jtemp}"));
-        let written = v["written"].as_u64().unwrap_or_default();
+        let written = match v["written"].as_u64() {
+            Some(s) => s,
+            None => return self.make_error("failed to unmarshal written count"),
+        };
 
         if written != 0 {
             return self.read_stream(sid, written as usize);
@@ -386,7 +383,7 @@ impl<'a> BitcodeContext {
         }
         let ret_s = self.write_stream(new_stream.clone().stream_id.as_str(), input_data)?;
         let written_map: HashMap<String, String> = serde_json::from_slice(&ret_s)?;
-        let i: i32 = written_map["written"].parse().unwrap_or(0);
+        let i: i32 = written_map["written"].parse()?;
         let j = json!({
           "qwtoken" : qwt,
           "stream_id": new_stream.stream_id,
@@ -401,27 +398,8 @@ impl<'a> BitcodeContext {
 
     /// file_stream_size computes the current size of a fabric file stream given its stream name
     ///     filename : the name of the file steam.  See new_file_stream.
-    pub fn file_stream_size(&'a self, filename: &str) -> usize {
-        elv_console_log("file_stream_size");
-        let ret: Vec<u8> =
-            match self.call_function("FileStreamSize", json!({ "file_name": filename }), "ctx") {
-                Ok(m) => m,
-                Err(_e) => {
-                    let j: FileStreamSize = serde_json::from_value(json!({"file_size" : 0}))
-                        .unwrap_or(FileStreamSize { file_size: 0 });
-                    return j.file_size;
-                }
-            };
-
-        match serde_json::from_slice::<FileStreamSize>(&ret) {
-            Ok(msize) => {
-                elv_console_log(&format!("FileStream returned={}", msize.file_size));
-                msize.file_size
-            }
-            Err(_e) => {
-                elv_console_log("Err from FileStreamSize");
-                0
-            }
-        }
+    pub fn file_stream_size(&'a self, filename: &str) -> CallResult {
+        self.log_debug("file_stream_size")?;
+        self.call_function("FileStreamSize", json!({ "file_name": filename }), "ctx")
     }
 }

@@ -4,7 +4,6 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::elv_console_log;
 use serde_derive::Serialize;
 use serde_json::json;
 use thiserror::Error;
@@ -44,7 +43,8 @@ fn discriminant(v: &ErrorKinds) -> u8 {
 }
 /// make_json_error translates the bitcode [ErrorKinds] to an error response to the client
 /// # Arguments
-/// * `err`- the error to be translated to a response
+/// * `err` - the error to be translated to a response
+/// * `id` - the jpc request id
 pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
     let msg = json!(
       {
@@ -61,8 +61,6 @@ pub fn make_json_error(err: ErrorKinds, id: &str) -> CallResult {
       }
     );
     let vr = serde_json::to_vec(&msg)?;
-    // let out = std::str::from_utf8(&vr)?;
-    // elv_console_log(&format!("returning a test {out}"));
     Ok(vr)
 }
 
@@ -73,7 +71,5 @@ pub fn make_success_json(msg: &serde_json::Value, id: &str) -> CallResult {
       "id"  : id,
     });
     let v = serde_json::to_vec(&js_ret)?;
-    let out = std::str::from_utf8(&v)?;
-    elv_console_log(&format!("returning : {out}"));
     Ok(v)
 }
