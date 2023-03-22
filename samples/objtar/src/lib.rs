@@ -33,7 +33,7 @@ impl<'a> FabricWriter<'a> {
 }
 impl<'a> std::io::Write for FabricWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        match BitcodeContext::write_stream_auto(self.bcc.request.id.clone(), "fos", buf) {
+        match self.bcc.write_stream("fos", buf) {
             Ok(s) => {
                 self.bcc
                     .log_debug(&format!("Wrote {} bytes", buf.len()))

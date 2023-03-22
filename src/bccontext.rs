@@ -29,8 +29,7 @@ where
 
 /// This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext
 /// is automatically created during the processing of the http request.  During initialization, all context
-/// data is acquired from the http request.  The BitcodeContext provides 2 way communication to the content fabric.
-/// There is convenience impl method [BitcodeContext::call_function] that allows the fabric to be accessed via a known set of APIs.
+/// data is acquired from the http request.
 #[derive(Debug, Clone, Default)]
 pub struct BitcodeContext {
     pub request: Request,
@@ -69,28 +68,8 @@ impl<'a> BitcodeContext {
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L111)
     ///
-    pub fn write_stream(&'a self, stream: &str, src: &'a [u8], len: usize) -> CallResult {
-        let mut actual_len = src.len();
-        if len != usize::MAX {
-            actual_len = len
-        }
-        self.log_debug(&format!("in write_stream len = {actual_len}"))?;
+    pub fn write_stream(&'a self, stream: &str, src: &'a [u8]) -> CallResult {
         host_call(&self.request.id, stream, "Write", src)
-    }
-
-    /// write_stream_auto writes a u8 slice to a fabric stream
-    /// # Arguments
-    /// * `id`-    a unique identifier (can use BitcodeContext's request id)
-    /// * `stream`-  the fabric stream to write to [BitcodeContext::new_stream]
-    /// * `src`-  a u8 slice to write
-    /// # Returns
-    /// utf8 bytes stream containing json
-    /// { "written" : bytes }
-    ///
-    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/rproxy/src/lib.rs#L31)
-    ///
-    pub fn write_stream_auto(id: String, stream: &'a str, src: &'a [u8]) -> CallResult {
-        host_call(&id, stream, "Write", src)
     }
 
     /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
@@ -405,11 +384,7 @@ impl<'a> BitcodeContext {
         defer! {
           let _ = self.close_stream(new_stream.stream_id.clone());
         }
-        let ret_s = self.write_stream(
-            new_stream.clone().stream_id.as_str(),
-            input_data,
-            input_data.len(),
-        )?;
+        let ret_s = self.write_stream(new_stream.clone().stream_id.as_str(), input_data)?;
         let written_map: HashMap<String, String> = serde_json::from_slice(&ret_s)?;
         let i: i32 = written_map["written"].parse().unwrap_or(0);
         let j = json!({

@@ -2,7 +2,7 @@ extern crate elvwasm;
 extern crate serde_json;
 use serde_json::json;
 
-use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext, ErrorKinds};
+use elvwasm::{implement_bitcode_module, jpc, register_handler, ErrorKinds};
 
 implement_bitcode_module!("proxy", do_proxy);
 
@@ -40,9 +40,8 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let proxy_resp_json: serde_json::Value =
         serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
     let client_response = serde_json::to_vec(&proxy_resp_json["result"])?;
-    let id = &bcc.request.id;
     bcc.callback(200, "application/json", client_response.len())?;
-    BitcodeContext::write_stream_auto(id.clone(), "fos", &client_response)?;
+    bcc.write_stream("fos", &client_response)?;
     bcc.make_success_json(&json!(
     {
         "headers" : "application/json",

@@ -180,7 +180,7 @@ fn do_img(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let mut encoder = JpegEncoder::new(&mut bytes);
     encoder.encode(&br.to_bytes(), br.width(), br.height(), br.color())?;
     bcc.callback(200, "image/jpeg", bytes.len())?;
-    BitcodeContext::write_stream_auto(bcc.request.id.clone(), "fos", &bytes)?;
+    bcc.write_stream("fos", &bytes)?;
     bcc.make_success_json(&json!(
     {
         "headers" : "application/json",

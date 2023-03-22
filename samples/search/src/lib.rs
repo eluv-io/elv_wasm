@@ -18,7 +18,7 @@ use elvwasm::ErrorKinds;
 use indexer::Indexer;
 use snailquote::unescape;
 
-use elvwasm::{implement_bitcode_module, jpc, register_handler, BitcodeContext};
+use elvwasm::{implement_bitcode_module, jpc, register_handler};
 
 implement_bitcode_module!(
     "crawl",
@@ -97,7 +97,6 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         "In do_crawl hash={} headers={:#?} query params={qp:#?}",
         &bcc.request.q_info.hash, &http_p.headers
     ))?;
-    let id = bcc.request.id.clone();
     let nib_res = serde_json::from_slice(&bcc.new_index_builder(json!({}))?)?;
     let dir = match extract_body(nib_res) {
         Some(v) => match v.get("dir") {
@@ -173,7 +172,7 @@ fn do_crawl(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let b = extract_body(part_hash.clone());
     let body_hash = b.unwrap_or_else(|| json!({}));
     bcc.callback(200, "application/json", part_u8.len())?;
-    BitcodeContext::write_stream_auto(id, "fos", &part_u8)?;
+    bcc.write_stream("fos", &part_u8)?;
     bcc.log_info(&format!("part hash = {part_hash}, body = {body_hash}"))?;
     bcc.make_success_json(&json!(
     {
@@ -221,7 +220,6 @@ struct HttpP {
 
 fn do_search(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.log_info("In do search")?;
-    let id = bcc.request.id.clone();
     let http_p = &bcc.request.params.http;
     bcc.log_info(&format!("http={:?}", &http_p))?;
     let qp = &http_p.query;
@@ -265,7 +263,7 @@ fn do_search(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.query_parser_parse_query("Sea")?;
     let res = bcc.query_parser_search(None)?;
     bcc.callback(200, "application/json", res.len())?;
-    BitcodeContext::write_stream_auto(id, "fos", &res)?;
+    bcc.write_stream("fos", &res)?;
     bcc.make_success_json(&json!(
     {
         "headers" : "application/json",

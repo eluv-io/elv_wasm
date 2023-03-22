@@ -57,7 +57,7 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
         bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
-    bcc.write_stream(&stream_img.stream_id, imgbits, imgbits.len())?;
+    bcc.write_stream(&stream_img.stream_id, imgbits)?;
     let imgpart: CreatePartResult = serde_json::from_slice(
         &bcc.q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)?,
     )?;
@@ -139,7 +139,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
         bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
-    bcc.write_stream(&stream_img.stream_id, imgbits, imgbits.len())?;
+    bcc.write_stream(&stream_img.stream_id, imgbits)?;
     let imgpart: CreatePartResult = serde_json::from_slice(
         &bcc.q_create_part_from_stream(&bcc.request.q_info.write_token, &stream_img.stream_id)?,
     )?;
@@ -175,7 +175,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
         &exr_tar.fout.len(),
         tarbits.len()
     ))?;
-    bcc.write_stream("fos", tarbits, tarbits.len())?;
+    bcc.write_stream("fos", tarbits)?;
     bcc.callback(200, "application/zip", tarbits.len())?;
 
     bcc.make_success_json(&json!(
