@@ -49,5 +49,5 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
 
 To Build all wasm binaries </br> *cargo build --target wasm32-unknown-unknown --release --workspace* </br>
 
- [__link0]: https://github.com/eluv-io/elv-wasm/docs/elvwasm/fn.jpc.html
- [__link1]: https://github.com/eluv-io/elv-wasm/docs/elvwasm/bccontext/struct.BitcodeContext.html
+ [__link0]: https://github.com/eluv-io/elv-wasm/blob/main/docs/elvwasm/fn.jpc.html
+ [__link1]: https://github.com/eluv-io/elv-wasm/tree/main/docs/elvwasm/bccontext/struct.BitcodeContext.html
