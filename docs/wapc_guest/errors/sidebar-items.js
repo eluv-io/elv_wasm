@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ErrorKind"],"fn":["new"],"struct":["Error"]};

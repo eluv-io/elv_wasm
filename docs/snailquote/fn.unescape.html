@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Parse the provided shell-like quoted string, such as one produced by escape."><title>unescape in snailquote - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-c4dbdcde0fbd8430.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="snailquote" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (22f247c6f 2023-03-13)" data-search-js="search-d1bc581867fd0849.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" data-theme-light-css="light-db279b6232be9c13.css" data-theme-dark-css="dark-cf923f49f397b216.css" data-theme-ayu-css="ayu-be46fdc453a55015.css" ></div><script src="../static.files/storage-9184409068f70b79.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-f5a2577c5297a973.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" href="../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../snailquote/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../snailquote/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><div class="sidebar-elems"><h2><a href="index.html">In snailquote</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Function <a href="index.html">snailquote</a>::<wbr><a class="fn" href="#">unescape</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/snailquote/lib.rs.html#231-308">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub fn unescape(s: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="enum" href="enum.UnescapeError.html" title="enum snailquote::UnescapeError">UnescapeError</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Parse the provided shell-like quoted string, such as one produced by <a href="fn.escape.html" title="fn snailquote::escape">escape</a>.</p>
+<h2 id="details"><a href="#details">Details</a></h2>
+<p>Unescape is able to handle single quotes (which cannot contain any additional escapes), double
+quotes (which may contain a set of escapes similar to ANSI-C, i.e. ‘\n’, ‘\r’, ‘'’, etc.
+Unescape will also parse unicode escapes of the form “\u{01ff}”. See
+<a href="https://doc.rust-lang.org/nightly/core/char/struct.EscapeUnicode.html" title="struct core::char::EscapeUnicode">char::escape_unicode</a> in the Rust standard library for more
+information on these escapes.</p>
+<p>Multiple different quoting styles may be used in one string, for example, the following string
+is valid: <code>'some spaces'_some_unquoted_&quot;and a \t tab&quot;</code>.</p>
+<p>The full set of supported escapes between double quotes may be found below:</p>
+<div><table><thead><tr><th>Escape</th><th>Unicode</th><th>Description</th></tr></thead><tbody>
+<tr><td>\a</td><td>\u{07}</td><td>Bell</td></tr>
+<tr><td>\b</td><td>\u{08}</td><td>Backspace</td></tr>
+<tr><td>\v</td><td>\u{0B}</td><td>Vertical tab</td></tr>
+<tr><td>\f</td><td>\u{0C}</td><td>Form feed</td></tr>
+<tr><td>\n</td><td>\u{0A}</td><td>Newline</td></tr>
+<tr><td>\r</td><td>\u{0D}</td><td>Carriage return</td></tr>
+<tr><td>\t</td><td>\u{09}</td><td>Tab</td></tr>
+<tr><td>\e</td><td>\u{1B}</td><td>Escape</td></tr>
+<tr><td>\E</td><td>\u{1B}</td><td>Escape</td></tr>
+<tr><td>\</td><td>\u{5C}</td><td>Backslash</td></tr>
+<tr><td>'</td><td>\u{27}</td><td>Single quote</td></tr>
+<tr><td>&quot;</td><td>\u{22}</td><td>Double quote</td></tr>
+<tr><td>$</td><td>\u{24}</td><td>Dollar sign (sh compatibility)</td></tr>
+<tr><td>`</td><td>\u{60}</td><td>Backtick (sh compatibility)</td></tr>
+<tr><td>\u{XX}</td><td>\u{XX}</td><td>Unicode character with hex code XX</td></tr>
+</tbody></table>
+</div><h2 id="errors"><a href="#errors">Errors</a></h2>
+<p>The returned result can display a human readable error if the string cannot be parsed as a
+valid quoted string.</p>
+<h2 id="examples"><a href="#examples">Examples</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>snailquote::unescape;
+<span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, unescape(<span class="string">&quot;foo&quot;</span>).unwrap());
+<span class="comment">// foo
+</span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, unescape(<span class="string">&quot;&#39;String with spaces&#39;&quot;</span>).unwrap());
+<span class="comment">// String with spaces
+</span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, unescape(<span class="string">&quot;\&quot;new\\nline\&quot;&quot;</span>).unwrap());
+<span class="comment">// new
+// line
+</span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, unescape(<span class="string">&quot;&#39;some spaces&#39;_some_unquoted_\&quot;and a \\t tab\&quot;&quot;</span>).unwrap());
+<span class="comment">// some spaces_some_unquoted_and a 	 tab</span></code></pre></div>
+</div></details></section></div></main></body></html>

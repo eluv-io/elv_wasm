@@ -1,0 +1,688 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext is automatically created during the processing of the http request.  During initialization, all context data is acquired from the http request."><title>BitcodeContext in elvwasm::bccontext - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-c4dbdcde0fbd8430.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="elvwasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (22f247c6f 2023-03-13)" data-search-js="search-d1bc581867fd0849.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" data-theme-light-css="light-db279b6232be9c13.css" data-theme-dark-css="dark-cf923f49f397b216.css" data-theme-ayu-css="ayu-be46fdc453a55015.css" ></div><script src="../../static.files/storage-9184409068f70b79.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-f5a2577c5297a973.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../../elvwasm/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../../elvwasm/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">BitcodeContext</a></h2><div class="sidebar-elems"><section><h3><a href="#fields">Fields</a></h3><ul class="block"><li><a href="#structfield.request">request</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block"><li><a href="#method.archive_index_to_part">archive_index_to_part</a></li><li><a href="#method.builder_add_text_field">builder_add_text_field</a></li><li><a href="#method.builder_build">builder_build</a></li><li><a href="#method.builder_create_index">builder_create_index</a></li><li><a href="#method.call">call</a></li><li><a href="#method.call_external_bitcode">call_external_bitcode</a></li><li><a href="#method.callback">callback</a></li><li><a href="#method.close_stream">close_stream</a></li><li><a href="#method.document_add_text">document_add_text</a></li><li><a href="#method.document_create">document_create</a></li><li><a href="#method.document_create_index">document_create_index</a></li><li><a href="#method.file_stream_size">file_stream_size</a></li><li><a href="#method.file_to_stream">file_to_stream</a></li><li><a href="#method.index_add_document">index_add_document</a></li><li><a href="#method.index_create_writer">index_create_writer</a></li><li><a href="#method.index_reader_builder_create">index_reader_builder_create</a></li><li><a href="#method.index_reader_searcher">index_reader_searcher</a></li><li><a href="#method.index_writer_commit">index_writer_commit</a></li><li><a href="#method.log_debug">log_debug</a></li><li><a href="#method.log_error">log_error</a></li><li><a href="#method.log_info">log_info</a></li><li><a href="#method.log_warn">log_warn</a></li><li><a href="#method.make_error">make_error</a></li><li><a href="#method.make_error_with_error">make_error_with_error</a></li><li><a href="#method.make_error_with_kind">make_error_with_kind</a></li><li><a href="#method.make_success">make_success</a></li><li><a href="#method.make_success_bytes">make_success_bytes</a></li><li><a href="#method.make_success_json">make_success_json</a></li><li><a href="#method.new">new</a></li><li><a href="#method.new_file_stream">new_file_stream</a></li><li><a href="#method.new_index_builder">new_index_builder</a></li><li><a href="#method.new_stream">new_stream</a></li><li><a href="#method.proxy_http">proxy_http</a></li><li><a href="#method.q_checksum_file">q_checksum_file</a></li><li><a href="#method.q_checksum_part">q_checksum_part</a></li><li><a href="#method.q_commit_content">q_commit_content</a></li><li><a href="#method.q_create_content">q_create_content</a></li><li><a href="#method.q_create_file_from_stream">q_create_file_from_stream</a></li><li><a href="#method.q_create_part_from_stream">q_create_part_from_stream</a></li><li><a href="#method.q_create_q_state_store">q_create_q_state_store</a></li><li><a href="#method.q_download_file">q_download_file</a></li><li><a href="#method.q_file_to_stream">q_file_to_stream</a></li><li><a href="#method.q_finalize_content">q_finalize_content</a></li><li><a href="#method.q_get_versions">q_get_versions</a></li><li><a href="#method.q_list_content">q_list_content</a></li><li><a href="#method.q_list_content_for">q_list_content_for</a></li><li><a href="#method.q_modify_content">q_modify_content</a></li><li><a href="#method.q_part_list">q_part_list</a></li><li><a href="#method.q_system_time">q_system_time</a></li><li><a href="#method.q_upload_file">q_upload_file</a></li><li><a href="#method.qss_delete">qss_delete</a></li><li><a href="#method.qss_get">qss_get</a></li><li><a href="#method.qss_set">qss_set</a></li><li><a href="#method.query_parser_for_index">query_parser_for_index</a></li><li><a href="#method.query_parser_parse_query">query_parser_parse_query</a></li><li><a href="#method.query_parser_search">query_parser_search</a></li><li><a href="#method.read_stream">read_stream</a></li><li><a href="#method.reader_builder_query_parser_create">reader_builder_query_parser_create</a></li><li><a href="#method.restore_index_from_part">restore_index_from_part</a></li><li><a href="#method.sqmd_clear_json">sqmd_clear_json</a></li><li><a href="#method.sqmd_delete_json">sqmd_delete_json</a></li><li><a href="#method.sqmd_get_json">sqmd_get_json</a></li><li><a href="#method.sqmd_get_json_external">sqmd_get_json_external</a></li><li><a href="#method.sqmd_get_json_resolve">sqmd_get_json_resolve</a></li><li><a href="#method.sqmd_merge_json">sqmd_merge_json</a></li><li><a href="#method.sqmd_query">sqmd_query</a></li><li><a href="#method.sqmd_set_json">sqmd_set_json</a></li><li><a href="#method.start_bitcode_lro">start_bitcode_lro</a></li><li><a href="#method.write_part_to_stream">write_part_to_stream</a></li><li><a href="#method.write_stream">write_stream</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block"><li><a href="#impl-Clone-for-BitcodeContext">Clone</a></li><li><a href="#impl-Debug-for-BitcodeContext">Debug</a></li><li><a href="#impl-Default-for-BitcodeContext">Default</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block"><li><a href="#impl-RefUnwindSafe-for-BitcodeContext">RefUnwindSafe</a></li><li><a href="#impl-Send-for-BitcodeContext">Send</a></li><li><a href="#impl-Sync-for-BitcodeContext">Sync</a></li><li><a href="#impl-Unpin-for-BitcodeContext">Unpin</a></li><li><a href="#impl-UnwindSafe-for-BitcodeContext">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block"><li><a href="#impl-Any-for-BitcodeContext">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-BitcodeContext">Borrow&lt;T&gt;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-BitcodeContext">BorrowMut&lt;T&gt;</a></li><li><a href="#impl-From%3CT%3E-for-BitcodeContext">From&lt;T&gt;</a></li><li><a href="#impl-Into%3CU%3E-for-BitcodeContext">Into&lt;U&gt;</a></li><li><a href="#impl-ToOwned-for-BitcodeContext">ToOwned</a></li><li><a href="#impl-TryFrom%3CU%3E-for-BitcodeContext">TryFrom&lt;U&gt;</a></li><li><a href="#impl-TryInto%3CU%3E-for-BitcodeContext">TryInto&lt;U&gt;</a></li></ul></section><h2><a href="index.html">In elvwasm::bccontext</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Struct <a href="../index.html">elvwasm</a>::<wbr><a href="index.html">bccontext</a>::<wbr><a class="struct" href="#">BitcodeContext</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../src/elvwasm/bccontext.rs.html#34-36">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub struct BitcodeContext {
+    pub request: <a class="struct" href="../bccontext_struct/struct.Request.html" title="struct elvwasm::bccontext_struct::Request">Request</a>,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>This structure encapsulates all communication with the Eluvio content fabric.  A new BitcodeContext
+is automatically created during the processing of the http request.  During initialization, all context
+data is acquired from the http request.</p>
+</div></details><h2 id="fields" class="fields small-section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.request" class="structfield small-section-header"><a href="#structfield.request" class="anchor field">§</a><code>request: <a class="struct" href="../bccontext_struct/struct.Request.html" title="struct elvwasm::bccontext_struct::Request">Request</a></code></span><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-BitcodeContext" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#38-414">source</a><a href="#impl-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;'a&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><section id="method.new" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#39-41">source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(request: <a class="struct" href="../bccontext_struct/struct.Request.html" title="struct elvwasm::bccontext_struct::Request">Request</a>) -&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h4></section><section id="method.log_info" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#43-45">source</a><h4 class="code-header">pub fn <a href="#method.log_info" class="fn">log_info</a>(&amp;'a self, s: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.log_debug" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#47-49">source</a><h4 class="code-header">pub fn <a href="#method.log_debug" class="fn">log_debug</a>(&amp;'a self, s: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.log_warn" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#51-53">source</a><h4 class="code-header">pub fn <a href="#method.log_warn" class="fn">log_warn</a>(&amp;'a self, s: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.log_error" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#55-57">source</a><h4 class="code-header">pub fn <a href="#method.log_error" class="fn">log_error</a>(&amp;'a self, s: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><details class="toggle method-toggle" open><summary><section id="method.write_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#71-73">source</a><h4 class="code-header">pub fn <a href="#method.write_stream" class="fn">write_stream</a>(&amp;'a self, stream: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, src: &amp;'a [<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>write_stream writes a u8 slice of specified length to a fabric stream</p>
+<h5 id="arguments"><a href="#arguments">Arguments</a></h5>
+<ul>
+<li><code>id</code>-    a unique identifier (can use BitcodeContext’s request id)</li>
+<li><code>stream</code>-  the fabric stream to write to <a href="struct.BitcodeContext.html#method.new_stream" title="method elvwasm::bccontext::BitcodeContext::new_stream">BitcodeContext::new_stream</a></li>
+<li><code>src</code>-  a u8 slice to write</li>
+<li><code>len</code> -  length of the slice to write</li>
+</ul>
+<h5 id="returns"><a href="#returns">Returns</a></h5>
+<p>utf8 bytes stream containing json
+{ “written” : bytes }</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L111">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.read_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#87-96">source</a><h4 class="code-header">pub fn <a href="#method.read_stream" class="fn">read_stream</a>(&amp;'a self, stream_to_read: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, sz: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>read_stream reads usize bytes from a fabric stream returning a slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a></p>
+<h5 id="arguments-1"><a href="#arguments-1">Arguments</a></h5>
+<ul>
+<li><code>stream_to_read</code>-  the fabric stream to read from</li>
+<li><code>sz</code>-  usize size of bytes</li>
+</ul>
+<h5 id="returns-1"><a href="#returns-1">Returns</a></h5>
+<p>utf8 bytes stream containing json
+{
+“return” : { “read” : byte-count-read },
+“result” : “base64 encoded string”
+}
+<a href="https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.callback" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#109-122">source</a><h4 class="code-header">pub fn <a href="#method.callback" class="fn">callback</a>(
+    &amp;'a self,
+    status: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
+    content_type: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>callback issues a Callback on the fabric setting up an expectation that the output stream
+contains a specified sized buffer</p>
+<h5 id="arguments-2"><a href="#arguments-2">Arguments</a></h5>
+<ul>
+<li><code>status</code>-    the http status of the call</li>
+<li><code>content-type</code>-     output buffer contents</li>
+<li><code>size</code>-  size of the output contents</li>
+</ul>
+<h5 id="returns-2"><a href="#returns-2">Returns</a></h5>
+<p>the checksum as hex-encoded string</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L133">Example</a></p>
+</div></details><section id="method.make_success" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#124-126">source</a><h4 class="code-header">pub fn <a href="#method.make_success" class="fn">make_success</a>(&amp;'a self, msg: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.make_success_json" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#128-136">source</a><h4 class="code-header">pub fn <a href="#method.make_success_json" class="fn">make_success_json</a>(&amp;'a self, msg: &amp;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.make_error" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#138-140">source</a><h4 class="code-header">pub fn <a href="#method.make_error" class="fn">make_error</a>(&amp;'a self, msg: &amp;'static <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.make_error_with_kind" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#142-144">source</a><h4 class="code-header">pub fn <a href="#method.make_error_with_kind" class="fn">make_error_with_kind</a>(&amp;'a self, kind: <a class="enum" href="../bccontext_error/enum.ErrorKinds.html" title="enum elvwasm::bccontext_error::ErrorKinds">ErrorKinds</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.make_error_with_error" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#146-148">source</a><h4 class="code-header">pub fn <a href="#method.make_error_with_error" class="fn">make_error_with_error</a>&lt;T&gt;(
+    &amp;'a self,
+    kind: <a class="enum" href="../bccontext_error/enum.ErrorKinds.html" title="enum elvwasm::bccontext_error::ErrorKinds">ErrorKinds</a>,
+    _err: T
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.make_success_bytes" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#150-155">source</a><h4 class="code-header">pub fn <a href="#method.make_success_bytes" class="fn">make_success_bytes</a>(&amp;'a self, msg: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>], id: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><section id="method.call" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#157-159">source</a><h4 class="code-header">pub fn <a href="#method.call" class="fn">call</a>(&amp;'a self, ns: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, op: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, msg: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><details class="toggle method-toggle" open><summary><section id="method.call_external_bitcode" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#253-290">source</a><h4 class="code-header">pub fn <a href="#method.call_external_bitcode" class="fn">call_external_bitcode</a>(
+    &amp;'a self,
+    function: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    args: &amp;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    object_hash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    code_part_hash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>call_external_bitcode - enables the calling of fabric api’s</p>
+<h5 id="arguments-3"><a href="#arguments-3">Arguments</a></h5>
+<ul>
+<li>
+<p><code>function</code> - the function to call on the external bitcode</p>
+</li>
+<li>
+<p><code>args</code> -  the argumaents to pass the external function</p>
+</li>
+<li>
+<p><code>object_hash</code>  - the content object containing the external bitcode part</p>
+</li>
+<li>
+<p><code>code_part_hash</code> - the code part for the external bitcode</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L101">Example</a></p>
+</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>elvwasm::ErrorKinds;
+<span class="kw">extern crate </span>wapc_guest <span class="kw">as </span>guest;
+<span class="kw">use </span>serde_json::{json, Value};
+<span class="kw">use </span>std::str;
+<span class="kw">use </span>guest::CallResult;
+<span class="kw">use </span>elvwasm::ExternalCallResult;
+
+<span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+    <span class="kw">let </span>http_p = <span class="kw-2">&amp;</span>bcc.request.params.http;
+    <span class="kw">let </span>qp = <span class="kw-2">&amp;</span>http_p.query;
+    <span class="kw">let </span>id = <span class="kw-2">&amp;</span>bcc.request.id;
+    <span class="kw">let </span>img_hash = <span class="kw-2">&amp;</span>qp.get(<span class="string">&quot;img_hash&quot;</span>).ok_or(ErrorKinds::Invalid(<span class="string">&quot;img_hash not present&quot;</span>.to_string()))<span class="question-mark">?</span>[<span class="number">0</span>];
+    <span class="kw">let </span>img_obj= <span class="kw-2">&amp;</span>qp.get(<span class="string">&quot;img_obj&quot;</span>).ok_or(ErrorKinds::Invalid(<span class="string">&quot;img_hash not present&quot;</span>.to_string()))<span class="question-mark">?</span>[<span class="number">0</span>];
+    <span class="kw">let </span>tar_hash = <span class="kw-2">&amp;</span>qp.get(<span class="string">&quot;tar_hash&quot;</span>).ok_or(ErrorKinds::Invalid(<span class="string">&quot;tar_hash not present&quot;</span>.to_string()))<span class="question-mark">?</span>[<span class="number">0</span>];
+    bcc.log_info(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;img_hash ={img_hash:?} tar_hash = {tar_hash:?}&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>params = <span class="macro">json!</span>({
+        <span class="string">&quot;http&quot; </span>: {
+            <span class="string">&quot;verb&quot; </span>: <span class="string">&quot;some&quot;</span>,
+            <span class="string">&quot;headers&quot;</span>: {
+                <span class="string">&quot;Content-type&quot;</span>: [
+                    <span class="string">&quot;application/json&quot;
+                </span>]
+            },
+            <span class="string">&quot;path&quot; </span>: <span class="string">&quot;/image/default/assets/birds.jpg&quot;</span>,
+            <span class="string">&quot;query&quot; </span>: {
+                <span class="string">&quot;height&quot; </span>: [<span class="string">&quot;200&quot;</span>],
+            },
+        },
+    });
+    <span class="kw">let </span>img = bcc.call_external_bitcode(<span class="string">&quot;image&quot;</span>, <span class="kw-2">&amp;</span>params, img_obj, img_hash)<span class="question-mark">?</span>;
+    <span class="kw">let </span>exr:ExternalCallResult = serde_json::from_slice(<span class="kw-2">&amp;</span>img)<span class="question-mark">?</span>;
+    <span class="kw">let </span>imgbits = base64::decode(<span class="kw-2">&amp;</span>exr.fout)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(imgbits)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.close_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#298-300">source</a><h4 class="code-header">pub fn <a href="#method.close_stream" class="fn">close_stream</a>(&amp;'a self, sid: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>close_stream closes the fabric stream</p>
+<ul>
+<li>sid:    the sream id (returned from one of the new_file_stream or new_stream)
+Returns the checksum as hex-encoded string</li>
+</ul>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/b6a5e5b79022d52138b29aa1779b44f29f65ef51/samples/external/src/lib.rs#L60">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#308-311">source</a><h4 class="code-header">pub fn <a href="#method.new_stream" class="fn">new_stream</a>(&amp;'a self) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>new_stream creates a new fabric bitcode stream.</p>
+<h5 id="returns-3"><a href="#returns-3">Returns</a></h5>
+<ul>
+<li>output <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> of format <code>{&quot;stream_id&quot; : id}</code> where id is a string</li>
+</ul>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/b6a5e5b79022d52138b29aa1779b44f29f65ef51/samples/external/src/lib.rs#L57">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_file_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#319-322">source</a><h4 class="code-header">pub fn <a href="#method.new_file_stream" class="fn">new_file_stream</a>(&amp;'a self) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>new_file_stream creates a new fabric file
+output <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> of format where id and path are strings
+{
+“stream_id”: id,
+“file_name”: path
+}</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_download_file" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#329-372">source</a><h4 class="code-header">pub fn <a href="#method.q_download_file" class="fn">q_download_file</a>(
+    &amp;'a mut self,
+    path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    hash_or_token: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_download_file : downloads the file stored  at the fabric file location path for some content</p>
+<h5 id="arguments-4"><a href="#arguments-4">Arguments</a></h5>
+<ul>
+<li><code>path</code> : fabric file location in the content</li>
+<li><code>hash_or_token</code> : hash for the content containing the file</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_upload_file" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#381-406">source</a><h4 class="code-header">pub fn <a href="#method.q_upload_file" class="fn">q_upload_file</a>(
+    &amp;'a mut self,
+    qwt: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    input_data: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>],
+    path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    mime: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_upload_file : uploads the input data and stores it at the fabric file location as filetype mime</p>
+<h5 id="arguments-5"><a href="#arguments-5">Arguments</a></h5>
+<ul>
+<li><code>qwt</code> : a fabric write token</li>
+<li><code>input_data</code> : a slice of u8 data</li>
+<li><code>path</code> : fabric file location</li>
+<li><code>mime</code> : MIME type to store the data as (eg gif)</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.file_stream_size" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#410-413">source</a><h4 class="code-header">pub fn <a href="#method.file_stream_size" class="fn">file_stream_size</a>(&amp;'a self, filename: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>file_stream_size computes the current size of a fabric file stream given its stream name
+filename : the name of the file steam.  See new_file_stream.</p>
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-BitcodeContext-1" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#23-631">source</a><a href="#impl-BitcodeContext-1" class="anchor">§</a><h3 class="code-header">impl&lt;'a&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.q_create_content" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#37-47">source</a><h4 class="code-header">pub fn <a href="#method.q_create_content" class="fn">q_create_content</a>(
+    &amp;'a self,
+    qtype: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    meta: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html" title="struct std::collections::hash::map::HashMap">HashMap</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, <a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_create_content creates a new content object locally.  The content will have a write token but will
+not be comitted to the fabric until calls to finalize and commit are made</p>
+<h5 id="arguments-6"><a href="#arguments-6">Arguments</a></h5>
+<ul>
+<li><code>qtype</code>-   a hash for the content type. Can also be “builtin” for built in bitcode</li>
+<li><code>meta</code>-    a HashMap containing the initial meta data for the object to be set at ‘/’</li>
+</ul>
+<h5 id="returns-4"><a href="#returns-4">Returns</a></h5>
+<p>utf8 bytes stream containing json</p>
+<div class="example-wrap"><pre class="language-json"><code>{ &quot;qid&quot; : &quot;idObj&quot;, &quot;qwtoken&quot; : &quot;writeToken&quot;}
+</code></pre></div></div></details><details class="toggle method-toggle" open><summary><section id="method.q_list_content" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#63-65">source</a><h4 class="code-header">pub fn <a href="#method.q_list_content" class="fn">q_list_content</a>(&amp;'a self) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_list_content calculates a content fabric QList for the context’s libid</p>
+<h5 id="returns-5"><a href="#returns-5">Returns</a></h5>
+<p>slice of u8 parseable to <a href="../bccontext_struct/struct.QList.html" title="struct elvwasm::bccontext_struct::QList">QList</a>
+e.g.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>qlist:elvwasm::QList = bcc.q_list_content().try_into()<span class="question-mark">?</span>;
+  <span class="kw">let </span>res = <span class="macro">vec!</span>[];
+
+  <span class="comment">// do stuff with the qlist
+  </span><span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_list_content_for" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#82-90">source</a><h4 class="code-header">pub fn <a href="#method.q_list_content_for" class="fn">q_list_content_for</a>(&amp;'a self, qlibid: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_list_content_for calculates a content fabric QList for a given libid</p>
+<h5 id="arguments-7"><a href="#arguments-7">Arguments</a></h5>
+<ul>
+<li><code>qlibid</code>-    libid to be listed</li>
+</ul>
+<h5 id="returns-6"><a href="#returns-6">Returns</a></h5>
+<p>slice of u8 parseable to <a href="../bccontext_struct/struct.QList.html" title="struct elvwasm::bccontext_struct::QList">QList</a>
+e.g.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.q_list_content_for(<span class="kw-2">&amp;</span>bcc.request.q_info.qlib_id)<span class="question-mark">?</span>;
+  <span class="kw">let </span>qlist:elvwasm::QList = serde_json::from_str(std::str::from_utf8(<span class="kw-2">&amp;</span>res).unwrap()).unwrap();
+  <span class="comment">// do stuff with the qlist
+  </span><span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_finalize_content" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#112-119">source</a><h4 class="code-header">pub fn <a href="#method.q_finalize_content" class="fn">q_finalize_content</a>(&amp;'a self, qwtoken: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_finalize_content finalizes a given write token</p>
+<h5 id="arguments-8"><a href="#arguments-8">Arguments</a></h5>
+<ul>
+<li><code>qwtoken</code> - a write token to finalize</li>
+</ul>
+<h5 id="returns-7"><a href="#returns-7">Returns</a></h5>
+<p>utf8 bytes stream containing json</p>
+<div class="example-wrap"><pre class="language-json"><code>{ &quot;qid&quot; : &quot;idObj&quot;, &quot;qhash&quot; : &quot;newHash&quot;}
+</code></pre></div>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>mr:elvwasm::ModifyResult = bcc.q_modify_content().try_into()<span class="question-mark">?</span>;
+  <span class="comment">// ... process content
+  </span><span class="kw">let </span>res = <span class="macro">vec!</span>[];
+  <span class="kw">let </span>hash = bcc.q_finalize_content(<span class="kw-2">&amp;</span>mr.qwtoken)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/external/src/lib.rs#L50">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_commit_content" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#135-142">source</a><h4 class="code-header">pub fn <a href="#method.q_commit_content" class="fn">q_commit_content</a>(&amp;'a self, qhash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_commit_content finalizes a given write token</p>
+<h5 id="arguments-9"><a href="#arguments-9">Arguments</a></h5>
+<ul>
+<li><code>qhash</code> - a finalized hash</li>
+</ul>
+<h5 id="returns-8"><a href="#returns-8">Returns</a></h5>
+<ul>
+<li>slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> that is empty
+e.g.</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.q_commit_content(<span class="string">&quot;hq__jd7sd655fffg7HrF76mHDolzzwe&quot;</span>)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details><section id="method.q_system_time" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#144-147">source</a><h4 class="code-header">pub fn <a href="#method.q_system_time" class="fn">q_system_time</a>(&amp;'a self) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section><details class="toggle method-toggle" open><summary><section id="method.q_modify_content" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#165-167">source</a><h4 class="code-header">pub fn <a href="#method.q_modify_content" class="fn">q_modify_content</a>(&amp;'a self) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_modify_content enables edit on the implicit content of the context</p>
+<h5 id="returns-9"><a href="#returns-9">Returns</a></h5>
+<p>utf8 bytes stream containing json</p>
+<div class="example-wrap"><pre class="language-json"><code>{ &quot;qwtoken&quot; : &quot;writeTokenForEdit&quot;}
+</code></pre></div>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>mr:elvwasm::ModifyResult = bcc.q_modify_content().try_into()<span class="question-mark">?</span>;
+  <span class="kw">let </span>res = <span class="macro">vec!</span>[];
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+<h5 id="returns-10"><a href="#returns-10">Returns</a></h5>
+<ul>
+<li>slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a></li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_part_list" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#178-184">source</a><h4 class="code-header">pub fn <a href="#method.q_part_list" class="fn">q_part_list</a>(&amp;'a self, object_id_or_hash: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_part_list returns a list of parts in a given hash</p>
+<h5 id="arguments-10"><a href="#arguments-10">Arguments</a></h5>
+<ul>
+<li><code>String</code>-    object id or hash for the objects parts to be listed</li>
+</ul>
+<h5 id="returns-11"><a href="#returns-11">Returns</a></h5>
+<p>utf8 bytes containing json
+<a href="../bccontext_struct/struct.QPartList.html" title="struct elvwasm::bccontext_struct::QPartList">QPartList</a></p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L93">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.write_part_to_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#198-216">source</a><h4 class="code-header">pub fn <a href="#method.write_part_to_stream" class="fn">write_part_to_stream</a>(
+    &amp;'a self,
+    stream_id: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
+    qphash: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
+    qihot: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
+    offset: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>,
+    length: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>write_part_to_stream writes the content of a part to to a fabric stream</p>
+<h5 id="arguments-11"><a href="#arguments-11">Arguments</a></h5>
+<ul>
+<li><code>stream_id</code>-    stream identifier from new_stream or the like</li>
+<li><code>off</code>-  offset into the file (0 based)</li>
+<li><code>len</code>-  length of part to write</li>
+<li><code>qphash</code> - part hash to write</li>
+</ul>
+<h5 id="returns-12"><a href="#returns-12">Returns</a></h5>
+<p>utf8 bytes stream containing json
+<a href="../bccontext_struct/struct.WriteResult.html" title="struct elvwasm::bccontext_struct::WriteResult">WriteResult</a></p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L110">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_create_part_from_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#229-235">source</a><h4 class="code-header">pub fn <a href="#method.q_create_part_from_stream" class="fn">q_create_part_from_stream</a>(
+    &amp;'a self,
+    qwtoken: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    stream_id: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_create_part_from_stream creates a new part in a writeable object from a context stream.
+The content will be made locally but not published until finalized and committed</p>
+<h5 id="arguments-12"><a href="#arguments-12">Arguments</a></h5>
+<ul>
+<li><code>qwtoken</code>-   a write token to write the part</li>
+<li><code>stream_id</code>- the stream to write <a href="struct.BitcodeContext.html#method.new_stream" title="method elvwasm::bccontext::BitcodeContext::new_stream">BitcodeContext::new_stream</a></li>
+</ul>
+<h5 id="returns-13"><a href="#returns-13">Returns</a></h5>
+<p>utf8 bytes stream containing json
+<a href="../bccontext_struct/struct.CreatePartResult.html" title="struct elvwasm::bccontext_struct::CreatePartResult">CreatePartResult</a></p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/external/src/lib.rs#L48">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_file_to_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#248-263">source</a><h4 class="code-header">pub fn <a href="#method.q_file_to_stream" class="fn">q_file_to_stream</a>(
+    &amp;'a self,
+    stream_id: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    hash_or_token: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_file_to_stream writes the given qfile’s content to the provided stream</p>
+<h5 id="arguments-13"><a href="#arguments-13">Arguments</a></h5>
+<ul>
+<li><code>stream_id</code>-  string identifier aquired from <a href="struct.BitcodeContext.html#method.new_stream" title="method elvwasm::bccontext::BitcodeContext::new_stream">BitcodeContext::new_stream</a></li>
+<li><code>path</code> - string conatining the QFile path</li>
+<li><code>hash_or_token</code> - an optional string with a hash to operate on (defaults to the contexts content)</li>
+</ul>
+<h5 id="returns-14"><a href="#returns-14">Returns</a></h5>
+<p>utf8 bytes stream containing json
+<a href="../bccontext_struct/struct.WriteResult.html" title="struct elvwasm::bccontext_struct::WriteResult">WriteResult</a></p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/real-img/src/lib.rs#L63">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.file_to_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#276-279">source</a><h4 class="code-header">pub fn <a href="#method.file_to_stream" class="fn">file_to_stream</a>(&amp;'a self, filename: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, stream: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>file_to_stream directs a fabric file (filename) to a fabric stream (stream)
+filename - name of the fabric file (see new_file_stream)
+stream - name of the stream that receives the file stream (see new_stream)</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>wr:elvwasm::WriteResult = bcc.file_to_stream(<span class="string">&quot;myfile&quot;</span>, <span class="string">&quot;someStreamId&quot;</span>).try_into()<span class="question-mark">?</span>;
+  bcc.log_info(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;file written {}&quot;</span>, wr.written));
+  <span class="kw">let </span>res = <span class="macro">vec!</span>[];
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_create_file_from_stream" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#290-308">source</a><h4 class="code-header">pub fn <a href="#method.q_create_file_from_stream" class="fn">q_create_file_from_stream</a>(
+    &amp;'a self,
+    stream_id: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    qwtoken: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    mime: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_create_file_from_stream creates a qfile from the cotents of a bitcode stream</p>
+<h5 id="arguments-14"><a href="#arguments-14">Arguments</a></h5>
+<ul>
+<li><code>stream_id</code>-    stream identifier from new_stream or the like</li>
+<li><code>qwtoken</code>-  write token (will use context’s if “” is provided)</li>
+<li><code>path</code>-  qfile path</li>
+<li><code>mime</code> - MIME type of the file</li>
+<li><code>size</code> - size of the file in bytes</li>
+</ul>
+<h5 id="returns-15"><a href="#returns-15">Returns</a></h5>
+<p>slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> parseable to <a href="../bccontext_struct/struct.QPartInfo.html" title="struct elvwasm::bccontext_struct::QPartInfo">QPartInfo</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_create_q_state_store" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#321-323">source</a><h4 class="code-header">pub fn <a href="#method.q_create_q_state_store" class="fn">q_create_q_state_store</a>(&amp;'a self) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_create_q_state_store creates a new state store in the fabric</p>
+<h5 id="returns-16"><a href="#returns-16">Returns</a></h5>
+<p>utf8 bytes stream containing a string with the state store id
+e.g.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.q_create_q_state_store()<span class="question-mark">?</span>;
+  <span class="kw">let </span>ssID = std::str::from_utf8(<span class="kw-2">&amp;</span>res)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_get_versions" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#340-346">source</a><h4 class="code-header">pub fn <a href="#method.q_get_versions" class="fn">q_get_versions</a>(&amp;'a self, qid: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, with_details: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_get_versions lists the content versions with additional details for the given qid in context’s libid.</p>
+<h5 id="arguments-15"><a href="#arguments-15">Arguments</a></h5>
+<ul>
+<li><code>qid</code>-                 id of object to get versions for</li>
+<li><code>with_details</code>-        whether to retrieve additional info (currently content type hash, qlib ID, and size stats)</li>
+</ul>
+<h5 id="returns-17"><a href="#returns-17">Returns</a></h5>
+<p><a href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a> parseable to <a href="../bccontext_struct/struct.QRef.html" title="struct elvwasm::bccontext_struct::QRef">QRef</a>
+e.g.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.q_get_versions(<span class="string">&quot;id_someQID&quot;</span>, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span>qVersions:elvwasm::QRef = serde_json::from_str(std::str::from_utf8(<span class="kw-2">&amp;</span>res).unwrap()).unwrap();
+  <span class="comment">// Do stuff with qVersions
+  </span><span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_checksum_part" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#354-363">source</a><h4 class="code-header">pub fn <a href="#method.q_checksum_part" class="fn">q_checksum_part</a>(&amp;'a self, sum_method: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, qphash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_checksum_part calculates a checksum of a given content part.</p>
+<h5 id="arguments-16"><a href="#arguments-16">Arguments</a></h5>
+<ul>
+<li><code>sum_method</code>-    checksum method (“MD5” or “SHA256”)</li>
+<li><code>qphash</code>-        hash of the content part to checksum</li>
+</ul>
+<h5 id="returns-18"><a href="#returns-18">Returns</a></h5>
+<p>the checksum as hex-encoded string</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.q_checksum_file" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#371-380">source</a><h4 class="code-header">pub fn <a href="#method.q_checksum_file" class="fn">q_checksum_file</a>(
+    &amp;'a self,
+    sum_method: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    file_path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>q_checksum_file calculates a checksum of a file in a file bundle</p>
+<h5 id="arguments-17"><a href="#arguments-17">Arguments</a></h5>
+<ul>
+<li><code>sum_method</code>-    checksum method (“MD5” or “SHA256”)</li>
+<li><code>file_path</code>-     the path of the file in the bundle</li>
+</ul>
+<h5 id="returns-19"><a href="#returns-19">Returns</a></h5>
+<p>the checksum as hex-encoded string</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_set_json" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#400-409">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_set_json" class="fn">sqmd_set_json</a>(&amp;'a self, path: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, val: &amp;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>The following sqmd_* based functions all work on the premise that a bitcode context represents a single content
+in the fabric.  As such, each content has meta data that is directly associated.  This meta forms a standard tree
+at the <code>/</code> root level.</p>
+<p>sqmd_set_json ets the metadata at path</p>
+<h5 id="arguments-18"><a href="#arguments-18">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+<li><code>val</code> : serde_json::Value to set</li>
+</ul>
+<h5 id="returns-20"><a href="#returns-20">Returns</a></h5>
+<ul>
+<li>error only no success return</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde_json::json;
+<span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  bcc.sqmd_set_json(<span class="string">&quot;/some_key&quot;</span>, <span class="kw-2">&amp;</span><span class="macro">json!</span>({<span class="string">&quot;foo&quot; </span>: <span class="string">&quot;bar&quot;</span>}))<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_merge_json" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#425-434">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_merge_json" class="fn">sqmd_merge_json</a>(&amp;'a self, path: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, json_str: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_merge_json merges the metadata at path</p>
+<h5 id="arguments-19"><a href="#arguments-19">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+<li><code>val</code> : serde_json::Value to merge</li>
+</ul>
+<h5 id="returns-21"><a href="#returns-21">Returns</a></h5>
+<ul>
+<li>error only no success return</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde_json::json;
+
+<span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  bcc.sqmd_merge_json(<span class="string">&quot;/some_key&quot;</span>, <span class="string">r#&quot;{{&quot;foo&quot; : &quot;bar&quot;}}&quot;#</span>)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_delete_json" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#447-455">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_delete_json" class="fn">sqmd_delete_json</a>(&amp;'a self, path: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_delete_json deletes the metadata at path</p>
+<h5 id="arguments-20"><a href="#arguments-20">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+</ul>
+<h5 id="returns-22"><a href="#returns-22">Returns</a></h5>
+<ul>
+<li>error only no success return</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  bcc.sqmd_delete_json(<span class="string">&quot;/some_key&quot;</span>)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_clear_json" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#468-476">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_clear_json" class="fn">sqmd_clear_json</a>(&amp;'a self, path: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_clear_json clears the metadata at path</p>
+<h5 id="arguments-21"><a href="#arguments-21">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+</ul>
+<h5 id="returns-23"><a href="#returns-23">Returns</a></h5>
+<ul>
+<li>nothing only error on failure</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  bcc.sqmd_clear_json(<span class="string">&quot;/some_key&quot;</span>)<span class="question-mark">?</span>; <span class="comment">// this will blast some_key and all its descendants
+  </span><span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_get_json" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#491-494">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_get_json" class="fn">sqmd_get_json</a>(&amp;'a self, path: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_get_json gets the metadata at path</p>
+<h5 id="arguments-22"><a href="#arguments-22">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+</ul>
+<h5 id="returns-24"><a href="#returns-24">Returns</a></h5>
+<ul>
+<li>UTF8 <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> slice containing json</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.sqmd_get_json(<span class="string">&quot;/some_key&quot;</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span>v:serde_json::Value = serde_json::from_slice(<span class="kw-2">&amp;</span>res.clone()).unwrap();
+  <span class="kw">let </span><span class="kw-2">mut </span>meta = v.as_object().unwrap();
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_get_json_resolve" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#509-512">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_get_json_resolve" class="fn">sqmd_get_json_resolve</a>(&amp;'a self, path: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_get_json_resolve gets the metadata at path resolving all links</p>
+<h5 id="arguments-23"><a href="#arguments-23">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+</ul>
+<h5 id="returns-25"><a href="#returns-25">Returns</a></h5>
+<ul>
+<li>UTF8 <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> slice containing json</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.sqmd_get_json_resolve(<span class="string">&quot;/some_key&quot;</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span>v:serde_json::Value = serde_json::from_slice(<span class="kw-2">&amp;</span>res.clone()).unwrap();
+  <span class="kw">let </span><span class="kw-2">mut </span>meta = v.as_object().unwrap();
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_get_json_external" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#527-537">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_get_json_external" class="fn">sqmd_get_json_external</a>(
+    &amp;'a self,
+    qlibid: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    qhash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_get_json_external gets the metadata at path from another content</p>
+<h5 id="arguments-24"><a href="#arguments-24">Arguments</a></h5>
+<ul>
+<li><code>path</code> : path to the meta data</li>
+<li><code>qhash</code>: hash of external content</li>
+</ul>
+<h5 id="returns-26"><a href="#returns-26">Returns</a></h5>
+<ul>
+<li>UTF8 <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> slice containing json</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.sqmd_get_json_external(<span class="string">&quot;libid4556&quot;</span>, <span class="string">&quot;hq_bad2a1ac0a2923ad85e1489736701c06320242a9&quot;</span>, <span class="string">&quot;/some_key&quot;</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span><span class="kw-2">mut </span>meta_str: String = String::from_utf8(res.clone())<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sqmd_query" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#553-556">source</a><h4 class="code-header">pub fn <a href="#method.sqmd_query" class="fn">sqmd_query</a>(&amp;'a self, query: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>sqmd_query queries the meta-data with the given JSONPath query expression.</p>
+<h5 id="arguments-25"><a href="#arguments-25">Arguments</a></h5>
+<ul>
+<li><code>query</code> : JSONPath query expression</li>
+</ul>
+<h5 id="returns-27"><a href="#returns-27">Returns</a></h5>
+<ul>
+<li>UTF8 <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a> slice containing json</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.sqmd_query(<span class="string">&quot;$[&#39;some&#39;].value[0].description&quot;</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span>v:serde_json::Value = serde_json::from_slice(<span class="kw-2">&amp;</span>res.clone()).unwrap();
+  <span class="kw">let </span><span class="kw-2">mut </span>meta = v.as_object().unwrap();
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.qss_set" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#573-583">source</a><h4 class="code-header">pub fn <a href="#method.qss_set" class="fn">qss_set</a>(&amp;'a self, qssid: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, key: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, val: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>qss_set sets data into the Q state store</p>
+<h5 id="arguments-26"><a href="#arguments-26">Arguments</a></h5>
+<ul>
+<li><code>qssid</code>- string identifier aquired from <a href="struct.BitcodeContext.html#method.q_create_q_state_store" title="method elvwasm::bccontext::BitcodeContext::q_create_q_state_store">BitcodeContext::q_create_q_state_store</a></li>
+<li><code>key</code> - string</li>
+<li><code>val</code> - string value to store</li>
+</ul>
+<h5 id="vecreturns"><a href="#vecreturns">VecReturns</a></h5>
+<p>Nothing error only</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.q_create_q_state_store()<span class="question-mark">?</span>;
+  <span class="kw">let </span>ssID = std::str::from_utf8(<span class="kw-2">&amp;</span>res)<span class="question-mark">?</span>;
+  bcc.qss_set(ssID, <span class="string">&quot;akey&quot;</span>, <span class="string">&quot;avalue&quot;</span>)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.qss_get" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#598-607">source</a><h4 class="code-header">pub fn <a href="#method.qss_get" class="fn">qss_get</a>(&amp;'a self, qssid: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, key: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>qss_get gets data from the Q state store</p>
+<h5 id="arguments-27"><a href="#arguments-27">Arguments</a></h5>
+<ul>
+<li><code>qssid</code>- string identifier aquired from <a href="struct.BitcodeContext.html#method.q_create_q_state_store" title="method elvwasm::bccontext::BitcodeContext::q_create_q_state_store">BitcodeContext::q_create_q_state_store</a></li>
+<li><code>key</code> - string</li>
+</ul>
+<h5 id="returns-28"><a href="#returns-28">Returns</a></h5>
+<p><a href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a> containing string value</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>res = bcc.qss_get(<span class="string">&quot;sid_648nfjfh5666nmjejh&quot;</span>, <span class="string">&quot;akey&quot;</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span>strVal = std::str::from_utf8(<span class="kw-2">&amp;</span>res)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(res)
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.qss_delete" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_core.rs.html#621-630">source</a><h4 class="code-header">pub fn <a href="#method.qss_delete" class="fn">qss_delete</a>(&amp;'a self, qssid: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, key: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>qss_get deletes data from the Q state store</p>
+<h5 id="arguments-28"><a href="#arguments-28">Arguments</a></h5>
+<ul>
+<li><code>qssid</code>- string identifier aquired from <a href="struct.BitcodeContext.html#method.q_create_q_state_store" title="method elvwasm::bccontext::BitcodeContext::q_create_q_state_store">BitcodeContext::q_create_q_state_store</a></li>
+<li><code>key</code> - string</li>
+</ul>
+<h5 id="returns-29"><a href="#returns-29">Returns</a></h5>
+<p>Nothing error only</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  bcc.qss_delete(<span class="string">&quot;sid_648nfjfh5666nmjejh&quot;</span>, <span class="string">&quot;akey&quot;</span>)<span class="question-mark">?</span>;
+  <span class="prelude-val">Ok</span>(<span class="string">&quot;SUCCESS&quot;</span>.to_owned().as_bytes().to_vec())
+}</code></pre></div>
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-BitcodeContext-2" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext_ext.rs.html#35-84">source</a><a href="#impl-BitcodeContext-2" class="anchor">§</a><h3 class="code-header">impl&lt;'a&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.proxy_http" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_ext.rs.html#36-67">source</a><h4 class="code-header">pub fn <a href="#method.proxy_http" class="fn">proxy_http</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>proxy_http proxies an http request in case of CORS issues</p>
+<h5 id="arguments-29"><a href="#arguments-29">Arguments</a></h5>
+<ul>
+<li><code>v</code> : a JSON Value</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde_json::json;
+
+<span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>v = <span class="macro">json!</span>({
+        <span class="string">&quot;request_parameters&quot; </span>: {
+        <span class="string">&quot;url&quot;</span>: <span class="string">&quot;https://www.googleapis.com/customsearch/v1?key=AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE&amp;q=fabric&amp;cx=012842113009817296384:qjezbmwk0cx&quot;</span>,
+        <span class="string">&quot;method&quot;</span>: <span class="string">&quot;GET&quot;</span>,
+        <span class="string">&quot;headers&quot;</span>: {
+          <span class="string">&quot;Accept&quot;</span>: <span class="string">&quot;application/json&quot;</span>,
+          <span class="string">&quot;Content-Type&quot;</span>: <span class="string">&quot;application/json&quot;
+        </span>}
+     }
+  });
+  bcc.proxy_http(<span class="prelude-val">Some</span>(v))
+}</code></pre></div>
+<h5 id="returns-30"><a href="#returns-30">Returns</a></h5>
+<ul>
+<li>slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a></li>
+</ul>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/rproxy/src/lib.rs#L26">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.start_bitcode_lro" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_ext.rs.html#80-83">source</a><h4 class="code-header">pub fn <a href="#method.start_bitcode_lro" class="fn">start_bitcode_lro</a>(&amp;'a self, function: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, args: &amp;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>start_bitcode_lro initiates a long running operation on the fabric.  Currently the lro implementation
+constrains the callback to be in the same bitcode module as the initiator.</p>
+<h5 id="arguments-30"><a href="#arguments-30">Arguments</a></h5>
+<ul>
+<li><code>function</code> : &amp;str the function to call in the current bitcode module</li>
+<li><code>args</code> : JSON value containing the arguments to pass the callback</li>
+</ul>
+<h5 id="returns-31"><a href="#returns-31">Returns</a></h5>
+<ul>
+<li>slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a></li>
+</ul>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/lro/src/lib.rs#L16">Example</a></p>
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-BitcodeContext-3" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#13-234">source</a><a href="#impl-BitcodeContext-3" class="anchor">§</a><h3 class="code-header">impl&lt;'a&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new_index_builder" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#19-25">source</a><h4 class="code-header">pub fn <a href="#method.new_index_builder" class="fn">new_index_builder</a>(&amp;'a mut self, _v: <a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>new_index_builder Creates a new index builder
+storing the resultant blob in a fabric part and returning the part hash in the body of an http response</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L85">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.archive_index_to_part" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#32-34">source</a><h4 class="code-header">pub fn <a href="#method.archive_index_to_part" class="fn">archive_index_to_part</a>(&amp;'a self, dir: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>archive_index_to_part Uses the index constructed in the fabric directory to form a compressed tar
+storing the resultant blob in a fabric part and returning the part hash</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L121">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.restore_index_from_part" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#43-49">source</a><h4 class="code-header">pub fn <a href="#method.restore_index_from_part" class="fn">restore_index_from_part</a>(
+    &amp;'a self,
+    content_hash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
+    part_hash: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>restore_index_from_part Extract the part using the supplied part hash restore an archived tantivy index locating the resultant
+in a directory on the local node.</p>
+<h5 id="arguments-31"><a href="#arguments-31">Arguments</a></h5>
+<ul>
+<li><code>content_hash</code> : &amp;str the content object hash</li>
+<li><code>part_hash</code> : &amp;str the part hash returned from <a href="struct.BitcodeContext.html#method.archive_index_to_part" title="method elvwasm::bccontext::BitcodeContext::archive_index_to_part">BitcodeContext::archive_index_to_part</a></li>
+</ul>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L190">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.query_parser_parse_query" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#56-58">source</a><h4 class="code-header">pub fn <a href="#method.query_parser_parse_query" class="fn">query_parser_parse_query</a>(&amp;'a self, query: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>query_parser_parse_query Queries the index using the assoicated index query context</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/searcher.rs#L32">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.builder_add_text_field" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#60-82">source</a><h4 class="code-header">pub fn <a href="#method.builder_add_text_field" class="fn">builder_add_text_field</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>builder_add_text_field adds a new text field to a Tantivy index</p>
+<h5 id="arguments-32"><a href="#arguments-32">Arguments</a></h5>
+<ul>
+<li><code>v</code> : a JSON Value</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde_json::json;
+
+<span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>v = <span class="macro">json!</span>({
+    <span class="string">&quot;name&quot;</span>:   <span class="string">&quot;title&quot;</span>,
+    <span class="string">&quot;type&quot;</span>:   <span class="number">1</span>,
+    <span class="string">&quot;stored&quot;</span>: <span class="bool-val">true</span>,
+  });
+  bcc.builder_add_text_field(<span class="prelude-val">Some</span>(v))
+}</code></pre></div>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L196">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.builder_build" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#83-100">source</a><h4 class="code-header">pub fn <a href="#method.builder_build" class="fn">builder_build</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>builder_build builds the new Index
+Arguments None</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde_json::json;
+
+
+<span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  bcc.builder_build(<span class="prelude-val">None</span>)
+}</code></pre></div>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L201">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.builder_create_index" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#102-110">source</a><h4 class="code-header">pub fn <a href="#method.builder_create_index" class="fn">builder_create_index</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>builder_create_index create an index from an existing dir</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L202">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.document_create" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#112-120">source</a><h4 class="code-header">pub fn <a href="#method.document_create" class="fn">document_create</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>document_create create a new document for a given Index</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L107">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.document_add_text" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#122-130">source</a><h4 class="code-header">pub fn <a href="#method.document_add_text" class="fn">document_add_text</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>document_add_text add text to a given document</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L115">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.document_create_index" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#132-140">source</a><h4 class="code-header">pub fn <a href="#method.document_create_index" class="fn">document_create_index</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>document_create_index creates an index given a set of documents</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L117">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.index_create_writer" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#142-150">source</a><h4 class="code-header">pub fn <a href="#method.index_create_writer" class="fn">index_create_writer</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>index_create_writer creates an index writer</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L118">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.index_add_document" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#152-160">source</a><h4 class="code-header">pub fn <a href="#method.index_add_document" class="fn">index_add_document</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>index_add_document adds a document to the writer</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L119">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.index_writer_commit" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#162-170">source</a><h4 class="code-header">pub fn <a href="#method.index_writer_commit" class="fn">index_writer_commit</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>index_writer_commit commits the index</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L120">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.index_reader_builder_create" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#172-180">source</a><h4 class="code-header">pub fn <a href="#method.index_reader_builder_create" class="fn">index_reader_builder_create</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>index_reader_builder_create creates a new reader builder on an index</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L203">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.index_reader_searcher" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#182-190">source</a><h4 class="code-header">pub fn <a href="#method.index_reader_searcher" class="fn">index_reader_searcher</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>index_reader_searcher creates a new query parser for the index</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/lib.rs#L204">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reader_builder_query_parser_create" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#192-200">source</a><h4 class="code-header">pub fn <a href="#method.reader_builder_query_parser_create" class="fn">reader_builder_query_parser_create</a>(
+    &amp;'a self,
+    v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;
+) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>reader_builder_query_parser_create creates a ReaderBuilder from a QueryParser</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/searcher.rs#L28">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.query_parser_for_index" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#202-223">source</a><h4 class="code-header">pub fn <a href="#method.query_parser_for_index" class="fn">query_parser_for_index</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>query_parser_for_index executes ForIndex on the QueryParser</p>
+<h5 id="arguments-33"><a href="#arguments-33">Arguments</a></h5>
+<ul>
+<li><code>v</code> : a JSON Value</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>do_something&lt;<span class="lifetime">&#39;s</span>&gt;(bcc: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>elvwasm::BitcodeContext) -&gt; wapc_guest::CallResult {
+  <span class="kw">let </span>v = serde_json::from_str(<span class="string">r#&quot;{
+        &quot;fields&quot; : [&quot;field1&quot;, &quot;field2&quot;]
+      }
+  }&quot;#</span>).unwrap();
+  bcc.query_parser_for_index(v)
+}</code></pre></div>
+<h5 id="returns-32"><a href="#returns-32">Returns</a></h5>
+<ul>
+<li>slice of <a href="https://doc.rust-lang.org/nightly/std/primitive.u8.html" title="primitive std::u8">u8</a></li>
+</ul>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/searcher.rs#L30">Example</a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.query_parser_search" class="method"><a class="srclink rightside" href="../../src/elvwasm/bccontext_search.rs.html#225-233">source</a><h4 class="code-header">pub fn <a href="#method.query_parser_search" class="fn">query_parser_search</a>(&amp;'a self, v: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>&gt;) -&gt; <a class="type" href="../../wapc_guest/protocol/type.CallResult.html" title="type wapc_guest::protocol::CallResult">CallResult</a></h4></section></summary><div class="docblock"><p>query_parser_search searches the given QueryParser for the term</p>
+<p><a href="https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/search/src/searcher.rs#L34">Example</a></p>
+</div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Clone-for-BitcodeContext" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#33">source</a><a href="#impl-Clone-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#33">source</a><a href="#method.clone" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" class="fn">clone</a>(&amp;self) -&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h4></section></summary><div class='docblock'>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl"><span class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/clone.rs.html#132-134">source</a></span><a href="#method.clone_from" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from" class="fn">clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;Self</a>)</h4></section></summary><div class='docblock'>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Debug-for-BitcodeContext" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#33">source</a><a href="#impl-Debug-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#33">source</a><a href="#method.fmt" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fn">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Default-for-BitcodeContext" class="impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#33">source</a><a href="#impl-Default-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.default" class="method trait-impl"><a class="srclink rightside" href="../../src/elvwasm/bccontext.rs.html#33">source</a><a href="#method.default" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default" class="fn">default</a>() -&gt; <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h4></section></summary><div class='docblock'>Returns the “default value” for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></div></details></div></details></div><h2 id="synthetic-implementations" class="small-section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-RefUnwindSafe-for-BitcodeContext" class="impl"><a href="#impl-RefUnwindSafe-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.RefUnwindSafe.html" title="trait core::panic::unwind_safe::RefUnwindSafe">RefUnwindSafe</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section><section id="impl-Send-for-BitcodeContext" class="impl"><a href="#impl-Send-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section><section id="impl-Sync-for-BitcodeContext" class="impl"><a href="#impl-Sync-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section><section id="impl-Unpin-for-BitcodeContext" class="impl"><a href="#impl-Unpin-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section><section id="impl-UnwindSafe-for-BitcodeContext" class="impl"><a href="#impl-UnwindSafe-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html" title="trait core::panic::unwind_safe::UnwindSafe">UnwindSafe</a> for <a class="struct" href="struct.BitcodeContext.html" title="struct elvwasm::bccontext::BitcodeContext">BitcodeContext</a></h3></section></div><h2 id="blanket-implementations" class="small-section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/any.rs.html#200">source</a><a href="#impl-Any-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/any/trait.Any.html" title="trait core::any::Any">Any</a> for T<span class="where fmt-newline">where
+    T: 'static + ?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</span></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/any.rs.html#201">source</a><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/any/trait.Any.html#tymethod.type_id" class="fn">type_id</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/core/any/struct.TypeId.html" title="struct core::any::TypeId">TypeId</a></h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a href="https://doc.rust-lang.org/nightly/core/any/trait.Any.html#tymethod.type_id">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/borrow.rs.html#211">source</a><a href="#impl-Borrow%3CT%3E-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/borrow/trait.Borrow.html" title="trait core::borrow::Borrow">Borrow</a>&lt;T&gt; for T<span class="where fmt-newline">where
+    T: ?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</span></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/91522" title="Tracking issue for const_borrow">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/borrow.rs.html#213">source</a></span><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/borrow/trait.Borrow.html#tymethod.borrow" class="fn">borrow</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;T</a></h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a href="https://doc.rust-lang.org/nightly/core/borrow/trait.Borrow.html#tymethod.borrow">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/borrow.rs.html#220">source</a><a href="#impl-BorrowMut%3CT%3E-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/borrow/trait.BorrowMut.html" title="trait core::borrow::BorrowMut">BorrowMut</a>&lt;T&gt; for T<span class="where fmt-newline">where
+    T: ?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</span></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/91522" title="Tracking issue for const_borrow">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/borrow.rs.html#221">source</a></span><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/borrow/trait.BorrowMut.html#tymethod.borrow_mut" class="fn">borrow_mut</a>(&amp;mut self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut T</a></h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a href="https://doc.rust-lang.org/nightly/core/borrow/trait.BorrowMut.html#tymethod.borrow_mut">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#733">source</a><a href="#impl-From%3CT%3E-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#736">source</a></span><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html#tymethod.from" class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#717">source</a><a href="#impl-Into%3CU%3E-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;U&gt; for T<span class="where fmt-newline">where
+    U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;T&gt;,</span></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#725">source</a></span><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html#tymethod.into" class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code><a href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-ToOwned-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/alloc/borrow.rs.html#82">source</a><a href="#impl-ToOwned-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/alloc/borrow/trait.ToOwned.html" title="trait alloc::borrow::ToOwned">ToOwned</a> for T<span class="where fmt-newline">where
+    T: <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,</span></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Owned" class="associatedtype trait-impl"><a href="#associatedtype.Owned" class="anchor">§</a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/alloc/borrow/trait.ToOwned.html#associatedtype.Owned" class="associatedtype">Owned</a> = T</h4></section></summary><div class='docblock'>The resulting type after obtaining ownership.</div></details><details class="toggle method-toggle" open><summary><section id="method.to_owned" class="method trait-impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/alloc/borrow.rs.html#87">source</a><a href="#method.to_owned" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/alloc/borrow/trait.ToOwned.html#tymethod.to_owned" class="fn">to_owned</a>(&amp;self) -&gt; T</h4></section></summary><div class='docblock'>Creates owned data from borrowed data, usually by cloning. <a href="https://doc.rust-lang.org/nightly/alloc/borrow/trait.ToOwned.html#tymethod.to_owned">Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.clone_into" class="method trait-impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/alloc/borrow.rs.html#91">source</a><a href="#method.clone_into" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/alloc/borrow/trait.ToOwned.html#method.clone_into" class="fn">clone_into</a>(&amp;self, target: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut T</a>)</h4></section></summary><div class='docblock'>Uses borrowed data to replace owned data, usually by cloning. <a href="https://doc.rust-lang.org/nightly/alloc/borrow/trait.ToOwned.html#method.clone_into">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#775">source</a><a href="#impl-TryFrom%3CU%3E-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt; for T<span class="where fmt-newline">where
+    U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;T&gt;,</span></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" class="associatedtype">Error</a> = <a class="enum" href="https://doc.rust-lang.org/nightly/core/convert/enum.Infallible.html" title="enum core::convert::Infallible">Infallible</a></h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#781">source</a></span><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fn">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-BitcodeContext" class="impl"><a class="srclink rightside" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#760">source</a><a href="#impl-TryInto%3CU%3E-for-BitcodeContext" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T<span class="where fmt-newline">where
+    U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,</span></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#766">source</a></span><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fn">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

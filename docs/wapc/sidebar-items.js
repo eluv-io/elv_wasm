@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["HOST_NAMESPACE"],"mod":["errors","wapc_functions"],"struct":["Invocation","ModuleState","WapcHost","WasiParams"],"trait":["ModuleHost","WebAssemblyEngineProvider"],"type":["HostCallback"]};

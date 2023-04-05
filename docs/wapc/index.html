@@ -1,0 +1,97 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="waPC"><title>wapc - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-c4dbdcde0fbd8430.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="wapc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (22f247c6f 2023-03-13)" data-search-js="search-d1bc581867fd0849.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" data-theme-light-css="light-db279b6232be9c13.css" data-theme-dark-css="dark-cf923f49f397b216.css" data-theme-ayu-css="ayu-be46fdc453a55015.css" ></div><script src="../static.files/storage-9184409068f70b79.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-f5a2577c5297a973.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" href="../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../wapc/index.html"><img src="https://avatars0.githubusercontent.com/u/54989751?s=200&amp;v=4" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../wapc/index.html"><img src="https://avatars0.githubusercontent.com/u/54989751?s=200&amp;v=4" alt="logo"></a><h2 class="location"><a href="#">Crate wapc</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 1.0.0</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#constants">Constants</a></li><li><a href="#traits">Traits</a></li><li><a href="#types">Type Definitions</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">wapc</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/wapc/lib.rs.html#1-125">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="wapc"><a href="#wapc">waPC</a></h2>
+<p><img src="https://img.shields.io/crates/v/wapc.svg" alt="crates.io" />
+<img src="https://img.shields.io/crates/l/wapc.svg" alt="license" /></p>
+<p>This is the Rust implementation of the <strong>waPC</strong> host protocol. This crate defines the <code>WapcHost</code> struct and the <code>WebAssemblyEngineProvider</code> trait to provide dynamic execution of WebAssembly modules. For information on the implementations with WebAssembly engines, check out the provider crates below:</p>
+<ul>
+<li><a href="https://github.com/wapc/wapc-rs/blob/master/crates/wasmtime-provider">wasmtime-provider</a></li>
+<li><a href="https://github.com/wapc/wapc-rs/blob/master/crates/wasm3-provider">wasm3-provider</a></li>
+</ul>
+<h2 id="wapc-1"><a href="#wapc-1">wapc</a></h2>
+<p>The <code>wapc</code> crate provides a high-level WebAssembly host runtime that conforms to an RPC mechanism called <strong>waPC</strong> (WebAssembly Procedure Calls). waPC is designed to be a fixed, lightweight standard allowing both sides of the guest/host boundary to make method calls containing arbitrary binary payloads. Neither side
+of the contract is ever required to perform explicit allocation, ensuring maximum portability for wasm targets that might behave differently in the presence of garbage collectors and memory
+relocation, compaction, etc.</p>
+<p>To use <code>wapc</code>, first you’ll need a waPC-compliant WebAssembly module (referred to as the <em>guest</em>) to load and execute. You can find a number of these samples available in the <a href="https://github.com/wapc/wapc-rs/blob/master/wasm/crates/">GitHub repository</a>.</p>
+<p>Next, you will need to chose a runtime engine. waPC describes the function call flow required for wasm-RPC, but it does not dictate how the low-level WebAssembly function calls are made. This allows you to select whatever engine best suits your needs, whether it’s a JIT-based engine or an interpreter-based one. Simply instantiate anything that implements the
+<a href="https://docs.rs/wapc/latest/wapc/trait.WebAssemblyEngineProvider.html">WebAssemblyEngineProvider</a> trait and pass it to the WapcHost constructor and the <a href="https://docs.rs/wapc/latest/wapc/struct.WapcHost.html">WapcHost</a> will facilitate all RPCs.</p>
+<p>To make function calls, ensure that you provided a suitable host callback function (or closure) when you created your WapcHost. Then invoke the <code>call</code> function to initiate the RPC flow.</p>
+<h3 id="example"><a href="#example">Example</a></h3>
+<p>The following is an example of synchronous, bi-directional procedure calls between a WebAssembly host runtime and the guest module.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>wasmtime_provider::WasmtimeEngineProvider; <span class="comment">// Or Wasm3EngineProvider
+</span><span class="kw">use </span>wapc::WapcHost;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">pub fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+
+  <span class="comment">// Sample host callback that prints the operation a WASM module requested.
+  </span><span class="kw">let </span>host_callback = |id: u64, bd: <span class="kw-2">&amp;</span>str, ns: <span class="kw-2">&amp;</span>str, op: <span class="kw-2">&amp;</span>str, payload: <span class="kw-2">&amp;</span>[u8]| {
+    <span class="macro">println!</span>(<span class="string">&quot;Guest {} invoked &#39;{}-&gt;{}:{}&#39; with a {} byte payload&quot;</span>,
+    id, bd, ns, op, payload.len());
+    <span class="comment">// Return success with zero-byte payload.
+    </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[])
+  };
+
+  <span class="kw">let </span>file = <span class="string">&quot;../../wasm/crates/wasm-basic/build/wasm_basic.wasm&quot;</span>;
+  <span class="kw">let </span>module_bytes = std::fs::read(file)<span class="question-mark">?</span>;
+
+  <span class="kw">let </span>engine = WasmtimeEngineProvider::new(<span class="kw-2">&amp;</span>module_bytes, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+  <span class="kw">let </span>host = WapcHost::new(Box::new(engine), <span class="prelude-val">Some</span>(Box::new(host_callback)))<span class="question-mark">?</span>;
+
+  <span class="kw">let </span>res = host.call(<span class="string">&quot;ping&quot;</span>, <span class="string">b&quot;payload bytes&quot;</span>)<span class="question-mark">?</span>;
+  <span class="macro">assert_eq!</span>(res, <span class="string">b&quot;payload bytes&quot;</span>);
+
+  <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+<p>For running examples, take a look at the examples available in the individual engine provider
+repositories:</p>
+<ul>
+<li><a href="https://github.com/wapc/wapc-rs/blob/master/crates/wasmtime-provider/examples">wasmtime-provider</a> - Utilizes the <a href="https://bytecodealliance.org/">Bytecode Alliance</a> runtime <a href="https://github.com/bytecodealliance/wasmtime">wasmtime</a> for WebAssembly JIT compilation and execution.</li>
+<li><a href="https://github.com/wapc/wapc-rs/blob/master/crates/wasm3-provider/examples">wasm3-provider</a> - Uses the <a href="https://github.com/wasm3">wasm3</a> C interpreter runtime (with a <a href="https://github.com/wasm3/wasm3-rs">Rust wrapper</a>)</li>
+</ul>
+<h2 id="notes"><a href="#notes">Notes</a></h2>
+<p>waPC is <em>reactive</em>. Hosts make requests and guests respond. During a request, guests can initiate calls back to the host and interact with the environment (via WASI). When a request is done the guest should be considered parked until the next request.</p>
+<h3 id="rpc-exchange-flow"><a href="#rpc-exchange-flow">RPC Exchange Flow</a></h3>
+<p>The following is a detailed outline of which functions are invoked and in which order to support
+a waPC exchange flow, which is always triggered by a consumer invoking the <code>call</code> function. Invoking
+and handling these low-level functions is the responsibility of the <em>engine provider</em>, while
+orchestrating the high-level control flow is the job of the <code>WapcHost</code>.</p>
+<ol>
+<li>Host invokes <code>__guest_call</code> on the WebAssembly module (via the engine provider)</li>
+<li>Guest calls the <code>__guest_request</code> function to instruct the host to write the request parameters to linear memory</li>
+<li>Guest uses the <code>op_len</code> and <code>msg_len</code> parameters long with the pointer values it generated in step 2 to retrieve the operation (UTF-8 string) and payload (opaque byte array)</li>
+<li>Guest performs work</li>
+<li><em>(Optional)</em> Guest invokes <code>__host_call</code> on host with pointers and lengths indicating the <code>binding</code>, <code>namespace</code>, <code>operation</code>, and payload.</li>
+<li><em>(Optional)</em> Guest can use <code>__host_response</code> and <code>host_response_len</code> functions to obtain and interpret results</li>
+<li><em>(Optional)</em> Guest can use <code>__host_error_len</code> and <code>__host_error</code> to obtain the host error if indicated (<code>__host_call</code> returns 0)
+<ol>
+<li>Steps 5-7 can repeat with as many different host calls as the guest needs</li>
+</ol>
+</li>
+<li>Guest will call <code>guest_error</code> to indicate if an error occurred during processing</li>
+<li>Guest will call <code>guest_response</code> to store the opaque response payload</li>
+<li>Guest will return 0 (error) or 1 (success) at the end of <code>__guest_call</code></li>
+</ol>
+<h3 id="required-host-exports"><a href="#required-host-exports">Required Host Exports</a></h3>
+<p>List of functions that must be exported by the host (imported by the guest)</p>
+<div><table><thead><tr><th>Module</th><th>Function</th><th>Parameters</th><th>Description</th></tr></thead><tbody>
+<tr><td>wapc</td><td>__host_call</td><td>br_ptr: i32<br/>bd_len: i32<br/>ns_ptr: i32<br/>ns_len: i32<br/>op_ptr: i32<br/>op_len: i32<br/>ptr: i32<br/>len: i32<br/>-&gt; i32</td><td>Invoked to initiate a host call</td></tr>
+<tr><td>wapc</td><td>__console_log</td><td>ptr: i32, len: i32</td><td>Allows guest to log to <code>stdout</code></td></tr>
+<tr><td>wapc</td><td>__guest_request</td><td>op_ptr: i32<br/>ptr: i32</td><td>Writes the guest request payload and operation name to linear memory at the designated locations</td></tr>
+<tr><td>wapc</td><td>__host_response</td><td>ptr: i32</td><td>Instructs host to write the host response payload to the given location in linear memory</td></tr>
+<tr><td>wapc</td><td>__host_response_len</td><td>-&gt; i32</td><td>Obtains the length of the current host response</td></tr>
+<tr><td>wapc</td><td>__guest_response</td><td>ptr: i32<br/>len: i32</td><td>Tells the host the size and location of the current guest response payload</td></tr>
+<tr><td>wapc</td><td>__guest_error</td><td>ptr: i32<br/>len: i32</td><td>Tells the host the size and location of the current guest error payload</td></tr>
+<tr><td>wapc</td><td>__host_error</td><td>ptr: i32</td><td>Instructs the host to write the host error payload to the given location</td></tr>
+<tr><td>wapc</td><td>__host_error_len</td><td>-&gt; i32</td><td>Queries the host for the length of the current host error (0 if none)</td></tr>
+</tbody></table>
+</div><h3 id="required-guest-exports"><a href="#required-guest-exports">Required Guest Exports</a></h3>
+<p>List of functions that must be exported by the guest (invoked by the host)</p>
+<div><table><thead><tr><th>Function</th><th>Parameters</th><th>Description</th></tr></thead><tbody>
+<tr><td>__guest_call</td><td>op_len: i32<br/>msg_len: i32</td><td>Invoked by the host to start an RPC exchange with the guest module</td></tr>
+</tbody></table>
+</div></div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="errors/index.html" title="mod wapc::errors">errors</a></div><div class="desc docblock-short">Library-specific error types and utility functions</div></li><li><div class="item-name"><a class="mod" href="wapc_functions/index.html" title="mod wapc::wapc_functions">wapc_functions</a></div><div class="desc docblock-short">A list of the function names that are part of each waPC conversation</div></li></ul><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Invocation.html" title="struct wapc::Invocation">Invocation</a></div><div class="desc docblock-short">Represents a waPC invocation, which is a combination of an operation string and the
+corresponding binary payload</div></li><li><div class="item-name"><a class="struct" href="struct.ModuleState.html" title="struct wapc::ModuleState">ModuleState</a></div><div class="desc docblock-short">Module state is essentially a ‘handle’ that is passed to a runtime engine to allow it
+to read and write relevant data as different low-level functions are executed during
+a waPC conversation</div></li><li><div class="item-name"><a class="struct" href="struct.WapcHost.html" title="struct wapc::WapcHost">WapcHost</a></div><div class="desc docblock-short">A WebAssembly host runtime for waPC-compliant modules</div></li><li><div class="item-name"><a class="struct" href="struct.WasiParams.html" title="struct wapc::WasiParams">WasiParams</a></div><div class="desc docblock-short">Parameters defining the options for enabling WASI on a module (if applicable)</div></li></ul><h2 id="constants" class="small-section-header"><a href="#constants">Constants</a></h2><ul class="item-table"><li><div class="item-name"><a class="constant" href="constant.HOST_NAMESPACE.html" title="constant wapc::HOST_NAMESPACE">HOST_NAMESPACE</a></div><div class="desc docblock-short">The host module name / namespace that guest modules must use for imports</div></li></ul><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.ModuleHost.html" title="trait wapc::ModuleHost">ModuleHost</a></div><div class="desc docblock-short">The module host (waPC) must provide an implementation of this trait to the engine provider
+to enable waPC function calls.</div></li><li><div class="item-name"><a class="trait" href="trait.WebAssemblyEngineProvider.html" title="trait wapc::WebAssemblyEngineProvider">WebAssemblyEngineProvider</a></div><div class="desc docblock-short">An engine provider is any code that encapsulates low-level WebAssembly interactions such
+as reading from and writing to linear memory, executing functions, and mapping imports
+in a way that conforms to the waPC conversation protocol.</div></li></ul><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.HostCallback.html" title="type wapc::HostCallback">HostCallback</a></div><div class="desc docblock-short">The signature of a Host Callback function.</div></li></ul></section></div></main></body></html>
