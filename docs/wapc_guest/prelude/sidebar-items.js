@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["console_log","host_call","register_function"],"type":["CallResult","HandlerResult"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"trait":["DotPaths"],"type":["Result"]};

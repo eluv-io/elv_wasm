@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ErrorKinds"],"fn":["make_json_error","make_success_json"]};
