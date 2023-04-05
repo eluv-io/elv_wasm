@@ -8,7 +8,7 @@ repository = "https://github.com/eluv-io/elv-wasm"
 readme = "README.md"
 rust-version = "1.56.0"
 license = "Apache-2.0"
-keywords = ["eluvio", "content fabric"]
+keywords = ["eluvio", "content", "fabric"]
 categories = ["api-bindings", "wasm"]
 exclude = [
     "samples/*",
