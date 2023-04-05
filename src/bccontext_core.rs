@@ -243,7 +243,7 @@ impl<'a> BitcodeContext {
     /// utf8 bytes stream containing json
     /// [WriteResult]
     ///
-    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/real-img/src/lib.rs#L57)
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/real-img/src/lib.rs#L63)
     ///
     pub fn q_file_to_stream(
         &'a self,
@@ -265,6 +265,14 @@ impl<'a> BitcodeContext {
     /// file_to_stream directs a fabric file (filename) to a fabric stream (stream)
     /// filename - name of the fabric file (see new_file_stream)
     /// stream - name of the stream that receives the file stream (see new_stream)
+    /// ```rust
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
+    ///   let wr:elvwasm::WriteResult = bcc.file_to_stream("myfile", "someStreamId").try_into()?;
+    ///   bcc.log_info(&format!("file written {}", wr.written));
+    ///   let res = vec![];
+    ///   Ok(res)
+    /// }
+    /// ```
     pub fn file_to_stream(&'a self, filename: &str, stream: &str) -> CallResult {
         let param = json!({ "stream_id" : stream, "path" : filename});
         self.call_function("FileToStream", param, "core")

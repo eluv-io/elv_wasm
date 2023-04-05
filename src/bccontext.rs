@@ -293,7 +293,7 @@ impl<'a> BitcodeContext {
     /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
     ///  Returns the checksum as hex-encoded string
     ///
-    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L109)
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/b6a5e5b79022d52138b29aa1779b44f29f65ef51/samples/external/src/lib.rs#L60)
     ///
     pub fn close_stream(&'a self, sid: String) -> CallResult {
         self.call_function("CloseStream", json!({ "stream_id": sid }), "ctx")
@@ -302,6 +302,9 @@ impl<'a> BitcodeContext {
     /// new_stream creates a new fabric bitcode stream.
     /// # Returns
     /// * output [u8] of format `{"stream_id" : id}` where id is a string
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/b6a5e5b79022d52138b29aa1779b44f29f65ef51/samples/external/src/lib.rs#L57)
+    ///
     pub fn new_stream(&'a self) -> CallResult {
         let v = json!({});
         self.call_function("NewStream", v, "ctx")
