@@ -23,6 +23,9 @@ exclude = [
 [profile.release]
 strip = true # Automatically strip symbols from the binary.
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wapc = { version = "1.0.0" }
+
 [lib]
 crate-type = ["rlib", "cdylib"]
 path = "src/lib.rs"
