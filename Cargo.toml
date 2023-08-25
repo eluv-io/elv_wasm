@@ -20,6 +20,9 @@ exclude = [
     "mock/*",
 ]
 
+[profile.release]
+strip = true # Automatically strip symbols from the binary.
+
 [lib]
 crate-type = ["rlib", "cdylib"]
 path = "src/lib.rs"
@@ -47,4 +50,5 @@ members = [
     "samples/objtar",
     "samples/lro",
     "samples/external",
+    "samples/meta",
 ]
