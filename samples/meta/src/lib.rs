@@ -10,6 +10,7 @@ use elvwasm::{
 };
 use serde_json::json;
 
+#[cfg(target_arch = "wasm32")]
 implement_bitcode_module!("get_meta", do_get_meta, "set_meta", do_set_meta);
 
 fn find_path(map: Map<String, Value>, path: String) -> Option<Value> {
@@ -31,6 +32,9 @@ fn find_path(map: Map<String, Value>, path: String) -> Option<Value> {
     current.get("").map(|v| v.clone())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub type CallResult = Result<Vec<u8>, Box<dyn std::error::Error + Sync + Send>>;
+
 fn do_get_meta_impl(
     qp: &HashMap<String, Vec<String>>,
     md: Map<String, serde_json::Value>,
@@ -45,6 +49,7 @@ fn do_get_meta_impl(
     Ok(serde_json::to_vec(&v)?)
 }
 
+#[cfg(target_arch = "wasm32")]
 #[no_mangle]
 fn do_get_meta(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
@@ -77,6 +82,7 @@ fn do_set_meta_impl(
     Ok(vec![])
 }
 
+#[cfg(target_arch = "wasm32")]
 #[no_mangle]
 fn do_set_meta(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
