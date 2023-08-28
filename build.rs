@@ -8,11 +8,6 @@ pub fn execute(exe: &str, args: &[&str]) {
         .unwrap_or_else(|_| panic!("failed to start external executable {exe}"));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-fn main() {
-}
-
-#[cfg(target_arch = "wasm32")]
 fn main() {
     println!("handling building assemblyscript");
     let mut pbase = env::current_dir().unwrap();
