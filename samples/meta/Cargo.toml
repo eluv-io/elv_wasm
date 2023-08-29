@@ -1,0 +1,27 @@
+[package]
+
+name = "meta"
+version = "0.0.1"
+authors = ["meta <jan.falkin@eluv.io>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://www.github.com/eluv-io/elv-wasm"
+description = "A Rust wasm library"
+
+[lib]
+name = "meta"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+elvwasm = "1.0.0"
+wapc = "1.0.0"
+wapc-guest = "1.0"
+serde = "1.0.156"
+serde_json = "1.0.94"
+serde_derive = "1.0.156"
+lazy_static = "1.4.0"
+snailquote = "0.3.0"
+scopeguard = "1.1.0"
+base64 = "0.21.0"
+thiserror = "1.0.30"
+maplit = "1.0"

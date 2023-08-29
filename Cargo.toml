@@ -20,13 +20,14 @@ exclude = [
     "mock/*",
 ]
 
+[profile.release]
+strip = true # Automatically strip symbols from the binary.
+
 [lib]
 crate-type = ["rlib", "cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-wapc = "1.0.0"
-wapc-guest = "1.0"
 serde = "1.0.156"
 serde_json = "1.0.94"
 serde_derive = "1.0.156"
@@ -37,6 +38,8 @@ snailquote = "0.3.1"
 json_dotpath = "1.1.0"
 structopt = "0.3.25"
 thiserror = "1.0.30"
+wapc = "1.0.0"
+wapc-guest = "1.0"
 
 [workspace]
 members = [
@@ -47,4 +50,5 @@ members = [
     "samples/objtar",
     "samples/lro",
     "samples/external",
+    "samples/meta",
 ]
