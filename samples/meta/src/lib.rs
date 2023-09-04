@@ -58,13 +58,11 @@ fn do_get_meta(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
             .collect();
     let id = &bcc.request.id;
     let meta_return = do_get_meta_impl(qp, meta)?;
-    bcc.write_stream("fos", &meta_return)?;
-    bcc.callback(200, "application/json", meta_return.len())?;
     make_success_json(
         &json!(
         {
             "headers" : "application/json",
-            "body" : "SUCCESS",
+            "body" : meta_return,
             "result" : "complete",
         }),
         id,
@@ -96,13 +94,11 @@ fn do_set_meta(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         );
     }
     let meta_return = do_set_meta_impl(qp, meta)?;
-    bcc.write_stream("fos", &meta_return)?;
-    bcc.callback(200, "application/json", meta_return.len())?;
     make_success_json(
         &json!(
         {
             "headers" : "application/json",
-            "body" : "SUCCESS",
+            "body" : meta_return,
             "result" : "complete",
         }),
         id,
