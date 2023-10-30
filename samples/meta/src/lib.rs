@@ -1,7 +1,11 @@
 extern crate elvwasm;
 extern crate serde;
 extern crate serde_json;
+extern crate openapi_proc_macro;
+
+
 use serde_json::{Map, Value};
+use openapi_proc_macro::openapi_decorator;
 
 use std::collections::HashMap;
 
@@ -31,7 +35,6 @@ fn find_path(map: Map<String, Value>, path: String) -> Option<Value> {
     current.get("").map(|v| v.clone())
 }
 
-
 fn do_get_meta_impl(
     qp: &HashMap<String, Vec<String>>,
     md: Map<String, serde_json::Value>,
@@ -46,6 +49,38 @@ fn do_get_meta_impl(
     Ok(serde_json::to_vec(&v)?)
 }
 
+#[openapi_decorator(
+    yaml = r#"
+    openapi: 3.0.0
+    info:
+      title: My API
+      version: 1.0
+    paths:
+      /my/endpoint:
+        get:
+          summary: Get data from my endpoint
+          parameters:
+          - name: tags
+            in: query
+            description: tags to filter by
+            required: false
+            style: form
+            schema:
+              type: array
+              items:
+                type: string
+          - name: limit
+            in: query
+            description: maximum number of results to return
+            required: false
+            schema:
+              type: integer
+              format: int32          
+          responses:
+            200:
+              description: Successful response
+    "#
+    )]
 #[no_mangle]
 fn do_get_meta(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;

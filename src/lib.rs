@@ -86,6 +86,12 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
+extern crate proc_macro;
+
+use proc_macro::TokenStream;
+use quote::quote;
+
+
 #[derive(Clone)]
 struct HandlerData<'a> {
     pub hf: HandlerFunction<'a>,
@@ -94,6 +100,31 @@ struct HandlerData<'a> {
 
 lazy_static! {
     static ref CALLMAP: Mutex<HashMap<String, HandlerData<'static>>> = Mutex::new(HashMap::new());
+}
+
+// Define a custom comment format: /// @openapi: ...
+// Authors can use this format to annotate their code.
+// Example comment:
+// /// @openapi: GET /api/resource
+// /// @openapi: Param: id (int) - The ID of the resource.
+
+// Define a Rust macro to process comments and generate OpenAPI data.
+macro_rules! generate_openapi {
+    ($($tokens:tt)*) => {
+        // Parse the source code using the syn library to extract comments.
+        let parsed_code = parse_macro_input!($($tokens)*);
+
+        // Process comments and extract metadata to generate OpenAPI specification.
+        // Implement this part as per your needs.
+        let openapi_spec = process_comments(parsed_code);
+
+        // Generate OpenAPI specification or perform other tasks with the data.
+        // You can use the quote library to generate code.
+        let generated_code = quote! {
+            // Your generated OpenAPI specification or code here.
+        };
+        generated_code
+    };
 }
 
 #[macro_export]

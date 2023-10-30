@@ -36,10 +36,12 @@ scopeguard = "1.1.0"
 base64 = "0.21.0"
 snailquote = "0.3.1"
 json_dotpath = "1.1.0"
+quote = "1.0.33"
 structopt = "0.3.25"
 thiserror = "1.0.30"
 wapc = "1.0.0"
 wapc-guest = "1.0"
+openapi_proc_macro = { path = "../elv-wasm-api-macros" }
 
 [workspace]
 members = [
