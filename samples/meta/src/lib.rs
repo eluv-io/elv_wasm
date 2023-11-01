@@ -70,8 +70,8 @@ fn do_get_meta(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
 }
 
 fn do_set_meta_impl(
-    qp: &HashMap<String, Vec<String>>,
-    md: HashMap<String, serde_json::Value>,
+    _qp: &HashMap<String, Vec<String>>,
+    _md: HashMap<String, serde_json::Value>,
 ) -> CallResult {
     Ok(vec![])
 }
