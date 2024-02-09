@@ -36,7 +36,7 @@ impl<'a> std::io::Write for FabricWriter<'a> {
             Ok(s) => {
                 self.bcc
                     .log_debug(&format!("Wrote {} bytes", buf.len()))
-                    .unwrap_or(vec![]); // to gobble the log result
+                    .unwrap_or_default(); // to gobble the log result
                 let w: elvwasm::WritePartResult = serde_json::from_slice(&s)?;
                 self.size += w.written;
                 Ok(w.written)
@@ -57,17 +57,17 @@ impl<'a> std::io::Seek for FabricWriter<'a> {
             SeekFrom::Start(s) => {
                 self.bcc
                     .log_debug(&format!("SEEK from START {s}"))
-                    .unwrap_or(vec![]);
+                    .unwrap_or_default();
             }
             SeekFrom::Current(s) => {
                 self.bcc
                     .log_debug(&format!("SEEK from CURRENT {s}"))
-                    .unwrap_or(vec![]);
+                    .unwrap_or_default();
             }
             SeekFrom::End(s) => {
                 self.bcc
                     .log_debug(&format!("SEEK from END {s}"))
-                    .unwrap_or(vec![]);
+                    .unwrap_or_default();
             }
         }
         Ok(self.size as u64)
@@ -104,7 +104,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         for part in pl.part_list.parts {
             let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
             defer! {
-                bcc.log_debug(&format!("Closing part stream {}", &stream_wm.stream_id)).unwrap_or(vec![]);
+                bcc.log_debug(&format!("Closing part stream {}", &stream_wm.stream_id)).unwrap_or_default();
                 let _ = bcc.close_stream(stream_wm.stream_id.clone());
             }
             let _wprb = bcc.write_part_to_stream(

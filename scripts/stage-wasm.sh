@@ -12,7 +12,7 @@ else
     cp $1/target/wasm32-unknown-unknown/release/lro.wasm $2/bitcode/wasm/lro/lro.wasm
     cp $1/target/wasm32-unknown-unknown/release/external.wasm $2/bitcode/wasm/external/external.wasm
 
-    cp -u -f $1/target/wasm32-unknown-unknown/release/test_wapc.wasm $2/exeng/tests
+    # cp -u -f $1/target/wasm32-unknown-unknown/release/test_wapc.wasm $2/exeng/tests
 
-    cp $1/samples/proxy/proxy.wasm $2/bitcode/wasm/proxy/proxy.wasm
+    # cp $1/samples/proxy/proxy.wasm $2/bitcode/wasm/proxy/proxy.wasm
 fi

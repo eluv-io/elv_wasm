@@ -70,10 +70,7 @@ pub mod bccontext_search;
 pub mod bccontext_struct;
 
 pub use self::bccontext::*;
-pub use self::bccontext_core::*;
 pub use self::bccontext_error::*;
-pub use self::bccontext_ext::*;
-pub use self::bccontext_search::*;
 pub use self::bccontext_struct::*;
 
 //use guest::console_log;
@@ -222,7 +219,6 @@ mod tests {
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     pub use self::bccontext::*;
-    pub use self::bccontext_struct::QList;
     use super::*;
     use serde_json::*;
 
