@@ -74,3 +74,121 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         "result" : 0,
     }))
 }
+
+mod tests {
+    macro_rules! output_raw_pointers {
+        ($raw_ptr:ident, $raw_len:ident) => {
+            unsafe {
+                std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len))
+                    .unwrap_or("unable to convert")
+            }
+        };
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __console_log(ptr: *const u8, len: usize) {
+        let out_str = output_raw_pointers!(ptr, len);
+        println!("console output : {}", out_str);
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_call(
+        bd_ptr: *const u8,
+        bd_len: usize,
+        ns_ptr: *const u8,
+        ns_len: usize,
+        op_ptr: *const u8,
+        op_len: usize,
+        ptr: *const u8,
+        len: usize,
+    ) -> usize {
+        let out_bd = output_raw_pointers!(bd_ptr, bd_len);
+        let out_ns = output_raw_pointers!(ns_ptr, ns_len);
+        let out_op = output_raw_pointers!(op_ptr, op_len);
+        let out_ptr = output_raw_pointers!(ptr, len);
+        println!(
+            "host call bd = {} ns = {} op = {}, ptr={}",
+            out_bd, out_ns, out_op, out_ptr
+        );
+        1
+    }
+    #[no_mangle]
+    pub extern "C" fn __host_response(ptr: *mut u8) {
+        println!("host __host_response ptr = {:?}", ptr);
+        let s = r#"{ "result" : {
+			"url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",
+		    "method": "GET",
+		    "headers": {
+			 "Accept": "application/json",
+			 "Content-Type": "application/json"
+		   }}}"#;
+        unsafe {
+            std::ptr::copy(s.as_ptr(), ptr, s.len() + 1);
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_response_len() -> usize {
+        println!("host __host_response_len");
+        let s = r#"{ "result" : {
+			"url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",
+		    "method": "GET",
+		    "headers": {
+			 "Accept": "application/json",
+			 "Content-Type": "application/json"
+		   }}}"#;
+        s.len()
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_error_len() -> usize {
+        println!("host __host_error_len");
+        0
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __host_error(ptr: *const u8) {
+        println!("host __host_error ptr = {:?}", ptr);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_response(ptr: *const u8, len: usize) {
+        let out_resp = output_raw_pointers!(ptr, len);
+        println!("host  __guest_response ptr = {}", out_resp);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_error(ptr: *const u8, len: usize) {
+        let out_error = output_raw_pointers!(ptr, len);
+        println!("host  __guest_error ptr = {}", out_error);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8) {
+        println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
+    }
+
+    #[test]
+    fn test_do_proxy() {
+        use crate::do_proxy;
+        use elvwasm::HttpParams;
+        use elvwasm::Request;
+        use std::collections::HashMap;
+
+        let mut bcc = elvwasm::BitcodeContext::new(Request::default());
+        let mut http_p = HttpParams::default();
+        let mut qp = HashMap::new();
+        qp.insert("QUERY".to_string(), vec!["fabric".to_string()]);
+        qp.insert(
+            "API_KEY".to_string(),
+            vec!["AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE".to_string()],
+        );
+        qp.insert(
+            "CONTEXT".to_string(),
+            vec!["012842113009817296384:qjezbmwk0cx".to_string()],
+        );
+        http_p.query = qp;
+        bcc.request.params.http = http_p;
+        let res = do_proxy(&mut bcc);
+        assert_eq!(res.is_ok(), true);
+    }
+}
