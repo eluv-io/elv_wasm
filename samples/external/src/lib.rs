@@ -56,7 +56,7 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
     bcc.log_debug(&format!("fout {}", &exr.fout))?;
     let stream_img: NewStreamResult = bcc.new_stream().try_into()?;
     defer! {
-        bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
+        bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or_default();
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
     bcc.write_stream(&stream_img.stream_id, imgbits)?;
@@ -137,7 +137,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     bcc.log_debug(&format!("fout {}", &exr.fout))?;
     let stream_img: NewStreamResult = bcc.new_stream().try_into()?;
     defer! {
-        bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or(vec![]);
+        bcc.log_debug(&format!("Closing part stream {}", &stream_img.stream_id)).unwrap_or_default();
         let _ = bcc.close_stream(stream_img.stream_id.clone());
     }
     bcc.write_stream(&stream_img.stream_id, imgbits)?;

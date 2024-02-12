@@ -66,6 +66,39 @@ impl<'a> BitcodeContext {
         "ext"
     );
 
+    implement_ext_func!(
+        /// rest_call calls a predefined rest server that has to be configured in the fabric for a specific node
+        /// # Arguments
+        /// * `v` : a JSON Value
+        ///
+        /// ```
+        /// use serde_json::json;
+        ///
+        /// fn do_something<'s>(bcc: &'s elvwasm::BitcodeContext) -> wapc_guest::CallResult {
+        ///   let v = json!({
+        ///         "request_parameters" : {
+        ///         "url": "node_service_1/rep/tagger",
+        ///         "method": "GET",
+        ///         "headers": {
+        ///           "Accept": "application/json",
+        ///           "Content-Type": "application/json"
+        ///         }
+        ///      }
+        ///   });
+        ///   bcc.rest_call(Some(v))
+        /// }
+        /// ```
+        ///
+        /// # Returns
+        /// * slice of [u8]
+        ///
+        /// [Example](FIXME)
+        ///
+        rest_call,
+        "RestCall",
+        "ext"
+    );
+
     /// start_bitcode_lro initiates a long running operation on the fabric.  Currently the lro implementation
     /// constrains the callback to be in the same bitcode module as the initiator.
     /// # Arguments

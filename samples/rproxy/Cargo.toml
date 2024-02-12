@@ -10,7 +10,7 @@ workspace = "../.."
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-elvwasm = { path = "../.."}
+elvwasm = { path = "../.." }
 wapc = "1.0.0"
 wapc-guest = "1.0"
 serde = "1.0.156"
@@ -19,3 +19,4 @@ serde_derive = "1.0.156"
 lazy_static = "1.4.0"
 snailquote = "0.3.0"
 thiserror = "1.0.30"
+console_error_panic_hook = "0.1.7"
