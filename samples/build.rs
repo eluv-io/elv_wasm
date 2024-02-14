@@ -9,15 +9,13 @@ pub fn execute(exe: &str, args: &[&str]) {
 }
 
 fn main() {
-    println!("handling building assemblyscript");
     let mut pbase = env::current_dir().unwrap();
+    println!("pbase={}", pbase.as_path().to_str().unwrap());
+    println!("handling building assemblyscript");
     let do_asc = env::var_os("BUILD_ASC").is_some();
     if do_asc {
-        pbase.push("samples");
-        env::set_current_dir(&pbase).unwrap();
         execute("npm", &["install", "asc"]);
         execute("npm", &["run", "asbuild"]);
-        pbase.pop();
     }
 
     pbase.push("go");
