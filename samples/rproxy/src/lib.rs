@@ -63,7 +63,7 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
 
     let proxy_resp = bcc.proxy_http(Some(json!({ "request": replaced })))?;
     let proxy_resp_json: serde_json::Value =
-        serde_json::from_str(std::str::from_utf8(&proxy_resp).unwrap_or("{}"))?;
+        serde_json::from_slice(&proxy_resp).unwrap_or(json!({}));
     let client_response = serde_json::to_vec(&proxy_resp_json["result"])?;
     bcc.callback(200, "application/json", client_response.len())?;
     bcc.write_stream("fos", &client_response)?;
@@ -109,13 +109,22 @@ mod tests {
             "host call bd = {} ns = {} op = {}, ptr={}",
             out_bd, out_ns, out_op, out_ptr
         );
+        if out_op == "sqmd_get_json" {
+            let s = r#"{ "result" : {
+            "url": "foobar",
+            }}"#;
+            unsafe {
+                std::ptr::copy(s.as_ptr(), ptr.cast_mut(), s.len() + 1);
+            }
+            return s.len();
+        }
         1
     }
     #[no_mangle]
     pub extern "C" fn __host_response(ptr: *mut u8) {
         println!("host __host_response ptr = {:?}", ptr);
         let s = r#"{ "result" : {
-			"url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",
+			"url": "https://httpbin.org/base64/${HEXVALUE}",
 		    "method": "GET",
 		    "headers": {
 			 "Accept": "application/json",
@@ -130,7 +139,7 @@ mod tests {
     pub extern "C" fn __host_response_len() -> usize {
         println!("host __host_response_len");
         let s = r#"{ "result" : {
-			"url": "https://www.googleapis.com/customsearch/v1?key=${API_KEY}&q=${QUERY}&cx=${CONTEXT}",
+			"url": "https://httpbin.org/base64/${HEXVALUE}",
 		    "method": "GET",
 		    "headers": {
 			 "Accept": "application/json",
@@ -177,15 +186,7 @@ mod tests {
         let mut bcc = elvwasm::BitcodeContext::new(Request::default());
         let mut http_p = HttpParams::default();
         let mut qp = HashMap::new();
-        qp.insert("QUERY".to_string(), vec!["fabric".to_string()]);
-        qp.insert(
-            "API_KEY".to_string(),
-            vec!["AIzaSyCppaD53DdPEetzJugaHc2wW57hG0Y5YWE".to_string()],
-        );
-        qp.insert(
-            "CONTEXT".to_string(),
-            vec!["012842113009817296384:qjezbmwk0cx".to_string()],
-        );
+        qp.insert("HEXVALUE".to_string(), vec!["Zm9vYmFy".to_string()]);
         http_p.query = qp;
         bcc.request.params.http = http_p;
         let res = do_proxy(&mut bcc);
