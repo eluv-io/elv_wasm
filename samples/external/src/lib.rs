@@ -113,27 +113,28 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     bcc.log_info(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
     let params = json!({
         "http" : {
-            "verb" : "some",
+            "verb" : "GET",
             "headers": {
                 "Content-type": [
                     "application/json"
                 ]
             },
-            "path" : "/image/default/assets/birds.jpg",
+            "path" : "/image/default/files/assets/birds.jpg",
             "query" : {
                 "height" : ["200"],
             },
         },
     });
     let exr: ExternalCallResult = bcc
-        .call_external_bitcode("image", &params, img_obj, img_hash)
+        .call_external_bitcode("image", &params, img_obj, "builtin")
         .try_into()?;
+    bcc.log_info("here")?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
-    bcc.log_debug(&format!(
+    console_log(&format!(
         "imgbits decoded size = {} fout size = {}",
         imgbits.len(),
         exr.fout.len()
-    ))?;
+    ));
     bcc.log_debug(&format!("fout {}", &exr.fout))?;
     let stream_img: NewStreamResult = bcc.new_stream().try_into()?;
     defer! {
