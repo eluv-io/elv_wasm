@@ -121,6 +121,42 @@ impl<'a> BitcodeContext {
         self.call_function(method, v, "ctx")
     }
 
+    /// callback_disposition issues a Callback on the fabric setting up an expectation that the output stream
+    /// contains a specified sized buffer
+    /// # Arguments
+    /// * `status`-    the http status of the call
+    /// * `content-type`-     output buffer contents
+    /// * `size`-  size of the output contents
+    /// * `disp`-  content disposition
+    /// # Returns
+    /// the checksum as hex-encoded string
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L133)
+    ///
+    pub fn callback_disposition(
+        &'a self,
+        status: usize,
+        content_type: &str,
+        size: usize,
+        disp: &str,
+        version: &str,
+    ) -> CallResult {
+        let v = json!(
+          {"http" : {
+            "status": status,
+            "headers": {
+              "Content-Type": [content_type],
+              "Content-Length": [size.to_string()],
+              "Content-Disposition": [disp],
+              "X-Content-Fabric-Bitcode-Version": [version],
+            }
+            }
+          }
+        );
+        let method = "Callback";
+        self.call_function(method, v, "ctx")
+    }
+
     pub fn make_success(&'a self, msg: &str) -> CallResult {
         self.make_success_json(&json!(msg))
     }
