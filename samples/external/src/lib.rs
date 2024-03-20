@@ -175,13 +175,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
         &exr_tar.fout.len(),
         tarbits.len()
     ))?;
-    bcc.write_stream("fos", tarbits)?;
     bcc.callback(200, "application/zip", tarbits.len())?;
-
-    bcc.make_success_json(&json!(
-    {
-        "headers" : "application/json",
-        "body" : "SUCCESS",
-        "result" : "complete",
-    }))
+    bcc.write_stream("fos", tarbits)?;
+    bcc.make_success_json(&json!({}))
 }

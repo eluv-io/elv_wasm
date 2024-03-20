@@ -132,10 +132,5 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
     bcc.callback(200, "application/zip", fw.size)?;
 
-    bcc.make_success_json(&json!(
-    {
-        "headers" : "application/zip",
-        "body" : "SUCCESS",
-        "result" : 0,
-    }))
+    bcc.make_success_json(&json!({}))
 }

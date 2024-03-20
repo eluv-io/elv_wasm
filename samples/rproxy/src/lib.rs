@@ -67,12 +67,7 @@ fn do_proxy(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let client_response = serde_json::to_vec(&proxy_resp_json["result"])?;
     bcc.callback(200, "application/json", client_response.len())?;
     bcc.write_stream("fos", &client_response)?;
-    bcc.make_success_json(&json!(
-    {
-        "headers" : "application/json",
-        "body" : "SUCCESS",
-        "result" : 0,
-    }))
+    bcc.make_success_json(&json!({}))
 }
 
 mod tests {

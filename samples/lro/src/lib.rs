@@ -30,10 +30,5 @@ fn do_lro_callback(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.log_info("IN CALLBACK!!!!!!!")?;
     let mr: ModifyResult = bcc.q_modify_content().try_into()?;
     bcc.log_info(&format!("write token = {}", mr.qwtoken))?;
-    bcc.make_success_json(&json!(
-    {
-        "headers" : "application/json",
-        "body" : "SUCCESS",
-        "result" : "complete",
-    }))
+    bcc.make_success_json(&json!({}))
 }

@@ -145,10 +145,10 @@ impl<'a> BitcodeContext {
           {"http" : {
             "status": status,
             "headers": {
-              "Content-Type": [content_type],
-              "Content-Length": [size.to_string()],
-              "Content-Disposition": [disp],
-              "X-Content-Fabric-Bitcode-Version": [version],
+              "Content-Type": vec![content_type],
+              "Content-Length": vec![size.to_string()],
+              "Content-Disposition": vec![disp],
+              "X-Content-Fabric-Bitcode-Version": vec![version],
             }
             }
           }
