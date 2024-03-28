@@ -15,7 +15,6 @@ use std::collections::HashMap;
 use std::str;
 
 use guest::prelude::*;
-use guest::CallResult;
 
 pub fn convert<'b, T>(cr: &'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>>
 where
