@@ -113,7 +113,7 @@ fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
         ))?
         .to_string();
     let is_document = ct == "application/pdf";
-    if ct != "image/jpeg" && !is_document {
+    if ct != "image/jpeg" && !is_document && exr.format == "image/jpeg" {
         filename += ".jpg"
     }
     bcc.log_debug(&format!(
