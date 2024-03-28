@@ -117,17 +117,17 @@ fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
         filename += ".jpg"
     }
     bcc.log_debug(&format!(
-        "RepAssets op={operation} asset={asset} isDoc={is_document} ct={ct} filename={filename}, rep image path={0} version={VERSION}",result.url
+        "RepAssets op={operation} asset={asset} isDoc={is_document} ct={ct} filename={filename}, rep image path={0} version={VERSION}, rep_image format={1}",result.url, &exr.format
     ))?;
     if operation == "download" {
         let content_disp = format!("attachment; filename=\"{}\"", filename);
-        bcc.callback_disposition(200, &ct, imgbits.len(), &content_disp, VERSION)?;
+        bcc.callback_disposition(200, &exr.format, imgbits.len(), &content_disp, VERSION)?;
     }
     if operation == "preview" {
         if is_document {
             bcc.callback(200, &ct, imgbits.len())?;
         } else {
-            bcc.callback(200, "image/jpeg", imgbits.len())?;
+            bcc.callback(200, &exr.format, imgbits.len())?;
         }
     }
     bcc.write_stream("fos", &imgbits)?;
