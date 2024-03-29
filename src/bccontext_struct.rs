@@ -217,6 +217,8 @@ pub struct HttpParams {
     pub headers: HashMap<String, Vec<String>>,
     pub path: String,
     #[serde(default)]
+    pub body: serde_json::Value,
+    #[serde(default)]
     pub query: HashMap<String, Vec<String>>,
     pub verb: String,
     #[serde(default)]
@@ -312,6 +314,23 @@ impl TryFrom<CallResult> for QPartList {
 pub struct QPartInfo {
     pub content: Q,
     pub part: QPart,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QFileToStreamResult {
+    #[serde(default)]
+    pub written: usize,
+    #[serde(default)]
+    pub mime_type: String,
+}
+
+impl TryFrom<CallResult> for QFileToStreamResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<QFileToStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

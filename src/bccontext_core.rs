@@ -215,6 +215,33 @@ impl<'a> BitcodeContext {
         self.call_function("QWritePartToStream", msg, "core")
     }
 
+    /// write_qfile_to_stream writes the content of a fabric file to to a fabric stream
+    /// # Arguments
+    /// * `stream_id`-    stream identifier from new_stream or the like
+    /// * `len`-  length of part to write
+    /// * `qphash` - part hash to write
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// [WriteResult]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L110)
+    ///
+    pub fn write_qfile_to_stream(
+        &'a self,
+        stream_id: String,
+        path: String,
+        qihot: String,
+    ) -> CallResult {
+        let msg = json!(
+          {
+            "stream_id" :  stream_id,
+            "path":path,
+            "qihot" : qihot,
+         }
+        );
+        self.call_function("QFileToStream", msg, "core")
+    }
+
     /// q_create_part_from_stream creates a new part in a writeable object from a context stream.
     /// The content will be made locally but not published until finalized and committed
     /// # Arguments
