@@ -5,15 +5,13 @@ extern crate elvwasm;
 extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
-#[macro_use(defer)]
-extern crate scopeguard;
 
 use std::convert::TryInto;
 
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, ExternalCallResult,
-    HttpParams, NewStreamResult, QFileToStreamResult, QPartList, ReadResult, SystemTimeResult,
+    HttpParams, SystemTimeResult,
 };
 use flate2::write::GzEncoder;
 use serde_derive::{Deserialize, Serialize};
@@ -112,30 +110,18 @@ fn do_bulk_download(
         for p in &params {
             bcc.log_debug(&format!("Bulk download param: {p}"))?;
             let cur_params = p.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
-            let meta: serde_json::Value = serde_json::from_slice(&bcc.sqmd_get_json(&p)?)?;
+            let asset = cur_params[cur_params.len() - 1];
+            let meta: serde_json::Value =
+                serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
             let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
-            let params = json!({
-                "http" : {
-                    "verb" : "GET",
-                    "headers": {
-                        "Content-type": [
-                            "application/json"
-                        ]
-                    },
-                    "path" : result.url,
-                    "query" : qp,
-                    "client_ip" : http_p.client_ip,
-                },
-            });
-            let exr: ExternalCallResult = bcc
-                .call_external_bitcode("image", &params, &bcc.request.q_info.hash, "builtin")
-                .try_into()?;
+            let exr: ExternalCallResult =
+                get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url).try_into()?;
             bcc.log_debug(&format!("here call result format = {0} ", exr.format[0]))?;
             let mut header = tar::Header::new_gnu();
             header.set_size(exr.fout.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
-            a.append_data(&mut header, result.url.clone(), exr.fout.as_bytes())?;
+            a.append_data(&mut header, &asset, exr.fout.as_bytes())?;
         }
         a.finish()?;
         let mut finished_writer = a.into_inner()?;
@@ -146,42 +132,21 @@ fn do_bulk_download(
     bcc.make_success_json(&json!({}))
 }
 
-fn do_single_asset(bcc: &mut BitcodeContext) -> CallResult {
+fn do_single_asset(
+    bcc: &BitcodeContext,
+    http_p: &HttpParams,
+    qp: &HashMap<String, Vec<String>>,
+    path_vec: Vec<&str>,
+) -> CallResult {
     bcc.log_info("do_single_asset")?;
-
-    Ok(vec![])
-}
-
-#[no_mangle]
-fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
-    bcc.log_info("Im Assets")?;
-    let http_p = &bcc.request.params.http;
-    let qp = &http_p.query;
-    let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
-    if path_vec[1] == "bulk_download" {
-        return do_bulk_download(bcc, http_p, qp);
-    }
     let asset = path_vec[path_vec.len() - 1];
     let operation = path_vec[2];
     let meta: serde_json::Value =
         serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
     let result: ComputeCallResult = compute_image_url(operation, &meta).try_into()?;
-    let params = json!({
-        "http" : {
-            "verb" : "GET",
-            "headers": {
-                "Content-type": [
-                    "application/json"
-                ]
-            },
-            "path" : result.url,
-            "query" : qp,
-            "client_ip" : http_p.client_ip,
-        },
-    });
-    let exr: ExternalCallResult = bcc
-        .call_external_bitcode("image", &params, &bcc.request.q_info.hash, "builtin")
-        .try_into()?;
+
+    let exr: ExternalCallResult =
+        get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url).try_into()?;
     bcc.log_info("here")?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
     console_log(&format!(
@@ -227,6 +192,41 @@ fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
     }
     bcc.write_stream("fos", &imgbits)?;
     bcc.make_success_json(&json!({}))
+}
+
+fn get_single_offering_image(
+    bcc: &BitcodeContext,
+    qp: &HashMap<String, Vec<String>>,
+    client_ip: &str,
+    url: &str,
+) -> CallResult {
+    let params = json!({
+        "http" : {
+            "verb" : "GET",
+            "headers": {
+                "Content-type": [
+                    "application/json"
+                ]
+            },
+            "path" : url,
+            "query" : qp,
+            "client_ip" : client_ip,
+        },
+    });
+    bcc.call_external_bitcode("image", &params, &bcc.request.q_info.hash, "builtin")
+}
+
+#[no_mangle]
+fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
+    bcc.log_info("Im Assets")?;
+    let http_p = &bcc.request.params.http;
+    let qp = &http_p.query;
+    let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
+    if path_vec[1] == "bulk_download" {
+        return do_bulk_download(bcc, http_p, qp);
+    } else {
+        return do_single_asset(&bcc, http_p, qp, path_vec);
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
