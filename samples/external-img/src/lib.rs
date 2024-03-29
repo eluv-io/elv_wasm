@@ -76,7 +76,7 @@ fn do_bulk_download(
     http_p: &HttpParams,
     qp: &HashMap<String, Vec<String>>,
 ) -> CallResult {
-    const HASH: i8 = 2; // location in param vector
+    const HASH: usize = 2; // location in param vector
     bcc.log_info("do_bulk_download")?;
 
     const DEF_CAP: usize = 50000000;
@@ -111,8 +111,11 @@ fn do_bulk_download(
             bcc.log_debug(&format!("Bulk download param: {p}"))?;
             let cur_params = p.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
             let asset = cur_params[cur_params.len() - 1];
-            let meta: serde_json::Value =
-                serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
+            let meta: serde_json::Value = serde_json::from_slice(&bcc.sqmd_get_json_external(
+                &bcc.request.q_info.qlib_id,
+                &cur_params[HASH],
+                &format!("/assets/{asset}"),
+            )?)?;
             let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
             let exr: ExternalCallResult =
                 get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url).try_into()?;
