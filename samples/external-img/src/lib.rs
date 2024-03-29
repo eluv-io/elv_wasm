@@ -130,7 +130,7 @@ fn do_bulk_download(
             let exr: ExternalCallResult = bcc
                 .call_external_bitcode("image", &params, &bcc.request.q_info.hash, "builtin")
                 .try_into()?;
-            bcc.log_debug(&format!("here call result format = {0} ", exr.format))?;
+            bcc.log_debug(&format!("here call result format = {0} ", exr.format[0]))?;
             let mut header = tar::Header::new_gnu();
             header.set_size(exr.fout.len() as u64);
             header.set_cksum();
