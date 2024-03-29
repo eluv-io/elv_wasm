@@ -7,8 +7,6 @@ extern crate serde_json;
 #[macro_use(defer)]
 extern crate scopeguard;
 
-use std::convert::TryInto;
-
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, QPartList,

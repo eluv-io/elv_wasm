@@ -126,7 +126,7 @@ impl TryFrom<CallResult> for SystemTimeResult {
 pub struct ExternalCallResult {
     pub function_return: serde_json::Value,
     pub fout: String,
-    pub format: String,
+    pub format: Vec<String>,
 }
 
 impl TryFrom<CallResult> for ExternalCallResult {
