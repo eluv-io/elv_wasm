@@ -95,17 +95,20 @@ fn do_bulk_download(
         let zip = GzEncoder::new(bw, flate2::Compression::default());
         let mut a = tar::Builder::new(zip);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
-
         let params: Vec<String> = bcc
             .request
             .params
             .http
             .body
-            .as_str()
-            .unwrap_or_default()
-            .split_whitespace()
-            .map(String::from)
-            .collect();
+            .as_array()
+            .map(|array| {
+                array
+                    .iter()
+                    .map(|value| value.as_str().unwrap_or_default().to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+        bcc.log_info(&format!("Bulk download params: {params:?}"))?;
 
         for p in &params {
             bcc.log_debug(&format!("Bulk download param: {p}"))?;
@@ -117,14 +120,22 @@ fn do_bulk_download(
                 &format!("/assets/{asset}"),
             )?)?;
             let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
-            let exr: ExternalCallResult =
-                get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url).try_into()?;
+            let exr: ExternalCallResult = get_single_offering_image(
+                bcc,
+                qp,
+                &http_p.client_ip,
+                &result.url,
+                &cur_params[HASH],
+            )
+            .try_into()?;
             bcc.log_debug(&format!("here call result format = {0} ", exr.format[0]))?;
             let mut header = tar::Header::new_gnu();
-            header.set_size(exr.fout.len() as u64);
+            let b64_decoded = general_purpose::STANDARD.decode(&exr.fout)?;
+            header.set_size(b64_decoded.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
-            a.append_data(&mut header, &asset, exr.fout.as_bytes())?;
+            header.set_mode(0o644);
+            a.append_data(&mut header, &asset, b64_decoded.as_slice())?;
         }
         a.finish()?;
         let mut finished_writer = a.into_inner()?;
@@ -148,8 +159,14 @@ fn do_single_asset(
         serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
     let result: ComputeCallResult = compute_image_url(operation, &meta).try_into()?;
 
-    let exr: ExternalCallResult =
-        get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url).try_into()?;
+    let exr: ExternalCallResult = get_single_offering_image(
+        bcc,
+        qp,
+        &http_p.client_ip,
+        &result.url,
+        &bcc.request.q_info.hash,
+    )
+    .try_into()?;
     bcc.log_info("here")?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
     console_log(&format!(
@@ -202,6 +219,7 @@ fn get_single_offering_image(
     qp: &HashMap<String, Vec<String>>,
     client_ip: &str,
     url: &str,
+    hash: &str,
 ) -> CallResult {
     let params = json!({
         "http" : {
@@ -216,16 +234,19 @@ fn get_single_offering_image(
             "client_ip" : client_ip,
         },
     });
-    bcc.call_external_bitcode("image", &params, &bcc.request.q_info.hash, "builtin")
+    bcc.log_debug(&format!(
+        "Calling external bitcode with params = {params:?}"
+    ))?;
+    bcc.call_external_bitcode("image", &params, hash, "builtin")
 }
 
 #[no_mangle]
 fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
-    bcc.log_info("Im Assets")?;
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
-    if path_vec[1] == "bulk_download" {
+    bcc.log_info(&format!("In Assets path_vec = {path_vec:?}"))?;
+    if path_vec[2] == "bulk_download" {
         return do_bulk_download(bcc, http_p, qp);
     } else {
         return do_single_asset(&bcc, http_p, qp, path_vec);
@@ -330,6 +351,7 @@ fn test_image_url_generation() {
         "download": "tier1",
         "preview": "none",
         "thumbnail": "tier1"
+
       },
       "title": "AquarionEVOL_ShowHeroTablet.jpg",
       "uuid": "11e1e-45d4a-06e3-6efc76",
@@ -353,5 +375,6 @@ fn test_image_url_generation() {
         result.url,
         "/image/tier1/files/assets/11e1e-45d4a-06e3-6efc76.jpg"
     );
+
     assert_eq!(result.content_type, "image/jpeg")
 }
