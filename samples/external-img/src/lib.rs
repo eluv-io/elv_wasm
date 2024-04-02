@@ -144,7 +144,7 @@ fn do_bulk_download(
                     Ok(exr) => exr.try_into()?,
                     Err(e) => {
                         v_file_status.push(SummaryElement {
-                            asset: p.to_string(),
+                            asset: format!("{0} Error={e}", p.to_string()),
                             status: "failed".to_string(),
                         });
                         bcc.log_error(&format!("Error processing {p} : {e}"))?;
