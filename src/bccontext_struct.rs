@@ -138,6 +138,15 @@ impl TryFrom<CallResult> for ExternalCallResult {
     }
 }
 
+impl TryFrom<Vec<u8>> for ExternalCallResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: Vec<u8>,
+    ) -> Result<ExternalCallResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct FinalizeCallResult {
     pub qid: String,

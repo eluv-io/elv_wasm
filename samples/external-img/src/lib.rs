@@ -71,6 +71,31 @@ fn compute_image_url(operation: &str, meta: &serde_json::Value) -> CallResult {
     Ok(jret.to_string().as_bytes().to_vec())
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct SummaryElement {
+    asset: String,
+    status: String,
+}
+
+fn process_multi_entry(
+    bcc: &BitcodeContext,
+    http_p: &HttpParams,
+    qp: &HashMap<String, Vec<String>>,
+    asset: &str,
+    hash: &str,
+) -> CallResult {
+    bcc.log_debug(&format!("Bulk download param: {0}", hash))?;
+
+    let meta: serde_json::Value = serde_json::from_slice(&bcc.sqmd_get_json_external(
+        &bcc.request.q_info.qlib_id,
+        hash,
+        &format!("/assets/{asset}"),
+    )?)?;
+    let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
+    bcc.log_debug(&format!("Compute call result = {0:?} ", result))?;
+    get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url, hash)
+}
+
 fn do_bulk_download(
     bcc: &BitcodeContext,
     http_p: &HttpParams,
@@ -109,26 +134,28 @@ fn do_bulk_download(
             })
             .unwrap_or_default();
         bcc.log_info(&format!("Bulk download params: {params:?}"))?;
+        let mut v_file_status: Vec<SummaryElement> = vec![];
 
         for p in &params {
-            bcc.log_debug(&format!("Bulk download param: {p}"))?;
-            let cur_params = p.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
-            let asset = cur_params[cur_params.len() - 1];
-            let meta: serde_json::Value = serde_json::from_slice(&bcc.sqmd_get_json_external(
-                &bcc.request.q_info.qlib_id,
-                &cur_params[HASH],
-                &format!("/assets/{asset}"),
-            )?)?;
-            let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
-            let exr: ExternalCallResult = get_single_offering_image(
-                bcc,
-                qp,
-                &http_p.client_ip,
-                &result.url,
-                &cur_params[HASH],
-            )
-            .try_into()?;
-            bcc.log_debug(&format!("here call result format = {0} ", exr.format[0]))?;
+            let current_params = p.split('/').collect::<Vec<&str>>();
+            let asset = current_params[current_params.len() - 1];
+            let exr: ExternalCallResult =
+                match process_multi_entry(bcc, http_p, qp, asset, current_params[HASH]) {
+                    Ok(exr) => exr.try_into()?,
+                    Err(e) => {
+                        v_file_status.push(SummaryElement {
+                            asset: p.to_string(),
+                            status: "failed".to_string(),
+                        });
+                        bcc.log_error(&format!("Error processing {p} : {e}"))?;
+                        continue;
+                    }
+                };
+
+            v_file_status.push(SummaryElement {
+                asset: asset.to_string(),
+                status: "success".to_string(),
+            });
             let mut header = tar::Header::new_gnu();
             let b64_decoded = general_purpose::STANDARD.decode(&exr.fout)?;
             header.set_size(b64_decoded.len() as u64);
@@ -137,6 +164,17 @@ fn do_bulk_download(
             header.set_mode(0o644);
             a.append_data(&mut header, &asset, b64_decoded.as_slice())?;
         }
+        let mut header = tar::Header::new_gnu();
+        let contents = v_file_status
+            .iter()
+            .map(|x| format!("{0} {1}", x.asset, x.status))
+            .collect::<Vec<String>>()
+            .join("\n");
+        header.set_size(contents.len() as u64);
+        header.set_cksum();
+        header.set_mtime(time_cur.time);
+        header.set_mode(0o644);
+        a.append_data(&mut header, "summary.txt", std::io::Cursor::new(contents))?;
         a.finish()?;
         let mut finished_writer = a.into_inner()?;
         finished_writer.flush()?;
@@ -247,9 +285,9 @@ fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
     let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
     bcc.log_info(&format!("In Assets path_vec = {path_vec:?}"))?;
     if path_vec[2] == "bulk_download" {
-        return do_bulk_download(bcc, http_p, qp);
+        do_bulk_download(bcc, http_p, qp)
     } else {
-        return do_single_asset(&bcc, http_p, qp, path_vec);
+        do_single_asset(&bcc, http_p, qp, path_vec)
     }
 }
 
