@@ -11,9 +11,8 @@ use std::convert::TryInto;
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, ExternalCallResult,
-    HttpParams, SystemTimeResult,
+    HttpParams, ReadStreamResult, SystemTimeResult,
 };
-use flate2::write::GzEncoder;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -24,6 +23,7 @@ use elvwasm::ErrorKinds;
 implement_bitcode_module!("assets", do_assets);
 
 const VERSION: &str = "1.0.7";
+const MANIFEST: &str = ".download.info";
 
 fn compute_image_url(operation: &str, meta: &serde_json::Value) -> CallResult {
     let v_represenations = meta.get("representations").ok_or(ErrorKinds::NotExist(
@@ -31,7 +31,6 @@ fn compute_image_url(operation: &str, meta: &serde_json::Value) -> CallResult {
     ))?;
     let binding = meta
         .get("file")
-        .clone()
         .ok_or(ErrorKinds::NotExist(
             "fabric_file not found in meta".to_string(),
         ))?
@@ -42,7 +41,7 @@ fn compute_image_url(operation: &str, meta: &serde_json::Value) -> CallResult {
             "fabric_file not convertible to string".to_string(),
         ))?
         .to_string();
-    let fabric_file: Vec<&str> = binding.split("/").collect();
+    let fabric_file: Vec<&str> = binding.split('/').collect();
     let offering = v_represenations
         .get(operation)
         .ok_or(ErrorKinds::NotExist(
@@ -83,6 +82,7 @@ fn process_multi_entry(
     qp: &HashMap<String, Vec<String>>,
     asset: &str,
     hash: &str,
+    filename: &mut String,
 ) -> CallResult {
     bcc.log_debug(&format!("Bulk download param: {0}", hash))?;
 
@@ -91,6 +91,15 @@ fn process_multi_entry(
         hash,
         &format!("/assets/{asset}"),
     )?)?;
+    *filename = meta
+        .get("title")
+        .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?
+        .as_str()
+        .ok_or(ErrorKinds::Invalid(
+            "title not convertible to string".to_string(),
+        ))?
+        .to_string();
+
     let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
     bcc.log_debug(&format!("Compute call result = {0:?} ", result))?;
     get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url, hash)
@@ -103,7 +112,6 @@ fn do_bulk_download(
 ) -> CallResult {
     const HASH: usize = 2; // location in param vector
     bcc.log_info("do_bulk_download")?;
-
     const DEF_CAP: usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity") {
         Some(x) => {
@@ -117,34 +125,56 @@ fn do_bulk_download(
     {
         let bw = BufWriter::with_capacity(buf_cap, &mut fw);
 
-        let zip = GzEncoder::new(bw, flate2::Compression::default());
-        let mut a = tar::Builder::new(zip);
+        //let zip = GzEncoder::new(bw, flate2::Compression::default());
+        let mut a = tar::Builder::new(bw);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
-        let params: Vec<String> = bcc
-            .request
-            .params
-            .http
-            .body
-            .as_array()
-            .map(|array| {
-                array
-                    .iter()
-                    .map(|value| value.as_str().unwrap_or_default().to_string())
-                    .collect()
-            })
-            .unwrap_or_default();
+        let rsr: ReadStreamResult = bcc.read_stream("fis".to_string(), 0).try_into()?;
+
+        bcc.log_info(&format!("HERE!!!!! rsr string len = {0}", rsr.result.len()))?;
+        let params: Vec<String> = if !rsr.result.is_empty() {
+            let b64_decoded = general_purpose::STANDARD.decode(&rsr.result)?;
+
+            let p: serde_json::Value = serde_json::from_slice(&b64_decoded)?;
+            bcc.log_info(&format!(
+                "HERE!!!!! Bulk download params: {p:?} decoded={0}",
+                std::str::from_utf8(&b64_decoded)?
+            ))?;
+            bcc.log_info(&format!(
+                "Bulk download params: {p:?} decoded={0}",
+                std::str::from_utf8(&b64_decoded)?
+            ))?;
+            p.as_array()
+                .ok_or(ErrorKinds::Invalid("params not an array".to_string()))?
+                .iter()
+                .map(|value| value.as_str().unwrap_or_default().to_string())
+                .collect()
+        } else {
+            bcc.request
+                .params
+                .http
+                .body
+                .as_array()
+                .map(|array| {
+                    array
+                        .iter()
+                        .map(|value| value.as_str().unwrap_or_default().to_string())
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
         bcc.log_info(&format!("Bulk download params: {params:?}"))?;
         let mut v_file_status: Vec<SummaryElement> = vec![];
 
         for p in &params {
             let current_params = p.split('/').collect::<Vec<&str>>();
             let asset = current_params[current_params.len() - 1];
+            let filename: &mut String = &mut "".to_string();
             let exr: ExternalCallResult =
-                match process_multi_entry(bcc, http_p, qp, asset, current_params[HASH]) {
+                match process_multi_entry(bcc, http_p, qp, asset, current_params[HASH], filename) {
                     Ok(exr) => exr.try_into()?,
                     Err(e) => {
                         v_file_status.push(SummaryElement {
-                            asset: format!("{0} Error={e}", p.to_string()),
+                            asset: format!("{0} Error={e}", p),
                             status: "failed".to_string(),
                         });
                         bcc.log_error(&format!("Error processing {p} : {e}"))?;
@@ -153,7 +183,7 @@ fn do_bulk_download(
                 };
 
             v_file_status.push(SummaryElement {
-                asset: asset.to_string(),
+                asset: filename.to_string(),
                 status: "success".to_string(),
             });
             let mut header = tar::Header::new_gnu();
@@ -162,7 +192,7 @@ fn do_bulk_download(
             header.set_cksum();
             header.set_mtime(time_cur.time);
             header.set_mode(0o644);
-            a.append_data(&mut header, &asset, b64_decoded.as_slice())?;
+            a.append_data(&mut header, &filename, b64_decoded.as_slice())?;
         }
         let mut header = tar::Header::new_gnu();
         let contents = v_file_status
@@ -174,13 +204,13 @@ fn do_bulk_download(
         header.set_cksum();
         header.set_mtime(time_cur.time);
         header.set_mode(0o644);
-        a.append_data(&mut header, "summary.txt", std::io::Cursor::new(contents))?;
+        a.append_data(&mut header, MANIFEST, std::io::Cursor::new(contents))?;
         a.finish()?;
         let mut finished_writer = a.into_inner()?;
         finished_writer.flush()?;
     }
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
-    bcc.callback(200, "application/zip", fw.size)?;
+    bcc.callback(200, "application/tar", fw.size)?;
     bcc.make_success_json(&json!({}))
 }
 
@@ -248,7 +278,7 @@ fn do_single_asset(
             bcc.callback(200, &exr.format[0], imgbits.len())?;
         }
     }
-    bcc.write_stream("fos", &imgbits)?;
+    bcc.write_stream("fos", imgbits)?;
     bcc.make_success_json(&json!({}))
 }
 
@@ -283,11 +313,13 @@ fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
-    bcc.log_info(&format!("In Assets path_vec = {path_vec:?}"))?;
+    bcc.log_info(&format!(
+        "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
+    ))?;
     if path_vec[2] == "bulk_download" {
         do_bulk_download(bcc, http_p, qp)
     } else {
-        do_single_asset(&bcc, http_p, qp, path_vec)
+        do_single_asset(bcc, http_p, qp, path_vec)
     }
 }
 
