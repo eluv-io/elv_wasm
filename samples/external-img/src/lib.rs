@@ -111,7 +111,7 @@ fn do_bulk_download(
     qp: &HashMap<String, Vec<String>>,
 ) -> CallResult {
     const HASH: usize = 2; // location in param vector
-    bcc.log_info("do_bulk_download")?;
+    bcc.log_debug("do_bulk_download")?;
     const DEF_CAP: usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity") {
         Some(x) => {
@@ -130,19 +130,10 @@ fn do_bulk_download(
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
         let rsr: ReadStreamResult = bcc.read_stream("fis".to_string(), 0).try_into()?;
 
-        bcc.log_info(&format!("HERE!!!!! rsr string len = {0}", rsr.result.len()))?;
         let params: Vec<String> = if !rsr.result.is_empty() {
             let b64_decoded = general_purpose::STANDARD.decode(&rsr.result)?;
 
             let p: serde_json::Value = serde_json::from_slice(&b64_decoded)?;
-            bcc.log_info(&format!(
-                "HERE!!!!! Bulk download params: {p:?} decoded={0}",
-                std::str::from_utf8(&b64_decoded)?
-            ))?;
-            bcc.log_info(&format!(
-                "Bulk download params: {p:?} decoded={0}",
-                std::str::from_utf8(&b64_decoded)?
-            ))?;
             p.as_array()
                 .ok_or(ErrorKinds::Invalid("params not an array".to_string()))?
                 .iter()
@@ -162,7 +153,7 @@ fn do_bulk_download(
                 })
                 .unwrap_or_default()
         };
-        bcc.log_info(&format!("Bulk download params: {params:?}"))?;
+        bcc.log_debug(&format!("Bulk download params: {params:?}"))?;
         let mut v_file_status: Vec<SummaryElement> = vec![];
 
         for p in &params {
@@ -220,7 +211,7 @@ fn do_single_asset(
     qp: &HashMap<String, Vec<String>>,
     path_vec: Vec<&str>,
 ) -> CallResult {
-    bcc.log_info("do_single_asset")?;
+    bcc.log_debug("do_single_asset")?;
     let asset = path_vec[path_vec.len() - 1];
     let operation = path_vec[2];
     let meta: serde_json::Value =
@@ -235,13 +226,12 @@ fn do_single_asset(
         &bcc.request.q_info.hash,
     )
     .try_into()?;
-    bcc.log_info("here")?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
-    console_log(&format!(
+    bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
         imgbits.len(),
         exr.fout.len()
-    ));
+    ))?;
     let mut filename = meta
         .get("title")
         .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?
@@ -313,7 +303,7 @@ fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
-    bcc.log_info(&format!(
+    bcc.log_debug(&format!(
         "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
     ))?;
     if path_vec[2] == "bulk_download" {
@@ -354,9 +344,6 @@ impl<'a> std::io::Write for FabricWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         match self.bcc.write_stream("fos", buf) {
             Ok(s) => {
-                self.bcc
-                    .log_debug(&format!("Wrote {} bytes", buf.len()))
-                    .unwrap_or_default(); // to gobble the log result
                 let w: elvwasm::WritePartResult = serde_json::from_slice(&s)?;
                 self.size += w.written;
                 Ok(w.written)
@@ -374,21 +361,9 @@ impl<'a> std::io::Write for FabricWriter<'a> {
 impl<'a> std::io::Seek for FabricWriter<'a> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
-            SeekFrom::Start(s) => {
-                self.bcc
-                    .log_debug(&format!("SEEK from START {s}"))
-                    .unwrap_or_default();
-            }
-            SeekFrom::Current(s) => {
-                self.bcc
-                    .log_debug(&format!("SEEK from CURRENT {s}"))
-                    .unwrap_or_default();
-            }
-            SeekFrom::End(s) => {
-                self.bcc
-                    .log_debug(&format!("SEEK from END {s}"))
-                    .unwrap_or_default();
-            }
+            SeekFrom::Start(_s) => {}
+            SeekFrom::Current(_s) => {}
+            SeekFrom::End(_s) => {}
         }
         Ok(self.size as u64)
     }
