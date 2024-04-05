@@ -29,7 +29,7 @@ implement_bitcode_module!(
     do_preview
 );
 
-const VERSION: &str = "1.0.7";
+const VERSION: &str = "1.1.0";
 const MANIFEST: &str = ".download.info";
 
 fn compute_image_url(
@@ -97,8 +97,43 @@ struct SummaryElement {
     status: String,
 }
 
+fn pre_processs_link(link: &str) -> String {
+    let mut path_vec: Vec<&str> = link.split('/').collect();
+    if path_vec.len() < 4 {
+        return link.to_string();
+    }
+    if path_vec[3] != "bc" {
+        path_vec.insert(3, "bc");
+        path_vec.insert(4, "assets");
+        path_vec.insert(5, "download");
+    }
+    let path_string = path_vec.join("/");
+    path_string
+}
+
+#[test]
+fn test_pre_process_link() {
+    let link =
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/files/assets/11e1e-45d4a-06e3-6efc76.jpg";
+    assert_eq!(
+        pre_processs_link(link),
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/11e1e-45d4a-06e3-6efc76.jpg"
+    );
+    let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/files/assets/some/deeper/path/11e1e-45d4a-06e3-6efc76.jpg";
+    assert_eq!(
+        pre_processs_link(link),
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/some/deeper/path/11e1e-45d4a-06e3-6efc76.jpg"
+    );
+    let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/11e1e-45d4a-06e3-6efc76.jpg";
+    assert_eq!(pre_processs_link(link), link);
+}
+
 fn process_multi_entry(bcc: &BitcodeContext, link: &str) -> CallResult {
-    bcc.fetch_link(json!(link))
+    let path_string = pre_processs_link(link);
+    bcc.log_debug(&std::format!(
+        "process_multi_entry path_string = {path_string}"
+    ))?;
+    bcc.fetch_link(json!(path_string))
 }
 
 #[no_mangle]
