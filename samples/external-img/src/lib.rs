@@ -102,6 +102,11 @@ fn pre_processs_link(link: &str) -> String {
     if path_vec.len() < 4 {
         return link.to_string();
     }
+
+    if path_vec[3] == "meta" {
+        path_vec.remove(3);
+    }
+
     if path_vec[3] != "bc" {
         path_vec.insert(3, "bc");
         path_vec.insert(4, "assets");
@@ -113,11 +118,10 @@ fn pre_processs_link(link: &str) -> String {
 
 #[test]
 fn test_pre_process_link() {
-    let link =
-        "/qfab/hq_someverylonghash53336444VVEDDDDDD/files/assets/11e1e-45d4a-06e3-6efc76.jpg";
+    let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/meta/assets/11e1e-45d4a-06e3-6efc76.jpg";
     assert_eq!(
         pre_processs_link(link),
-        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/11e1e-45d4a-06e3-6efc76.jpg"
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/assets/11e1e-45d4a-06e3-6efc76.jpg"
     );
     let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/files/assets/some/deeper/path/11e1e-45d4a-06e3-6efc76.jpg";
     assert_eq!(
@@ -126,6 +130,12 @@ fn test_pre_process_link() {
     );
     let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/11e1e-45d4a-06e3-6efc76.jpg";
     assert_eq!(pre_processs_link(link), link);
+
+    let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/meta/assets/11e1e-45d4a-06e3-6efc76.jpg";
+    assert_eq!(
+        pre_processs_link(link),
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/assets/11e1e-45d4a-06e3-6efc76.jpg"
+    );
 }
 
 fn process_multi_entry(bcc: &BitcodeContext, link: &str) -> CallResult {
