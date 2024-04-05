@@ -357,6 +357,42 @@ impl TryFrom<CallResult> for WriteResult {
     }
 }
 
+/*
+type FetchResult struct {
+    Status  int         `json:"status,omitempty"`
+    Headers http.Header `json:"headers,omitempty"`
+    Body    []byte      `json:"body,omitempty"`
+}
+*/
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct FetchResult {
+    #[serde(default)]
+    pub status: usize,
+    #[serde(default)]
+    pub headers: HashMap<String, Vec<String>>,
+    #[serde(default)]
+    pub body: String,
+}
+
+impl TryFrom<CallResult> for FetchResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<FetchResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
+impl TryFrom<Vec<u8>> for FetchResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: Vec<u8>,
+    ) -> Result<FetchResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ModifyResult {
     #[serde(default)]

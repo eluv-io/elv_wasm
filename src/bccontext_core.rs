@@ -570,11 +570,11 @@ impl<'a> BitcodeContext {
     /// * UTF8 [u8] slice containing the resolved link
     /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-    ///   let res = bcc.fetch_link("/qfab/hq_somehash/file/assets/foo.jpg")?;
+    ///   let res = bcc.fetch_link(serde_json::from_str("/qfab/hq_somehash/file/assets/foo.jpg"))?;
     ///   Ok(res)
     /// }
     /// ```
-    pub fn fetch_link(&'a self, link: &str) -> CallResult {
+    pub fn fetch_link(&'a self, link: serde_json::Value) -> CallResult {
         let fetch_params = json!
         (
           {

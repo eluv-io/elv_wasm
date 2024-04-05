@@ -11,7 +11,7 @@ use std::convert::TryInto;
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, ExternalCallResult,
-    HttpParams, ReadStreamResult, SystemTimeResult,
+    FetchResult, HttpParams, ReadStreamResult, SystemTimeResult,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -20,7 +20,14 @@ use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
 
 use elvwasm::ErrorKinds;
 
-implement_bitcode_module!("assets", do_assets);
+implement_bitcode_module!(
+    "download",
+    do_download,
+    "bulk_download",
+    do_bulk_download,
+    "preview",
+    do_preview
+);
 
 const VERSION: &str = "1.0.7";
 const MANIFEST: &str = ".download.info";
@@ -76,40 +83,19 @@ struct SummaryElement {
     status: String,
 }
 
-fn process_multi_entry(
-    bcc: &BitcodeContext,
-    http_p: &HttpParams,
-    qp: &HashMap<String, Vec<String>>,
-    asset: &str,
-    hash: &str,
-    filename: &mut String,
-) -> CallResult {
-    bcc.log_debug(&format!("Bulk download param: {0}", hash))?;
-
-    let meta: serde_json::Value = serde_json::from_slice(&bcc.sqmd_get_json_external(
-        &bcc.request.q_info.qlib_id,
-        hash,
-        &format!("/assets/{asset}"),
-    )?)?;
-    *filename = meta
-        .get("title")
-        .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?
-        .as_str()
-        .ok_or(ErrorKinds::Invalid(
-            "title not convertible to string".to_string(),
-        ))?
-        .to_string();
-
-    let result: ComputeCallResult = compute_image_url("download", &meta).try_into()?;
-    bcc.log_debug(&format!("Compute call result = {0:?} ", result))?;
-    get_single_offering_image(bcc, qp, &http_p.client_ip, &result.url, hash)
+fn process_multi_entry(bcc: &BitcodeContext, link: &str) -> CallResult {
+    bcc.fetch_link(json!(link))
 }
 
-fn do_bulk_download(
-    bcc: &BitcodeContext,
-    http_p: &HttpParams,
-    qp: &HashMap<String, Vec<String>>,
-) -> CallResult {
+#[no_mangle]
+fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
+    let http_p = &bcc.request.params.http;
+    let qp = &http_p.query;
+    let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
+    bcc.log_debug(&format!(
+        "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
+    ))?;
+
     const HASH: usize = 2; // location in param vector
     bcc.log_debug("do_bulk_download")?;
     const DEF_CAP: usize = 50000000;
@@ -157,33 +143,41 @@ fn do_bulk_download(
         let mut v_file_status: Vec<SummaryElement> = vec![];
 
         for p in &params {
-            let current_params = p.split('/').collect::<Vec<&str>>();
-            let asset = current_params[current_params.len() - 1];
-            let filename: &mut String = &mut "".to_string();
-            let exr: ExternalCallResult =
-                match process_multi_entry(bcc, http_p, qp, asset, current_params[HASH], filename) {
-                    Ok(exr) => exr.try_into()?,
-                    Err(e) => {
-                        v_file_status.push(SummaryElement {
-                            asset: format!("{0} Error={e}", p),
-                            status: "failed".to_string(),
-                        });
-                        bcc.log_error(&format!("Error processing {p} : {e}"))?;
-                        continue;
-                    }
-                };
+            let exr: FetchResult = match process_multi_entry(bcc, p) {
+                Ok(exr) => exr.try_into()?,
+                Err(e) => {
+                    v_file_status.push(SummaryElement {
+                        asset: format!("{0} Error={e}", p),
+                        status: "failed".to_string(),
+                    });
+                    bcc.log_error(&format!("Error processing {p} : {e}"))?;
+                    continue;
+                }
+            };
 
-            v_file_status.push(SummaryElement {
-                asset: filename.to_string(),
-                status: "success".to_string(),
-            });
             let mut header = tar::Header::new_gnu();
-            let b64_decoded = general_purpose::STANDARD.decode(&exr.fout)?;
+            let b64_decoded = general_purpose::STANDARD.decode(&exr.body)?;
             header.set_size(b64_decoded.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
             header.set_mode(0o644);
+            let filename: String = exr
+                .headers
+                .get("Content-Disposition")
+                .ok_or(ErrorKinds::NotExist(
+                    "Content-Disposition not found".to_string(),
+                ))?
+                .iter()
+                .find(|s| s.contains("filename="))
+                .and_then(|s| s.split("filename=").nth(1))
+                .map(|s| s.trim_matches(|c| c == '"' || c == '\''))
+                .ok_or(ErrorKinds::NotExist("filename= not found".to_string()))?
+                .to_string();
             a.append_data(&mut header, &filename, b64_decoded.as_slice())?;
+            v_file_status.push(SummaryElement {
+                asset: filename.to_string(),
+                status: "success".to_string(),
+            });
         }
         let mut header = tar::Header::new_gnu();
         let contents = v_file_status
@@ -201,7 +195,8 @@ fn do_bulk_download(
         finished_writer.flush()?;
     }
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
-    bcc.callback(200, "application/tar", fw.size)?;
+    let disp = format!("attachment; filename=\"{}\"", "download.tar");
+    bcc.callback_disposition(200, "application/tar", fw.size, &disp, VERSION)?;
     bcc.make_success_json(&json!({}))
 }
 
@@ -210,27 +205,21 @@ fn do_single_asset(
     http_p: &HttpParams,
     qp: &HashMap<String, Vec<String>>,
     path_vec: Vec<&str>,
+    is_download: bool,
 ) -> CallResult {
     bcc.log_debug("do_single_asset")?;
     let asset = path_vec[path_vec.len() - 1];
-    let operation = path_vec[2];
+    let operation = path_vec[1];
     let meta: serde_json::Value =
         serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
     let result: ComputeCallResult = compute_image_url(operation, &meta).try_into()?;
 
-    let exr: ExternalCallResult = get_single_offering_image(
-        bcc,
-        qp,
-        &http_p.client_ip,
-        &result.url,
-        &bcc.request.q_info.hash,
-    )
-    .try_into()?;
-    let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
+    let exr: FetchResult = get_single_offering_image(bcc, &result.url).try_into()?;
+    let imgbits = &general_purpose::STANDARD.decode(&exr.body)?;
     bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
         imgbits.len(),
-        exr.fout.len()
+        exr.body.len()
     ))?;
     let mut filename = meta
         .get("title")
@@ -251,66 +240,60 @@ fn do_single_asset(
         ))?
         .to_string();
     let is_document = ct == "application/pdf";
-    if ct != "image/jpeg" && !is_document && exr.format[0] == "image/jpeg" {
+    let content_returned = exr
+        .headers
+        .get("Content-Type")
+        .ok_or(ErrorKinds::NotExist("Content-Type not found".to_string()))?;
+    if ct != "image/jpeg" && !is_document && content_returned[0] == "image/jpeg" {
         filename += ".jpg"
     }
     bcc.log_debug(&format!(
-        "RepAssets op={operation} asset={asset} isDoc={is_document} ct={ct} filename={filename}, rep image path={0} version={VERSION}, rep_image format={1}",result.url, &exr.format[0]
+        "RepAssets op={operation} asset={asset} isDoc={is_document} ct={ct} filename={filename}, rep image path={0} version={VERSION}, rep_image format={1}",result.url, &content_returned[0]
     ))?;
-    if operation == "download" {
+    if is_download {
         let content_disp = format!("attachment; filename=\"{}\"", filename);
-        bcc.callback_disposition(200, &exr.format[0], imgbits.len(), &content_disp, VERSION)?;
-    }
-    if operation == "preview" {
+        bcc.callback_disposition(
+            200,
+            &content_returned[0],
+            imgbits.len(),
+            &content_disp,
+            VERSION,
+        )?;
+    } else {
         if is_document {
             bcc.callback(200, &ct, imgbits.len())?;
         } else {
-            bcc.callback(200, &exr.format[0], imgbits.len())?;
+            bcc.callback(200, &content_returned[0], imgbits.len())?;
         }
     }
     bcc.write_stream("fos", imgbits)?;
     bcc.make_success_json(&json!({}))
 }
 
-fn get_single_offering_image(
-    bcc: &BitcodeContext,
-    qp: &HashMap<String, Vec<String>>,
-    client_ip: &str,
-    url: &str,
-    hash: &str,
-) -> CallResult {
-    let params = json!({
-        "http" : {
-            "verb" : "GET",
-            "headers": {
-                "Content-type": [
-                    "application/json"
-                ]
-            },
-            "path" : url,
-            "query" : qp,
-            "client_ip" : client_ip,
-        },
-    });
-    bcc.log_debug(&format!(
-        "Calling external bitcode with params = {params:?}"
-    ))?;
-    bcc.call_external_bitcode("image", &params, hash, "builtin")
+fn get_single_offering_image(bcc: &BitcodeContext, url: &str) -> CallResult {
+    bcc.fetch_link(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]
-fn do_assets(bcc: &mut BitcodeContext) -> CallResult {
+fn do_download(bcc: &mut BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
     let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
     bcc.log_debug(&format!(
         "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
     ))?;
-    if path_vec[2] == "bulk_download" {
-        do_bulk_download(bcc, http_p, qp)
-    } else {
-        do_single_asset(bcc, http_p, qp, path_vec)
-    }
+    do_single_asset(bcc, http_p, qp, path_vec, true)
+}
+
+#[no_mangle]
+fn do_preview(bcc: &mut BitcodeContext) -> CallResult {
+    let http_p = &bcc.request.params.http;
+    let qp = &http_p.query;
+    let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
+    bcc.log_debug(&format!(
+        "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
+    ))?;
+    do_single_asset(bcc, http_p, qp, path_vec, false)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

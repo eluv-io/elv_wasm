@@ -292,7 +292,7 @@ impl<'a> BitcodeContext {
         object_hash: &str,
         code_part_hash: &str,
     ) -> CallResult {
-        let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
+        let params = json!({ "module": "".to_string() ,"function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         let call_val = serde_json::to_vec(&params)?;
 
         let call_ret_val = host_call(
