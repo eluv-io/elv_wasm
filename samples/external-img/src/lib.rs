@@ -10,8 +10,8 @@ use std::convert::TryInto;
 
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, ExternalCallResult,
-    FetchResult, HttpParams, ReadStreamResult, SystemTimeResult,
+    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadStreamResult,
+    SystemTimeResult,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -32,7 +32,11 @@ implement_bitcode_module!(
 const VERSION: &str = "1.0.7";
 const MANIFEST: &str = ".download.info";
 
-fn compute_image_url(operation: &str, meta: &serde_json::Value) -> CallResult {
+fn compute_image_url(
+    operation: &str,
+    meta: &serde_json::Value,
+    qp: &HashMap<String, Vec<String>>,
+) -> CallResult {
     let v_represenations = meta.get("representations").ok_or(ErrorKinds::NotExist(
         "representations not found in meta".to_string(),
     ))?;
@@ -68,7 +72,17 @@ fn compute_image_url(operation: &str, meta: &serde_json::Value) -> CallResult {
         .ok_or(ErrorKinds::NotExist(
             "attachment_content_type not convertible to string".to_string(),
         ))?;
-    let url = format!("/image/{offering}/files/{file_path}");
+
+    let v = &vec!["-1".to_string()];
+    let mut url = format!("/image/{offering}/files/{file_path}");
+    let height_str = qp.get("height").unwrap_or(v);
+    if &height_str[0] != "-1" {
+        let height = height_str[0].parse::<i32>().unwrap_or(-1);
+        if height > 0 {
+            url = format!("{url}?height={height}");
+        }
+    }
+
     let jret = json!({
         "url": url,
         "content_type": content_type,
@@ -96,7 +110,6 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
     ))?;
 
-    const HASH: usize = 2; // location in param vector
     bcc.log_debug("do_bulk_download")?;
     const DEF_CAP: usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity") {
@@ -202,7 +215,6 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
 
 fn do_single_asset(
     bcc: &BitcodeContext,
-    http_p: &HttpParams,
     qp: &HashMap<String, Vec<String>>,
     path_vec: Vec<&str>,
     is_download: bool,
@@ -212,7 +224,7 @@ fn do_single_asset(
     let operation = path_vec[1];
     let meta: serde_json::Value =
         serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
-    let result: ComputeCallResult = compute_image_url(operation, &meta).try_into()?;
+    let result: ComputeCallResult = compute_image_url(operation, &meta, qp).try_into()?;
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url).try_into()?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.body)?;
@@ -259,13 +271,12 @@ fn do_single_asset(
             &content_disp,
             VERSION,
         )?;
+    } else if is_document {
+        bcc.callback(200, &ct, imgbits.len())?;
     } else {
-        if is_document {
-            bcc.callback(200, &ct, imgbits.len())?;
-        } else {
-            bcc.callback(200, &content_returned[0], imgbits.len())?;
-        }
+        bcc.callback(200, &content_returned[0], imgbits.len())?;
     }
+
     bcc.write_stream("fos", imgbits)?;
     bcc.make_success_json(&json!({}))
 }
@@ -282,7 +293,7 @@ fn do_download(bcc: &mut BitcodeContext) -> CallResult {
     bcc.log_debug(&format!(
         "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
     ))?;
-    do_single_asset(bcc, http_p, qp, path_vec, true)
+    do_single_asset(bcc, qp, path_vec, true)
 }
 
 #[no_mangle]
@@ -293,7 +304,7 @@ fn do_preview(bcc: &mut BitcodeContext) -> CallResult {
     bcc.log_debug(&format!(
         "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
     ))?;
-    do_single_asset(bcc, http_p, qp, path_vec, false)
+    do_single_asset(bcc, qp, path_vec, false)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -386,22 +397,40 @@ fn test_image_url_generation() {
       "version": "2",
     });
     let operation = "download";
-    let result: ComputeCallResult = compute_image_url(operation, &meta).try_into().unwrap();
+    let result: ComputeCallResult =
+        compute_image_url(operation, &meta, &HashMap::<String, Vec<String>>::default())
+            .try_into()
+            .unwrap();
     assert_eq!(
         result.url,
         "/image/tier1/files/assets/11e1e-45d4a-06e3-6efc76.jpg"
     );
     let operation = "preview";
-    let result: ComputeCallResult = compute_image_url(operation, &meta).try_into().unwrap();
+    let result: ComputeCallResult =
+        compute_image_url(operation, &meta, &HashMap::<String, Vec<String>>::default())
+            .try_into()
+            .unwrap();
     assert_eq!(
         result.url,
         "/image/none/files/assets/11e1e-45d4a-06e3-6efc76.jpg"
     );
     let operation = "thumbnail";
-    let result: ComputeCallResult = compute_image_url(operation, &meta).try_into().unwrap();
+    let result: ComputeCallResult =
+        compute_image_url(operation, &meta, &HashMap::<String, Vec<String>>::default())
+            .try_into()
+            .unwrap();
     assert_eq!(
         result.url,
         "/image/tier1/files/assets/11e1e-45d4a-06e3-6efc76.jpg"
+    );
+    let mut qp = HashMap::<String, Vec<String>>::default();
+    qp.insert("height".to_string(), vec!["100".to_string()]);
+
+    let result_with_height: ComputeCallResult =
+        compute_image_url(operation, &meta, &qp).try_into().unwrap();
+    assert_eq!(
+        result_with_height.url,
+        "/image/tier1/files/assets/11e1e-45d4a-06e3-6efc76.jpg?height=100"
     );
 
     assert_eq!(result.content_type, "image/jpeg")
