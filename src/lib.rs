@@ -127,7 +127,7 @@ macro_rules! implement_bitcode_module {
     use elvwasm::register_handlers;
 
     fn hook_impl(info: &std::panic::PanicInfo) {
-      let _ = console_log(&format!("Panic is WASM!! {}", info));
+      let _ = console_log(&format!("Panic in WASM!! {}", info));
     }
     #[no_mangle]
     pub extern "C" fn wapc_init() {
@@ -324,8 +324,7 @@ const ID_NOT_CALCULATED_YET: &str = "id not yet calculated";
 
 fn do_bitcode(json_params: Request) -> CallResult {
     console_log("Parameters parsed");
-    let split_path: Vec<&str> = json_params.params.http.path.as_str().split('/').collect();
-    console_log(&format!("splitpath={split_path:?}"));
+    let method: &str = json_params.method.as_str();
 
     let mut v_leaks: Vec<Box<BitcodeContext>> = Vec::<Box<BitcodeContext>>::new();
 
@@ -342,13 +341,13 @@ fn do_bitcode(json_params: Request) -> CallResult {
     // if json_params.method == "content"{
     //   element = 0;
     // }
-    let mut bind = cm.get(split_path[1]).into_iter();
+    let mut bind = cm.get(method).into_iter();
     let cm_handler = match bind.find(|mut _x| true).as_mut() {
         Some(b) => b.to_owned(),
         None => {
             return Err(Box::new(ErrorKinds::Invalid(format!(
                 "handler not found {}",
-                split_path[1]
+                method
             ))))
         }
     };

@@ -17,6 +17,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
+use std::path::Path;
 
 use elvwasm::ErrorKinds;
 
@@ -103,13 +104,8 @@ fn pre_processs_link(link: &str) -> String {
         return link.to_string();
     }
 
-    if path_vec[3] == "meta" {
-        path_vec.remove(3);
-    }
-
-    if path_vec[3] != "bc" {
-        path_vec.insert(3, "bc");
-        path_vec.insert(4, "assets");
+    if path_vec[3] == "meta" && path_vec[4] == "assets" {
+        path_vec[3] = "bc";
         path_vec.insert(5, "download");
     }
     let path_string = path_vec.join("/");
@@ -261,14 +257,17 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
 fn do_single_asset(
     bcc: &BitcodeContext,
     qp: &HashMap<String, Vec<String>>,
-    path_vec: Vec<&str>,
+    operation: &str,
+    asset: &str,
     is_download: bool,
 ) -> CallResult {
     bcc.log_debug("do_single_asset")?;
-    let asset = path_vec[path_vec.len() - 1];
-    let operation = path_vec[1];
+    let asset_path = Path::new("/assets")
+        .join(Path::new(asset).strip_prefix("/").unwrap())
+        .to_string_lossy()
+        .into_owned();
     let meta: serde_json::Value =
-        serde_json::from_slice(&bcc.sqmd_get_json(&format!("/assets/{asset}"))?)?;
+        serde_json::from_slice(&bcc.sqmd_get_json(&asset_path)?)?;
     let result: ComputeCallResult = compute_image_url(operation, &meta, qp).try_into()?;
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url).try_into()?;
@@ -332,24 +331,14 @@ fn get_single_offering_image(bcc: &BitcodeContext, url: &str) -> CallResult {
 
 #[no_mangle]
 fn do_download(bcc: &mut BitcodeContext) -> CallResult {
-    let http_p = &bcc.request.params.http;
-    let qp = &http_p.query;
-    let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
-    bcc.log_debug(&format!(
-        "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
-    ))?;
-    do_single_asset(bcc, qp, path_vec, true)
+    let req = &bcc.request;
+    do_single_asset(bcc, &req.params.http.query, &req.method, &req.params.http.path, true)
 }
 
 #[no_mangle]
 fn do_preview(bcc: &mut BitcodeContext) -> CallResult {
-    let http_p = &bcc.request.params.http;
-    let qp = &http_p.query;
-    let path_vec: Vec<&str> = bcc.request.params.http.path.split('/').collect();
-    bcc.log_debug(&format!(
-        "In Assets path_vec = {path_vec:?} http params = {http_p:?}"
-    ))?;
-    do_single_asset(bcc, qp, path_vec, false)
+    let req = &bcc.request;
+    do_single_asset(bcc, &req.params.http.query, &req.method, &req.params.http.path, false)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
