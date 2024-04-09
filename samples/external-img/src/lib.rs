@@ -35,6 +35,14 @@ implement_bitcode_module!(
 const VERSION: &str = "1.1.3";
 const MANIFEST: &str = ".download.info";
 
+// This function is used to compute the image url based on the operation and meta data
+// The content type is aquired from meta and is used to determine if the file is a video or image
+// if video the url is returned as is from meta download default
+// if image the url is constructed from the representations and file path
+//      The operation is used to determine the representation to use
+//      The meta data is used to determine the file path
+//      The query parameters are used to determine the height of the image
+// The function returns a json string with the url, content_type, and offering
 fn compute_image_url(
     operation: &str,
     meta: &serde_json::Value,
@@ -126,6 +134,11 @@ struct SummaryElement {
     status: String,
 }
 
+// This function is used to pre process the link
+// The function takes a link and returns a string
+// The function splits the link by '/' and checks if the 4th and 5th elements are meta and assets
+// If they are the function replaces the 3rd element with bc and inserts download after assets
+// The function then joins the elements back together with '/' and returns the string
 fn pre_processs_link(link: &str) -> String {
     let mut path_vec: Vec<&str> = link.split('/').collect();
     if path_vec.len() < 4 {
@@ -165,6 +178,11 @@ fn process_multi_entry(bcc: &BitcodeContext, link: &str) -> CallResult {
     bcc.fetch_link(json!(path_string))
 }
 
+// This function is used to download multiple assets
+// The function takes a list of assets from a POST body and downloads them
+// The body is of the form ["/qfab/hash/meta/assets/asset1", "/qfab/hash/meta/assets/asset2]
+// This function is used to download multiple assets at once
+// The function creates a tar file with the assets and a manifest file
 #[no_mangle]
 fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
@@ -277,6 +295,12 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
     bcc.make_success_json(&json!({}))
 }
 
+// This function is used to download or preview/thu8mbnail a single asset
+// The function gets the meta data for the asset and the content type via compute_image_url
+// The function then fetches the image bits from the url calling get_single_offering_image
+// which in actuality is a fetch_link
+// The function then decodes the image or video bits and writes them to the stream
+// The function then returns a success json
 fn do_single_asset(
     bcc: &BitcodeContext,
     qp: &HashMap<String, Vec<String>>,
@@ -395,6 +419,9 @@ impl TryFrom<CallResult> for ComputeCallResult {
     }
 }
 
+//FabricWriter is a struct that implements the Write trait
+//The struct is used to write the image bits to the qfab based stream
+// The is no buffer in the struct as the BufWriter will write immediately to "fos" of qfab's context
 #[derive(Debug)]
 struct FabricWriter<'a> {
     bcc: &'a BitcodeContext,
