@@ -64,12 +64,12 @@ fn compute_image_url(
     let offering: &str;
     if ct[0] == "video" {
         offering = "implied";
-        let down = meta
-            .get("download")
-            .ok_or(ErrorKinds::NotExist(format!("download not found in meta")))?;
-        let def = down.get("default").ok_or(ErrorKinds::NotExist(format!(
-            "default not found in download"
-        )))?;
+        let down = meta.get("download").ok_or(ErrorKinds::NotExist(
+            "download not found in meta".to_string(),
+        ))?;
+        let def = down.get("default").ok_or(ErrorKinds::NotExist(
+            "default not found in download".to_string(),
+        ))?;
         url = def
             .get("/")
             .ok_or(ErrorKinds::NotExist("/ not found in default".to_string()))?
@@ -149,8 +149,7 @@ fn pre_processs_link(link: &str) -> String {
         path_vec[3] = "bc";
         path_vec.insert(5, "download");
     }
-    let path_string = path_vec.join("/");
-    path_string
+    path_vec.join("/")
 }
 
 #[test]
