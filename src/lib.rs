@@ -73,7 +73,7 @@ pub use self::bccontext::*;
 pub use self::bccontext_error::*;
 pub use self::bccontext_struct::*;
 
-//use guest::console_log;
+use guest::console_log;
 
 use std::str;
 
@@ -232,7 +232,7 @@ mod tests {
         let test_json = json!({
           "id" : "dummydummy",
           "jpc" : "1.0",
-          "method" : "content",
+          "method" : "testing",
           "params" : {
             "http" : {
               "path" : "/testing",
@@ -313,11 +313,6 @@ pub fn register_handler(name: &str, h: HandlerFunction<'static>) {
         }
         Err(e) => console_log(&format!("MutexGuard unable to aquire lock, error = {e}")),
     };
-}
-
-#[cfg(test)]
-pub fn console_log(s: &str) {
-    println!("{}", s)
 }
 
 const ID_NOT_CALCULATED_YET: &str = "id not yet calculated";

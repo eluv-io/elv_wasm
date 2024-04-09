@@ -27,10 +27,12 @@ implement_bitcode_module!(
     "bulk_download",
     do_bulk_download,
     "preview",
+    do_preview,
+    "thumbnail",
     do_preview
 );
 
-const VERSION: &str = "1.1.0";
+const VERSION: &str = "1.1.3";
 const MANIFEST: &str = ".download.info";
 
 fn compute_image_url(
@@ -38,32 +40,6 @@ fn compute_image_url(
     meta: &serde_json::Value,
     qp: &HashMap<String, Vec<String>>,
 ) -> CallResult {
-    let v_represenations = meta.get("representations").ok_or(ErrorKinds::NotExist(
-        "representations not found in meta".to_string(),
-    ))?;
-    let binding = meta
-        .get("file")
-        .ok_or(ErrorKinds::NotExist(
-            "fabric_file not found in meta".to_string(),
-        ))?
-        .get("/")
-        .ok_or(ErrorKinds::NotExist("failed to find /".to_string()))?
-        .as_str()
-        .ok_or(ErrorKinds::NotExist(
-            "fabric_file not convertible to string".to_string(),
-        ))?
-        .to_string();
-    let fabric_file: Vec<&str> = binding.split('/').collect();
-    let offering = v_represenations
-        .get(operation)
-        .ok_or(ErrorKinds::NotExist(
-            "operation not found in representations".to_string(),
-        ))?
-        .as_str()
-        .ok_or(ErrorKinds::NotExist(
-            "operation not convertible to string".to_string(),
-        ))?;
-    let file_path = &fabric_file[2..].join("/");
     let content_type = meta
         .get("attachment_content_type")
         .ok_or(ErrorKinds::NotExist(
@@ -74,14 +50,66 @@ fn compute_image_url(
             "attachment_content_type not convertible to string".to_string(),
         ))?;
 
-    let v = &vec!["-1".to_string()];
-    let mut url = format!("/image/{offering}/files/{file_path}");
-    let height_str = qp.get("height").unwrap_or(v);
-    if &height_str[0] != "-1" {
-        let height = height_str[0].parse::<i32>().unwrap_or(-1);
-        if height > 0 {
-            url = format!("{url}?height={height}");
+    let ct: Vec<&str> = content_type.split('/').collect();
+    let url: &str;
+    let mut surl: String;
+    let offering: &str;
+    if ct[0] == "video" {
+        offering = "implied";
+        let down = meta
+            .get("download")
+            .ok_or(ErrorKinds::NotExist(format!("download not found in meta")))?;
+        let def = down.get("default").ok_or(ErrorKinds::NotExist(format!(
+            "default not found in download"
+        )))?;
+        url = def
+            .get("/")
+            .ok_or(ErrorKinds::NotExist("/ not found in default".to_string()))?
+            .as_str()
+            .ok_or(ErrorKinds::NotExist(
+                "url not convertible to string".to_string(),
+            ))?;
+    } else {
+        let v_represenations = meta.get("representations").ok_or(ErrorKinds::NotExist(
+            "representations not found in meta".to_string(),
+        ))?;
+
+        offering = v_represenations
+            .get(operation)
+            .ok_or(ErrorKinds::NotExist(
+                "operation not found in representations".to_string(),
+            ))?
+            .as_str()
+            .ok_or(ErrorKinds::NotExist(
+                "operation not convertible to string".to_string(),
+            ))?;
+
+        let binding = meta
+            .get("file")
+            .ok_or(ErrorKinds::NotExist(
+                "fabric_file not found in meta".to_string(),
+            ))?
+            .get("/")
+            .ok_or(ErrorKinds::NotExist("failed to find /".to_string()))?
+            .as_str()
+            .ok_or(ErrorKinds::NotExist(
+                "fabric_file not convertible to string".to_string(),
+            ))?
+            .to_string();
+        let fabric_file: Vec<&str> = binding.split('/').collect();
+
+        let file_path = &fabric_file[2..].join("/");
+
+        let v = &vec!["-1".to_string()];
+        surl = format!("/image/{offering}/files/{file_path}");
+        let height_str = qp.get("height").unwrap_or(v);
+        if &height_str[0] != "-1" {
+            let height = height_str[0].parse::<i32>().unwrap_or(-1);
+            if height > 0 {
+                surl = format!("{surl}?height={height}");
+            }
         }
+        url = &surl;
     }
 
     let jret = json!({
@@ -117,12 +145,7 @@ fn test_pre_process_link() {
     let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/meta/assets/11e1e-45d4a-06e3-6efc76.jpg";
     assert_eq!(
         pre_processs_link(link),
-        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/assets/11e1e-45d4a-06e3-6efc76.jpg"
-    );
-    let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/files/assets/some/deeper/path/11e1e-45d4a-06e3-6efc76.jpg";
-    assert_eq!(
-        pre_processs_link(link),
-        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/some/deeper/path/11e1e-45d4a-06e3-6efc76.jpg"
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/11e1e-45d4a-06e3-6efc76.jpg"
     );
     let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/files/assets/11e1e-45d4a-06e3-6efc76.jpg";
     assert_eq!(pre_processs_link(link), link);
@@ -130,7 +153,7 @@ fn test_pre_process_link() {
     let link = "/qfab/hq_someverylonghash53336444VVEDDDDDD/meta/assets/11e1e-45d4a-06e3-6efc76.jpg";
     assert_eq!(
         pre_processs_link(link),
-        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/assets/11e1e-45d4a-06e3-6efc76.jpg"
+        "/qfab/hq_someverylonghash53336444VVEDDDDDD/bc/assets/download/11e1e-45d4a-06e3-6efc76.jpg"
     );
 }
 
@@ -266,11 +289,11 @@ fn do_single_asset(
         .join(Path::new(asset).strip_prefix("/").unwrap())
         .to_string_lossy()
         .into_owned();
-    let meta: serde_json::Value =
-        serde_json::from_slice(&bcc.sqmd_get_json(&asset_path)?)?;
+    let meta: serde_json::Value = serde_json::from_slice(&bcc.sqmd_get_json(&asset_path)?)?;
     let result: ComputeCallResult = compute_image_url(operation, &meta, qp).try_into()?;
+    let is_video = result.offering == "implied";
 
-    let exr: FetchResult = get_single_offering_image(bcc, &result.url).try_into()?;
+    let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.body)?;
     bcc.log_debug(&format!(
         "imgbits decoded size = {} fout size = {}",
@@ -325,20 +348,35 @@ fn do_single_asset(
     bcc.make_success_json(&json!({}))
 }
 
-fn get_single_offering_image(bcc: &BitcodeContext, url: &str) -> CallResult {
+fn get_single_offering_image(bcc: &BitcodeContext, url: &str, is_video: bool) -> CallResult {
+    if is_video {
+        return bcc.fetch_link(json!(url));
+    }
     bcc.fetch_link(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]
 fn do_download(bcc: &mut BitcodeContext) -> CallResult {
     let req = &bcc.request;
-    do_single_asset(bcc, &req.params.http.query, &req.method, &req.params.http.path, true)
+    do_single_asset(
+        bcc,
+        &req.params.http.query,
+        &req.method,
+        &req.params.http.path,
+        true,
+    )
 }
 
 #[no_mangle]
 fn do_preview(bcc: &mut BitcodeContext) -> CallResult {
     let req = &bcc.request;
-    do_single_asset(bcc, &req.params.http.query, &req.method, &req.params.http.path, false)
+    do_single_asset(
+        bcc,
+        &req.params.http.query,
+        &req.method,
+        &req.params.http.path,
+        false,
+    )
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
