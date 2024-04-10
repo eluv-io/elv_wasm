@@ -192,6 +192,11 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
     ))?;
 
     bcc.log_debug("do_bulk_download")?;
+
+    // set the headers BEFORE writing any data - otherwise they will be ignored.
+    let disp = format!("attachment; filename=\"{}\"", "download.tar");
+    bcc.callback_disposition(200, "application/tar", 0, &disp, VERSION)?;
+
     const DEF_CAP: usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity") {
         Some(x) => {
@@ -289,8 +294,6 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         finished_writer.flush()?;
     }
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
-    let disp = format!("attachment; filename=\"{}\"", "download.tar");
-    bcc.callback_disposition(200, "application/tar", fw.size, &disp, VERSION)?;
     bcc.make_success_json(&json!({}))
 }
 

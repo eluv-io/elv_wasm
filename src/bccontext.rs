@@ -140,7 +140,7 @@ impl<'a> BitcodeContext {
         disp: &str,
         version: &str,
     ) -> CallResult {
-        let v = json!(
+        let mut v = json!(
           {"http" : {
             "status": status,
             "headers": {
@@ -152,6 +152,19 @@ impl<'a> BitcodeContext {
             }
           }
         );
+        if size == 0 {
+            v = json!(
+                {"http" : {
+                  "status": status,
+                  "headers": {
+                    "Content-Type": vec![content_type],
+                    "Content-Disposition": vec![disp],
+                    "X-Content-Fabric-Bitcode-Version": vec![version],
+                  }
+                  }
+                }
+              );
+        }
         let method = "Callback";
         self.call_function(method, v, "ctx")
     }
