@@ -22,7 +22,10 @@ use elvwasm::{
     ReadStreamResult, WriteResult,
 };
 
-implement_bitcode_module!("image", do_img);
+implement_bitcode_module!(
+    "image", do_img,
+    "content", do_img
+);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WatermarkJson {
@@ -117,6 +120,13 @@ fn do_img(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     defer! {
       let _ = bcc.close_stream(stream_main.stream_id.clone());
     }
+    let qp = &http_p.query;
+    let v_none = vec!["".to_string()];
+
+    let content_disp = qp
+        .get("header-x_set_content_disposition")
+        .unwrap_or(&v_none);
+
     let img = &mut fab_file_to_image(&bcc, &stream_main.stream_id, &asset_path)?;
     let (w, h) = img.dimensions();
     let v = &vec![h.to_string()];
@@ -178,12 +188,7 @@ fn do_img(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let mut bytes: Vec<u8> = Vec::new();
     let mut encoder = JpegEncoder::new(&mut bytes);
     encoder.encode(&br.to_bytes(), br.width(), br.height(), br.color())?;
-    bcc.callback(200, "image/jpeg", bytes.len())?;
+    bcc.callback_disposition(200, "image/jpeg", bytes.len(), &content_disp[0], "1.0.0")?;
     bcc.write_stream("fos", &bytes)?;
-    bcc.make_success_json(&json!(
-    {
-        "headers" : "application/json",
-        "body" : "SUCCESS",
-        "result" : 0,
-    }))
+    bcc.make_success_json(&json!({}))
 }

@@ -215,6 +215,33 @@ impl<'a> BitcodeContext {
         self.call_function("QWritePartToStream", msg, "core")
     }
 
+    /// write_qfile_to_stream writes the content of a fabric file to to a fabric stream
+    /// # Arguments
+    /// * `stream_id`-    stream identifier from new_stream or the like
+    /// * `len`-  length of part to write
+    /// * `qphash` - part hash to write
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// [WriteResult]
+    ///
+    ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/objtar/src/lib.rs#L110)
+    ///
+    pub fn write_qfile_to_stream(
+        &'a self,
+        stream_id: String,
+        path: String,
+        qihot: String,
+    ) -> CallResult {
+        let msg = json!(
+          {
+            "stream_id" :  stream_id,
+            "path":path,
+            "qihot" : qihot,
+         }
+        );
+        self.call_function("QFileToStream", msg, "core")
+    }
+
     /// q_create_part_from_stream creates a new part in a writeable object from a context stream.
     /// The content will be made locally but not published until finalized and committed
     /// # Arguments
@@ -534,6 +561,27 @@ impl<'a> BitcodeContext {
           }
         );
         self.call_function("SQMDGetExternal", sqmd_get, "core")
+    }
+
+    /// fetch_link resolves the fabric file link
+    /// # Arguments
+    /// * `link` : fabric link
+    /// # Returns
+    /// * UTF8 [u8] slice containing the resolved link
+    /// ```rust
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
+    ///   let res = bcc.fetch_link(serde_json::from_str("/qfab/hq_somehash/file/assets/foo.jpg")?)?;
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn fetch_link(&'a self, link: serde_json::Value) -> CallResult {
+        let fetch_params = json!
+        (
+          {
+            "link": link,
+          }
+        );
+        self.call_function("FetchLink", fetch_params, "core")
     }
 
     //

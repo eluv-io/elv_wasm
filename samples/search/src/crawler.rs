@@ -285,6 +285,7 @@ mod tests {
                 http: elvwasm::HttpParams {
                     headers: HashMap::<String, Vec<String>, RandomState>::new(),
                     path: "/".to_string(),
+                    body: json!({}),
                     query: HashMap::<String, Vec<String>, RandomState>::new(),
                     verb: "GET".to_string(),
                     fragment: "".to_string(),

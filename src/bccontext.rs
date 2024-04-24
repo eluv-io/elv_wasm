@@ -15,7 +15,6 @@ use std::collections::HashMap;
 use std::str;
 
 use guest::prelude::*;
-use guest::CallResult;
 
 pub fn convert<'b, T>(cr: &'b CallResult) -> Result<T, Box<dyn std::error::Error + Sync + Send>>
 where
@@ -117,6 +116,55 @@ impl<'a> BitcodeContext {
             }
           }
         );
+        let method = "Callback";
+        self.call_function(method, v, "ctx")
+    }
+
+    /// callback_disposition issues a Callback on the fabric setting up an expectation that the output stream
+    /// contains a specified sized buffer
+    /// # Arguments
+    /// * `status`-    the http status of the call
+    /// * `content-type`-     output buffer contents
+    /// * `size`-  size of the output contents
+    /// * `disp`-  content disposition
+    /// # Returns
+    /// the checksum as hex-encoded string
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L133)
+    ///
+    pub fn callback_disposition(
+        &'a self,
+        status: usize,
+        content_type: &str,
+        size: usize,
+        disp: &str,
+        version: &str,
+    ) -> CallResult {
+        let mut v = json!(
+          {"http" : {
+            "status": status,
+            "headers": {
+              "Content-Type": vec![content_type],
+              "Content-Length": vec![size.to_string()],
+              "Content-Disposition": vec![disp],
+              "X-Content-Fabric-Bitcode-Version": vec![version],
+            }
+            }
+          }
+        );
+        if size == 0 {
+            v = json!(
+                {"http" : {
+                  "status": status,
+                  "headers": {
+                    "Content-Type": vec![content_type],
+                    "Content-Disposition": vec![disp],
+                    "X-Content-Fabric-Bitcode-Version": vec![version],
+                  }
+                  }
+                }
+              );
+        }
         let method = "Callback";
         self.call_function(method, v, "ctx")
     }
@@ -257,7 +305,7 @@ impl<'a> BitcodeContext {
         object_hash: &str,
         code_part_hash: &str,
     ) -> CallResult {
-        let params = json!({ "function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
+        let params = json!({ "module": "".to_string() ,"function": function,  "params" : args, "object_hash" : object_hash, "code_part_hash" : code_part_hash});
         let call_val = serde_json::to_vec(&params)?;
 
         let call_ret_val = host_call(

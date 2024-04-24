@@ -7,8 +7,6 @@ extern crate serde_json;
 #[macro_use(defer)]
 extern crate scopeguard;
 
-use std::convert::TryInto;
-
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, QPartList,
@@ -18,7 +16,11 @@ use flate2::write::GzEncoder;
 use serde_json::json;
 use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
 
-implement_bitcode_module!("tar", do_tar_from_obj);
+implement_bitcode_module!(
+    "tar", do_tar_from_obj,
+    "content", do_tar_from_obj
+);
+
 #[derive(Debug)]
 struct FabricWriter<'a> {
     bcc: &'a BitcodeContext,
@@ -132,10 +134,5 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
     bcc.callback(200, "application/zip", fw.size)?;
 
-    bcc.make_success_json(&json!(
-    {
-        "headers" : "application/zip",
-        "body" : "SUCCESS",
-        "result" : 0,
-    }))
+    bcc.make_success_json(&json!({}))
 }

@@ -51,4 +51,5 @@ members = [
     "samples/lro",
     "samples/external",
     "samples/meta",
+    "samples/external-img",
 ]

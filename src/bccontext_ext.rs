@@ -102,7 +102,8 @@ impl<'a> BitcodeContext {
     /// start_bitcode_lro initiates a long running operation on the fabric.  Currently the lro implementation
     /// constrains the callback to be in the same bitcode module as the initiator.
     /// # Arguments
-    /// * `function` : &str the function to call in the current bitcode module
+    /// * `module` : &str the bitcode module on which to call the function. Empty for "current module".
+    /// * `function` : &str the function to call in the given bitcode module.
     /// * `args` : JSON value containing the arguments to pass the callback
     ///
     /// # Returns
@@ -110,8 +111,8 @@ impl<'a> BitcodeContext {
     ///
     ///  [Example](https://github.com/eluv-io/elv-wasm/blob/d261ece2140e5fc498edc470c6495065d1643b14/samples/lro/src/lib.rs#L16)
     ///
-    pub fn start_bitcode_lro(&'a self, function: &str, args: &serde_json::Value) -> CallResult {
-        let params = json!({ "function": function,  "args" : args});
+    pub fn start_bitcode_lro(&'a self, module: &str, function: &str, args: &serde_json::Value) -> CallResult {
+        let params = json!({ "module": module, "function": function,  "args" : args});
         self.call_function("StartBitcodeLRO", params, "lro")
     }
 }

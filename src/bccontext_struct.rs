@@ -126,7 +126,7 @@ impl TryFrom<CallResult> for SystemTimeResult {
 pub struct ExternalCallResult {
     pub function_return: serde_json::Value,
     pub fout: String,
-    pub format: String,
+    pub format: Vec<String>,
 }
 
 impl TryFrom<CallResult> for ExternalCallResult {
@@ -135,6 +135,15 @@ impl TryFrom<CallResult> for ExternalCallResult {
         cr: CallResult,
     ) -> Result<ExternalCallResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
         Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
+impl TryFrom<Vec<u8>> for ExternalCallResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: Vec<u8>,
+    ) -> Result<ExternalCallResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr)?)
     }
 }
 
@@ -216,6 +225,8 @@ pub struct HttpParams {
     #[serde(default)]
     pub headers: HashMap<String, Vec<String>>,
     pub path: String,
+    #[serde(default)]
+    pub body: serde_json::Value,
     #[serde(default)]
     pub query: HashMap<String, Vec<String>>,
     pub verb: String,
@@ -315,6 +326,23 @@ pub struct QPartInfo {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QFileToStreamResult {
+    #[serde(default)]
+    pub written: usize,
+    #[serde(default)]
+    pub mime_type: String,
+}
+
+impl TryFrom<CallResult> for QFileToStreamResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<QFileToStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WriteResult {
     #[serde(default)]
     pub written: usize,
@@ -326,6 +354,42 @@ impl TryFrom<CallResult> for WriteResult {
         cr: CallResult,
     ) -> Result<WriteResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
         Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
+/*
+type FetchResult struct {
+    Status  int         `json:"status,omitempty"`
+    Headers http.Header `json:"headers,omitempty"`
+    Body    []byte      `json:"body,omitempty"`
+}
+*/
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct FetchResult {
+    #[serde(default)]
+    pub status: usize,
+    #[serde(default)]
+    pub headers: HashMap<String, Vec<String>>,
+    #[serde(default)]
+    pub body: String,
+}
+
+impl TryFrom<CallResult> for FetchResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: CallResult,
+    ) -> Result<FetchResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr?)?)
+    }
+}
+
+impl TryFrom<Vec<u8>> for FetchResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: Vec<u8>,
+    ) -> Result<FetchResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr)?)
     }
 }
 

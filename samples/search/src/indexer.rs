@@ -665,6 +665,7 @@ mod tests {
                     path: "/".to_string(),
                     query: HashMap::<String, Vec<String>, RandomState>::new(),
                     verb: "GET".to_string(),
+                    body: json!({}),
                     fragment: "".to_string(),
                     content_length: 0,
                     client_ip: "localhost".to_string(),

@@ -41,7 +41,7 @@ sudo dpkg -i tinygo_0.27.0_amd64.deb
 Alternately, for macos, run
 
 ```shell
-brew tap tingo-org/tools
+brew tap tinygo-org/tools
 brew install tinygo
 ```
 
