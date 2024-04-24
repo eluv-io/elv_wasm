@@ -4,7 +4,10 @@ use serde_json::json;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, ErrorKinds};
 
-implement_bitcode_module!("content", do_proxy);
+implement_bitcode_module!(
+    "proxy", do_proxy,
+    "content", do_proxy
+);
 
 use std::collections::HashMap;
 
