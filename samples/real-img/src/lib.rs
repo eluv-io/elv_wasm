@@ -22,7 +22,7 @@ use elvwasm::{
     ReadStreamResult, WriteResult,
 };
 
-implement_bitcode_module!("image", do_img);
+implement_bitcode_module!("content", do_img);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WatermarkJson {
