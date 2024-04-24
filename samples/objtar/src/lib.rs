@@ -16,7 +16,11 @@ use flate2::write::GzEncoder;
 use serde_json::json;
 use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
 
-implement_bitcode_module!("tar", do_tar_from_obj);
+implement_bitcode_module!(
+    "tar", do_tar_from_obj,
+    "content", do_tar_from_obj
+);
+
 #[derive(Debug)]
 struct FabricWriter<'a> {
     bcc: &'a BitcodeContext,

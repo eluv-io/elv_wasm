@@ -15,7 +15,7 @@ import {
 
 
   register("_JPC", _jpc)
-  registerHandler("proxy", doProxy)
+  registerHandler("content", doProxy)
 
 
   // This must be present in the entry file.
