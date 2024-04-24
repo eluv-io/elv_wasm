@@ -73,8 +73,6 @@ pub use self::bccontext::*;
 pub use self::bccontext_error::*;
 pub use self::bccontext_struct::*;
 
-use guest::console_log;
-
 use std::str;
 
 use guest::prelude::*;

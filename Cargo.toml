@@ -52,4 +52,5 @@ members = [
     "samples/external",
     "samples/meta",
     "samples/external-img",
+    "samples/panic",
 ]
