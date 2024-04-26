@@ -4,10 +4,7 @@ use serde_json::json;
 
 use elvwasm::{implement_bitcode_module, jpc, register_handler, ErrorKinds};
 
-implement_bitcode_module!(
-    "proxy", do_proxy,
-    "content", do_proxy
-);
+implement_bitcode_module!("proxy", do_proxy, "content", do_proxy);
 
 use std::collections::HashMap;
 
@@ -83,11 +80,6 @@ mod tests {
         };
     }
 
-    #[no_mangle]
-    pub extern "C" fn __console_log(ptr: *const u8, len: usize) {
-        let out_str = output_raw_pointers!(ptr, len);
-        println!("console output : {}", out_str);
-    }
     #[no_mangle]
     pub extern "C" fn __host_call(
         bd_ptr: *const u8,

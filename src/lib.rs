@@ -73,8 +73,6 @@ pub use self::bccontext::*;
 pub use self::bccontext_error::*;
 pub use self::bccontext_struct::*;
 
-use guest::console_log;
-
 use std::str;
 
 use guest::prelude::*;
@@ -138,7 +136,7 @@ macro_rules! implement_bitcode_module {
   }
 }
 
-#[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
+#[cfg(not(any(target_os = "macos", all(target_arch = "wasm32", target_os = "wasi"))))]
 mod c_exports {
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
@@ -154,73 +152,12 @@ mod c_exports {
         let out_str = output_raw_pointers!(ptr, len);
         println!("console output : {}", out_str);
     }
-    #[no_mangle]
-    pub extern "C" fn __host_call(
-        bd_ptr: *const u8,
-        bd_len: usize,
-        ns_ptr: *const u8,
-        ns_len: usize,
-        op_ptr: *const u8,
-        op_len: usize,
-        ptr: *const u8,
-        len: usize,
-    ) -> usize {
-        let out_bd = output_raw_pointers!(bd_ptr, bd_len);
-        let out_ns = output_raw_pointers!(ns_ptr, ns_len);
-        let out_op = output_raw_pointers!(op_ptr, op_len);
-        let out_ptr = output_raw_pointers!(ptr, len);
-        println!(
-            "host call bd = {} ns = {} op = {}, ptr={}",
-            out_bd, out_ns, out_op, out_ptr
-        );
-        0
-    }
-    #[no_mangle]
-    pub extern "C" fn __host_response(ptr: *const u8) {
-        println!("host __host_response ptr = {:?}", ptr);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __host_response_len() -> usize {
-        println!("host __host_response_len");
-        0
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __host_error_len() -> usize {
-        println!("host __host_error_len");
-        0
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __host_error(ptr: *const u8) {
-        println!("host __host_error ptr = {:?}", ptr);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __guest_response(ptr: *const u8, len: usize) {
-        let out_resp = output_raw_pointers!(ptr, len);
-        println!("host  __guest_response ptr = {}", out_resp);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __guest_error(ptr: *const u8, len: usize) {
-        let out_error = output_raw_pointers!(ptr, len);
-        println!("host  __guest_error ptr = {}", out_error);
-    }
-
-    #[no_mangle]
-    pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8) {
-        println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
-    }
-
 }
 
 // The following are mearly intended to verify internal consistency.  There are no actual calls made
 // but the tests verify that the json parsing of the http message is correct
 #[cfg(test)]
 mod tests {
-
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     pub use self::bccontext::*;

@@ -6,8 +6,6 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use std::convert::TryInto;
-
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadStreamResult,
