@@ -13,7 +13,7 @@ name = "meta"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-elvwasm = "1.0.0"
+elvwasm = {path = "../.."}
 wapc = "1.0.0"
 wapc-guest = "1.0"
 serde = "1.0.156"

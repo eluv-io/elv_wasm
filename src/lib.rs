@@ -138,11 +138,8 @@ macro_rules! implement_bitcode_module {
   }
 }
 
-// The following are mearly intended to verify internal consistency.  There are no actual calls made
-// but the tests verify that the json parsing of the http message is correct
-#[cfg(test)]
-mod tests {
-
+#[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
+mod c_exports {
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
             unsafe {
@@ -216,6 +213,14 @@ mod tests {
     pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8) {
         println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
     }
+
+}
+
+// The following are mearly intended to verify internal consistency.  There are no actual calls made
+// but the tests verify that the json parsing of the http message is correct
+#[cfg(test)]
+mod tests {
+
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     pub use self::bccontext::*;
