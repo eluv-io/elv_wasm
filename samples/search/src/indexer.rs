@@ -180,16 +180,11 @@ mod tests {
     extern crate serde_json;
     extern crate snailquote;
     extern crate tempdir;
-    use crate::crawler;
     use base64::engine::general_purpose;
     use base64::Engine;
-    use elvwasm::BitcodeContext;
-    use elvwasm::ErrorKinds;
     use elvwasm::Request;
     use json_dotpath::DotPaths;
-    use serde_json::Value;
     use std::collections::hash_map::RandomState;
-    use std::collections::HashMap;
     use std::fs::File;
     use std::io::BufReader;
     use std::sync::Arc;
@@ -207,6 +202,36 @@ mod tests {
         docs: vec![],
     };
 
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct RootMockFabric {
+        pub library: Library,
+        pub call: serde_json::Value,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct Object {
+        pub hash: String,
+        pub id: String,
+        pub qlib_id: String,
+        #[serde(rename = "type")]
+        pub qtype: String,
+        pub write_token: String,
+        pub meta: serde_json::Map<String, serde_json::Value>,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct Library {
+        pub id: String,
+        pub objects: std::vec::Vec<Object>,
+    }
+
+    #[derive(Debug)]
+    pub struct MockFabric<'a> {
+        ctx: Option<Box<FakeContext>>,
+        fab: Option<RootMockFabric>,
+        resp: Vec<u8>,
+        docs: Vec<TestDocument<'a>>,
+    }
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
             unsafe {
@@ -216,11 +241,6 @@ mod tests {
         };
     }
 
-    #[no_mangle]
-    pub extern "C" fn __console_log(ptr: *const u8, len: usize) {
-        let out_str = output_raw_pointers!(ptr, len);
-        println!("console output : {}", out_str);
-    }
     #[no_mangle]
     pub extern "C" fn __host_call(
         bd_ptr: *const u8,
@@ -285,36 +305,6 @@ mod tests {
     #[no_mangle]
     pub extern "C" fn __guest_request(op_ptr: *const u8, ptr: *const u8) {
         println!("host __guest_request op_ptr = {:?} ptr = {:?}", op_ptr, ptr);
-    }
-    #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct RootMockFabric {
-        pub library: Library,
-        pub call: serde_json::Value,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct Object {
-        pub hash: String,
-        pub id: String,
-        pub qlib_id: String,
-        #[serde(rename = "type")]
-        pub qtype: String,
-        pub write_token: String,
-        pub meta: serde_json::Map<String, serde_json::Value>,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct Library {
-        pub id: String,
-        pub objects: std::vec::Vec<Object>,
-    }
-
-    #[derive(Debug)]
-    pub struct MockFabric<'a> {
-        ctx: Option<Box<FakeContext>>,
-        fab: Option<RootMockFabric>,
-        resp: Vec<u8>,
-        docs: Vec<TestDocument<'a>>,
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
