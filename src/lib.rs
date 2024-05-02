@@ -135,9 +135,25 @@ macro_rules! implement_bitcode_module {
     }
   }
 }
+#[cfg(any(target_os = "linux"))]
+mod c_exports {
+    macro_rules! output_raw_pointers {
+        ($raw_ptr:ident, $raw_len:ident) => {
+            unsafe {
+                std::str::from_utf8(std::slice::from_raw_parts($raw_ptr, $raw_len))
+                    .unwrap_or("unable to convert")
+            }
+        };
+    }
 
+    #[no_mangle]
+    pub extern "C" fn __console_log(ptr: *const u8, len: usize) {
+        let out_str = output_raw_pointers!(ptr, len);
+        println!("console output : {}", out_str);
+    }
+}
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[cfg(any(target_os = "macos"))]
 mod c_exports {
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
