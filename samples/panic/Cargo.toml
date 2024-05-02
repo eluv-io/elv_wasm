@@ -1,19 +1,18 @@
 [package]
 
-name = "meta"
+name = "panic"
 version = "0.0.1"
-authors = ["meta <jan.falkin@eluv.io>"]
+authors = ["panic <panic@eluv.io>"]
 license = "MIT"
-readme = "README.md"
 repository = "https://www.github.com/eluv-io/elv-wasm"
-description = "A Rust wasm library"
+description = "A Rust wasm bitcode example triggering a panic through division by zero"
 
 [lib]
-name = "meta"
+name = "panic"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-elvwasm = {path = "../.."}
+elvwasm = { path = "../.." }
 wapc = "1.0.0"
 wapc-guest = "1.0"
 serde = "1.0.156"
