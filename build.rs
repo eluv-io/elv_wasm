@@ -1,4 +1,6 @@
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::process::Command;
 
 pub fn execute(exe: &str, args: &[&str]) {
@@ -8,7 +10,25 @@ pub fn execute(exe: &str, args: &[&str]) {
         .unwrap_or_else(|_| panic!("failed to start external executable {exe}"));
 }
 
+fn setup_version() {
+    // Retrieve the Cargo version from the environment variable
+    let cargo_version = env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "unknown".to_string());
+
+    // Write the version to a file
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = format!("{}/version.rs", out_dir);
+    let mut file = File::create(&dest_path).unwrap();
+
+    write!(
+        &mut file,
+        "pub const CARGO_VERSION: &str = \"{}\";\n\n",
+        cargo_version
+    )
+    .unwrap();
+}
+
 fn main() {
+    setup_version();
     println!("handling building assemblyscript");
     let mut pbase = env::current_dir().unwrap();
     pbase.push("samples");

@@ -4,7 +4,7 @@ extern crate serde_json;
 extern crate thiserror;
 extern crate wapc_guest as guest;
 
-use crate::{make_json_error, ErrorKinds};
+use crate::{get_cargo_version, make_json_error, ErrorKinds};
 use crate::{FileStream, NewStreamResult, Request, Response};
 
 use serde_json::json;
@@ -112,6 +112,7 @@ impl<'a> BitcodeContext {
             "headers": {
               "Content-Type": [content_type],
               "Content-Length": [size.to_string()],
+              "X-Content-Fabric-Bitcode-Version": vec![get_cargo_version()],
             }
             }
           }
@@ -147,23 +148,23 @@ impl<'a> BitcodeContext {
               "Content-Type": vec![content_type],
               "Content-Length": vec![size.to_string()],
               "Content-Disposition": vec![disp],
-              "X-Content-Fabric-Bitcode-Version": vec![version],
+              "X-Content-Fabric-Bitcode-Version": vec![version, get_cargo_version()],
             }
             }
           }
         );
         if size == 0 {
             v = json!(
-                {"http" : {
-                  "status": status,
-                  "headers": {
-                    "Content-Type": vec![content_type],
-                    "Content-Disposition": vec![disp],
-                    "X-Content-Fabric-Bitcode-Version": vec![version],
-                  }
-                  }
+              {"http" : {
+                "status": status,
+                "headers": {
+                  "Content-Type": vec![content_type],
+                  "Content-Disposition": vec![disp],
+                  "X-Content-Fabric-Bitcode-Version": vec![version],
                 }
-              );
+                }
+              }
+            );
         }
         let method = "Callback";
         self.call_function(method, v, "ctx")
