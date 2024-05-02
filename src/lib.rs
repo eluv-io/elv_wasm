@@ -136,6 +136,8 @@ macro_rules! implement_bitcode_module {
   }
 }
 
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod c_exports {
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
@@ -151,10 +153,6 @@ mod c_exports {
         let out_str = output_raw_pointers!(ptr, len);
         println!("console output : {}", out_str);
     }
-}
-
-#[cfg(any(target_os = "darwin", all(target_arch = "wasm32", target_os = "wasi")))]
-mod c_exports {
     #[no_mangle]
     pub extern "C" fn __host_call(
         bd_ptr: *const u8,
