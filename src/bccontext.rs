@@ -160,7 +160,7 @@ impl<'a> BitcodeContext {
                 "headers": {
                   "Content-Type": vec![content_type],
                   "Content-Disposition": vec![disp],
-                  "X-Content-Fabric-Bitcode-Version": vec![version],
+                  "X-Content-Fabric-Bitcode-Version": vec![version, get_cargo_version()],
                 }
                 }
               }
