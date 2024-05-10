@@ -478,6 +478,20 @@ impl TryFrom<CallResult> for ReadStreamResult {
     }
 }
 
+impl TryFrom<Vec<u8>> for ReadStreamResult {
+    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+    fn try_from(
+        cr: Vec<u8>,
+    ) -> Result<ReadStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
+        Ok(serde_json::from_slice(&cr)?)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ReadCount {
+    pub read: i32,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LROResult {
     pub lro_handle: String,

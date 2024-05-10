@@ -8,8 +8,8 @@ extern crate serde_json;
 
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadStreamResult,
-    SystemTimeResult,
+    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadCount,
+    ReadStreamResult, SystemTimeResult,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -318,12 +318,24 @@ fn do_single_asset(
     let is_video = result.offering == "implied";
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
-    let imgbits = &general_purpose::STANDARD.decode(&exr.body)?;
-    bcc.log_debug(&format!(
-        "imgbits decoded size = {} fout size = {}",
-        imgbits.len(),
-        exr.body.len()
-    ))?;
+    let mut body = vec![0u8; 0];
+    let id = general_purpose::STANDARD.decode(&exr.body)?;
+    let sid = String::from_utf8(id)?;
+    loop {
+        let partial: ReadStreamResult = match bcc.read_stream(sid.to_string(), 10000) {
+            Ok(p) => p.try_into()?,
+            Err(e) => {
+                bcc.log_error(&format!("Error reading stream: {e}"))?;
+                break;
+            }
+        };
+        let count: ReadCount = serde_json::from_str(&partial.retval)?;
+        if count.read == 0 {
+            break;
+        }
+        let img_partial = &general_purpose::STANDARD.decode(partial.result)?;
+        body = [&body[..], img_partial].concat();
+    }
     let mut filename = meta
         .get("title")
         .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?
@@ -358,25 +370,25 @@ fn do_single_asset(
         bcc.callback_disposition(
             200,
             &content_returned[0],
-            imgbits.len(),
+            body.len(),
             &content_disp,
             VERSION,
         )?;
     } else if is_document {
-        bcc.callback(200, &ct, imgbits.len())?;
+        bcc.callback(200, &ct, body.len())?;
     } else {
-        bcc.callback(200, &content_returned[0], imgbits.len())?;
+        bcc.callback(200, &content_returned[0], body.len())?;
     }
 
-    bcc.write_stream("fos", imgbits)?;
+    bcc.write_stream("fos", &body)?;
     bcc.make_success_json(&json!({}))
 }
 
 fn get_single_offering_image(bcc: &BitcodeContext, url: &str, is_video: bool) -> CallResult {
     if is_video {
-        return bcc.fetch_link(json!(url));
+        return bcc.fetch_link_async(json!(url));
     }
-    bcc.fetch_link(json!(format!("./rep{url}")))
+    bcc.fetch_link_async(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]

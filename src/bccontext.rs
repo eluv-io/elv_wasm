@@ -84,13 +84,12 @@ impl<'a> BitcodeContext {
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112)
     ///
     pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
-        let input = vec![0; sz];
-        self.log_debug(&format!("imput len = {}", input.len()))?;
+        self.log_debug(&format!("imput len = {}", sz))?;
         host_call(
             self.request.id.as_str(),
             stream_to_read.as_str(),
             "Read",
-            &input,
+            &serde_json::to_string(&json!({ "len": sz }))?.as_bytes(),
         )
     }
 
