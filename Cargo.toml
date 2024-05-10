@@ -2,7 +2,7 @@
 name = "elvwasm"
 description = "Contains and collects the bitcode extension API for the Eluvio content fabric"
 homepage = "https://eluvio.co/"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 repository = "https://github.com/eluv-io/elv-wasm"
 readme = "README.md"

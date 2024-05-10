@@ -91,6 +91,14 @@ lazy_static! {
     static ref CALLMAP: Mutex<HashMap<String, HandlerData<'static>>> = Mutex::new(HashMap::new());
 }
 
+mod version {
+    include!(concat!(env!("OUT_DIR"), "/version.rs"));
+}
+
+pub fn get_cargo_version() -> &'static str {
+    version::CARGO_VERSION
+}
+
 #[macro_export]
 macro_rules! register_handlers {
   () => {};
