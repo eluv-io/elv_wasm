@@ -386,9 +386,9 @@ fn do_single_asset(
 
 fn get_single_offering_image(bcc: &BitcodeContext, url: &str, is_video: bool) -> CallResult {
     if is_video {
-        return bcc.fetch_link_async(json!(url));
+        return bcc.fetch_link_stream(json!(url));
     }
-    bcc.fetch_link_async(json!(format!("./rep{url}")))
+    bcc.fetch_link_stream(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]
