@@ -50,22 +50,6 @@ pub struct QRef {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct ReadResult {
-    pub result: String,
-    #[serde(rename = "return", default)]
-    pub ret: String,
-}
-
-impl TryFrom<CallResult> for ReadResult {
-    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
-    fn try_from(
-        cr: CallResult,
-    ) -> Result<ReadResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
-        Ok(serde_json::from_slice(&cr?)?)
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WritePartResult {
     pub written: usize,
 }
@@ -372,7 +356,7 @@ pub struct FetchResult {
     #[serde(default)]
     pub headers: HashMap<String, Vec<String>>,
     #[serde(default)]
-    pub body: String,
+    pub sid: String,
 }
 
 impl TryFrom<CallResult> for FetchResult {
@@ -464,9 +448,8 @@ impl TryFrom<CallResult> for NewStreamResult {
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReadStreamResult {
-    #[serde(rename = "return")]
-    pub retval: String,
-    pub result: String,
+    pub read: i64,
+    pub bytes: String,
 }
 
 impl TryFrom<CallResult> for ReadStreamResult {

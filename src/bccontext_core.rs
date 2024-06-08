@@ -584,27 +584,6 @@ impl<'a> BitcodeContext {
         self.call_function("FetchLink", fetch_params, "core")
     }
 
-    /// fetch_link_stream resolves the fabric file link
-    /// # Arguments
-    /// * `link` : fabric link
-    /// # Returns
-    /// * UTF8 [u8] slice containing the resolved link
-    /// ```rust
-    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-    ///   let res = bcc.fetch_link_stream(serde_json::from_str("/qfab/hq_somehash/file/assets/foo.jpg")?)?;
-    ///   Ok(res)
-    /// }
-    /// ```
-    pub fn fetch_link_stream(&'a self, link: serde_json::Value) -> CallResult {
-        let fetch_params = json!
-        (
-          {
-            "link": link,
-          }
-        );
-        self.call_function("FetchLinkStream", fetch_params, "core")
-    }
-
     //
     /// sqmd_query queries the meta-data with the given JSONPath query expression.
     /// # Arguments

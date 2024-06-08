@@ -8,8 +8,8 @@ extern crate serde_json;
 
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadCount,
-    ReadStreamResult, SystemTimeResult,
+    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadStreamResult,
+    SystemTimeResult,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -213,8 +213,8 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
         let rsr: ReadStreamResult = bcc.read_stream("fis".to_string(), 0).try_into()?;
 
-        let params: Vec<String> = if !rsr.result.is_empty() {
-            let b64_decoded = general_purpose::STANDARD.decode(&rsr.result)?;
+        let params: Vec<String> = if !rsr.bytes.is_empty() {
+            let b64_decoded = general_purpose::STANDARD.decode(&rsr.bytes)?;
 
             let p: serde_json::Value = serde_json::from_slice(&b64_decoded)?;
             p.as_array()
@@ -253,7 +253,8 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
             };
 
             let mut header = tar::Header::new_gnu();
-            let b64_decoded = general_purpose::STANDARD.decode(&exr.body)?;
+            let data: ReadStreamResult = bcc.read_stream(exr.sid, 0).try_into()?;
+            let b64_decoded = general_purpose::STANDARD.decode(&data.bytes)?;
             header.set_size(b64_decoded.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
@@ -318,22 +319,22 @@ fn do_single_asset(
     let is_video = result.offering == "implied";
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
+
     let mut body = vec![0u8; 0];
-    let id = general_purpose::STANDARD.decode(&exr.body)?;
-    let sid = String::from_utf8(id)?;
+    let sid = exr.sid;
     loop {
-        let partial: ReadStreamResult = match bcc.read_stream(sid.to_string(), 10000) {
+        const SZ: usize = 10000;
+        let partial: ReadStreamResult = match bcc.read_stream(sid.to_string(), SZ) {
             Ok(p) => p.try_into()?,
             Err(e) => {
                 bcc.log_error(&format!("Error reading stream: {e}"))?;
                 break;
             }
         };
-        let count: ReadCount = serde_json::from_str(&partial.retval)?;
-        if count.read == 0 {
+        if partial.read == 0 {
             break;
         }
-        let img_partial = &general_purpose::STANDARD.decode(partial.result)?;
+        let img_partial = &general_purpose::STANDARD.decode(&partial.bytes)?;
         body = [&body[..], img_partial].concat();
     }
     let mut filename = meta
@@ -386,9 +387,9 @@ fn do_single_asset(
 
 fn get_single_offering_image(bcc: &BitcodeContext, url: &str, is_video: bool) -> CallResult {
     if is_video {
-        return bcc.fetch_link_stream(json!(url));
+        return bcc.fetch_link(json!(url));
     }
-    bcc.fetch_link_stream(json!(format!("./rep{url}")))
+    bcc.fetch_link(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]

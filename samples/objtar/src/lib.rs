@@ -10,16 +10,13 @@ extern crate scopeguard;
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, QPartList,
-    ReadResult, SystemTimeResult,
+    ReadStreamResult, SystemTimeResult,
 };
 use flate2::write::GzEncoder;
 use serde_json::json;
 use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
 
-implement_bitcode_module!(
-    "tar", do_tar_from_obj,
-    "content", do_tar_from_obj
-);
+implement_bitcode_module!("tar", do_tar_from_obj, "content", do_tar_from_obj);
 
 #[derive(Debug)]
 struct FabricWriter<'a> {
@@ -117,14 +114,14 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 -1,
             )?;
             let usz = part.size.try_into()?;
-            let data: ReadResult = bcc
+            let data: ReadStreamResult = bcc
                 .read_stream(stream_wm.stream_id.clone(), usz)
                 .try_into()?;
             let mut header = tar::Header::new_gnu();
             header.set_size(usz as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
-            let b64_decoded = general_purpose::STANDARD.decode(&data.result)?;
+            let b64_decoded = general_purpose::STANDARD.decode(&data.bytes)?;
             a.append_data(&mut header, part.hash.clone(), b64_decoded.as_slice())?;
         }
         a.finish()?;

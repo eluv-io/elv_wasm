@@ -22,10 +22,7 @@ use elvwasm::{
     ReadStreamResult, WriteResult,
 };
 
-implement_bitcode_module!(
-    "image", do_img,
-    "content", do_img
-);
+implement_bitcode_module!("image", do_img, "content", do_img);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WatermarkJson {
@@ -96,7 +93,7 @@ fn fab_file_to_image(
             )))
         }
     };
-    let base = read_data.result;
+    let base = read_data.bytes;
     let buffer = match general_purpose::STANDARD.decode(base) {
         Ok(v) => v,
         Err(x) => {
