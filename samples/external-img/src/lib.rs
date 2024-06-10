@@ -253,8 +253,7 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
             };
 
             let mut header = tar::Header::new_gnu();
-            let data: ReadStreamResult = bcc.read_stream(exr.sid, 0).try_into()?;
-            let b64_decoded = general_purpose::STANDARD.decode(&data.bytes)?;
+            let b64_decoded = general_purpose::STANDARD.decode(&exr.sid)?;
             header.set_size(b64_decoded.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
@@ -387,9 +386,9 @@ fn do_single_asset(
 
 fn get_single_offering_image(bcc: &BitcodeContext, url: &str, is_video: bool) -> CallResult {
     if is_video {
-        return bcc.fetch_link(json!(url));
+        return bcc.fetch_link_reader(json!(url));
     }
-    bcc.fetch_link(json!(format!("./rep{url}")))
+    bcc.fetch_link_reader(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]
