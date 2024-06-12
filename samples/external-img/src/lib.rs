@@ -319,7 +319,7 @@ fn do_single_asset(
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
 
-    let mut body = vec![0u8; 0];
+    let mut body_size = 0;
     let sid = exr.sid;
     loop {
         const SZ: usize = 10000;
@@ -334,7 +334,8 @@ fn do_single_asset(
             break;
         }
         let img_partial = &general_purpose::STANDARD.decode(&partial.bytes)?;
-        body = [&body[..], img_partial].concat();
+        body_size += img_partial.len();
+        bcc.write_stream("fos", &img_partial)?;
     }
     let mut filename = meta
         .get("title")
@@ -367,20 +368,12 @@ fn do_single_asset(
     ))?;
     if is_download {
         let content_disp = format!("attachment; filename=\"{}\"", filename);
-        bcc.callback_disposition(
-            200,
-            &content_returned[0],
-            body.len(),
-            &content_disp,
-            VERSION,
-        )?;
+        bcc.callback_disposition(200, &content_returned[0], body_size, &content_disp, VERSION)?;
     } else if is_document {
-        bcc.callback(200, &ct, body.len())?;
+        bcc.callback(200, &ct, body_size)?;
     } else {
-        bcc.callback(200, &content_returned[0], body.len())?;
+        bcc.callback(200, &content_returned[0], body_size)?;
     }
-
-    bcc.write_stream("fos", &body)?;
     bcc.make_success_json(&json!({}))
 }
 
