@@ -356,7 +356,7 @@ pub struct FetchResult {
     #[serde(default)]
     pub headers: HashMap<String, Vec<String>>,
     #[serde(default)]
-    pub sid: String,
+    pub body: String,
 }
 
 impl TryFrom<CallResult> for FetchResult {

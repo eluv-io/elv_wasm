@@ -253,7 +253,7 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
             };
 
             let mut header = tar::Header::new_gnu();
-            let b64_decoded = general_purpose::STANDARD.decode(&exr.sid)?;
+            let b64_decoded = general_purpose::STANDARD.decode(&exr.body)?;
             header.set_size(b64_decoded.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
@@ -320,7 +320,7 @@ fn do_single_asset(
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
 
     let mut body_size = 0;
-    let sid = exr.sid;
+    let sid = exr.body;
     loop {
         const SZ: usize = 10000;
         let partial: ReadStreamResult = match bcc.read_stream(sid.to_string(), SZ) {

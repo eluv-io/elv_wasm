@@ -88,7 +88,7 @@ impl<'a> BitcodeContext {
         host_call(
             self.request.id.as_str(),
             stream_to_read.as_str(),
-            "Read",
+            "Reader",
             &serde_json::to_string(&json!({ "len": sz }))?.as_bytes(),
         )
     }
