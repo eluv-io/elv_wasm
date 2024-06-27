@@ -437,39 +437,6 @@ impl TryFrom<CallResult> for NewStreamResult {
     }
 }
 
-/// Bitcode representation of a result from read_stream
-/// ```
-/// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-///   let res = bcc.new_stream()?;
-///   let stream1:elvwasm::NewStreamResult = serde_json::from_slice(&res)?;
-///   // stream1.stream_id has new id
-///   Ok(res)
-/// }
-/// ```
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ReadStreamResult {
-    pub read: i64,
-    pub bytes: String,
-}
-
-impl TryFrom<CallResult> for ReadStreamResult {
-    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
-    fn try_from(
-        cr: CallResult,
-    ) -> Result<ReadStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
-        Ok(serde_json::from_slice(&cr?)?)
-    }
-}
-
-impl TryFrom<Vec<u8>> for ReadStreamResult {
-    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
-    fn try_from(
-        cr: Vec<u8>,
-    ) -> Result<ReadStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
-        Ok(serde_json::from_slice(&cr)?)
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReadCount {
     pub read: i32,

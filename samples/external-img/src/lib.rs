@@ -8,8 +8,7 @@ extern crate serde_json;
 
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadStreamResult,
-    SystemTimeResult,
+    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, SystemTimeResult,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -211,12 +210,10 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         //let zip = GzEncoder::new(bw, flate2::Compression::default());
         let mut a = tar::Builder::new(bw);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
-        let rsr: ReadStreamResult = bcc.read_stream("fis".to_string(), 0).try_into()?;
+        let rsr = bcc.read_stream("fis".to_string(), 0)?;
 
-        let params: Vec<String> = if !rsr.bytes.is_empty() {
-            let b64_decoded = general_purpose::STANDARD.decode(&rsr.bytes)?;
-
-            let p: serde_json::Value = serde_json::from_slice(&b64_decoded)?;
+        let params: Vec<String> = if !rsr.is_empty() {
+            let p: serde_json::Value = serde_json::from_slice(&rsr)?;
             p.as_array()
                 .ok_or(ErrorKinds::Invalid("params not an array".to_string()))?
                 .iter()
@@ -323,19 +320,18 @@ fn do_single_asset(
     let sid = exr.body;
     loop {
         const SZ: usize = 10000;
-        let partial: ReadStreamResult = match bcc.read_stream(sid.to_string(), SZ) {
-            Ok(p) => p.try_into()?,
+        let partial = match bcc.read_stream(sid.to_string(), SZ) {
+            Ok(p) => p,
             Err(e) => {
                 bcc.log_error(&format!("Error reading stream: {e}"))?;
                 break;
             }
         };
-        if partial.read == 0 {
+        if partial.is_empty() {
             break;
         }
-        let img_partial = &general_purpose::STANDARD.decode(&partial.bytes)?;
-        body_size += img_partial.len();
-        bcc.write_stream("fos", &img_partial)?;
+        body_size += partial.len();
+        bcc.write_stream("fos", &partial)?;
     }
     let mut filename = meta
         .get("title")
