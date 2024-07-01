@@ -143,7 +143,7 @@ macro_rules! implement_bitcode_module {
     }
   }
 }
-#[cfg(any(target_os = "linux"))]
+#[cfg(target_os = "linux")]
 mod c_exports {
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {
@@ -161,7 +161,7 @@ mod c_exports {
     }
 }
 
-#[cfg(any(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 mod c_exports {
     macro_rules! output_raw_pointers {
         ($raw_ptr:ident, $raw_len:ident) => {

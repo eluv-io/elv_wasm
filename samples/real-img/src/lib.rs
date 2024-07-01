@@ -4,28 +4,19 @@ extern crate serde_json;
 extern crate scopeguard;
 use std::collections::HashMap;
 
-use base64::Engine;
 use elvwasm::ErrorKinds;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 
 extern crate image;
-use base64::engine::general_purpose;
+use image::jpeg::JpegEncoder;
 use image::GenericImageView;
-use image::{
-    error::{DecodingError, ImageFormatHint},
-    jpeg::JpegEncoder,
-};
 
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult,
-    ReadStreamResult, WriteResult,
+    implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, WriteResult,
 };
 
-implement_bitcode_module!(
-    "image", do_img,
-    "content", do_img
-);
+implement_bitcode_module!("image", do_img, "content", do_img);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WatermarkJson {
@@ -84,10 +75,7 @@ fn fab_file_to_image(
             )))
         }
     };
-    let read_data: ReadStreamResult = match bcc
-        .read_stream(stream_id.to_owned(), written.written)
-        .try_into()
-    {
+    let read_data = match bcc.read_stream(stream_id.to_owned(), written.written) {
         Ok(v) => v,
         Err(x) => {
             return Err(image::ImageError::IoError(std::io::Error::new(
@@ -96,15 +84,7 @@ fn fab_file_to_image(
             )))
         }
     };
-    let base = read_data.result;
-    let buffer = match general_purpose::STANDARD.decode(base) {
-        Ok(v) => v,
-        Err(x) => {
-            return Err(image::ImageError::Decoding(
-                DecodingError::from_format_hint(ImageFormatHint::Name(format!("{x}"))),
-            ))
-        }
-    };
+    let buffer = read_data;
     image::load_from_memory_with_format(&buffer, image::ImageFormat::Jpeg)
 }
 

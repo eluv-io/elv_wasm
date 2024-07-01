@@ -76,21 +76,41 @@ impl<'a> BitcodeContext {
     /// * `stream_to_read`-  the fabric stream to read from
     /// * `sz`-  usize size of bytes
     /// # Returns
+    ///   byte slice of the read stream
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112)
+    ///
+    pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
+        self.log_debug(&format!("imput len = {}", sz))?;
+        // Read was previously being called with a json object containing the length
+        // resulting in a full read of the part and itsd subsequent return as a base64 encoded string
+        // The new convention is to call Reader which will return a byte slice or error
+        host_call(
+            self.request.id.as_str(),
+            stream_to_read.as_str(),
+            "Reader",
+            serde_json::to_string(&json!({ "len": sz }))?.as_bytes(),
+        )
+    }
+
+    /// read_stream_inline reads usize bytes from a fabric stream returning a slice of [u8]
+    /// # Arguments
+    /// * `stream_to_read`-  the fabric stream to read from
+    /// * `sz`-  usize size of bytes
+    /// # Returns
     /// utf8 bytes stream containing json
     /// {
     ///   "return" : { "read" : byte-count-read },
     ///   "result" : "base64 encoded string"
     ///  }
-    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112)
-    ///
-    pub fn read_stream(&'a self, stream_to_read: String, sz: usize) -> CallResult {
-        let input = vec![0; sz];
-        self.log_debug(&format!("imput len = {}", input.len()))?;
+    ///  this api is provided for backward compatibility with the previous read_stream api
+    /// and should be avoided in new code
+    pub fn read_stream_inline(&'a self, stream_to_read: String, sz: usize) -> CallResult {
+        self.log_debug(&format!("imput len = {}", sz))?;
         host_call(
             self.request.id.as_str(),
             stream_to_read.as_str(),
             "Read",
-            &input,
+            serde_json::to_string(&json!({ "len": sz }))?.as_bytes(),
         )
     }
 

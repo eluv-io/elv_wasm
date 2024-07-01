@@ -563,6 +563,29 @@ impl<'a> BitcodeContext {
         self.call_function("SQMDGetExternal", sqmd_get, "core")
     }
 
+    /// fetch_link_reader resolves the fabric file link
+    /// # Arguments
+    /// * `link` : fabric link
+    /// # Returns
+    /// * UTF8 [u8] slice containing the resolved link
+    /// ```rust
+    /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
+    ///   let res = bcc.fetch_link_reader(serde_json::from_str("/qfab/hq_somehash/file/assets/foo.jpg")?)?;
+    ///   Ok(res)
+    /// }
+    /// ```
+    pub fn fetch_link_reader(&'a self, link: serde_json::Value) -> CallResult {
+      let fetch_params = json!
+      (
+        {
+          "link": link,
+          "use_reader": true,
+        }
+      );
+      self.call_function("FetchLink", fetch_params, "core")
+  }
+
+
     /// fetch_link resolves the fabric file link
     /// # Arguments
     /// * `link` : fabric link
@@ -579,6 +602,7 @@ impl<'a> BitcodeContext {
         (
           {
             "link": link,
+            "use_reader": false,
           }
         );
         self.call_function("FetchLink", fetch_params, "core")

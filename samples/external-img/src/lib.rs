@@ -8,8 +8,7 @@ extern crate serde_json;
 
 use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, ReadStreamResult,
-    SystemTimeResult,
+    implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, SystemTimeResult,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -211,12 +210,10 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         //let zip = GzEncoder::new(bw, flate2::Compression::default());
         let mut a = tar::Builder::new(bw);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
-        let rsr: ReadStreamResult = bcc.read_stream("fis".to_string(), 0).try_into()?;
+        let rsr = bcc.read_stream("fis".to_string(), 0)?;
 
-        let params: Vec<String> = if !rsr.result.is_empty() {
-            let b64_decoded = general_purpose::STANDARD.decode(&rsr.result)?;
-
-            let p: serde_json::Value = serde_json::from_slice(&b64_decoded)?;
+        let params: Vec<String> = if !rsr.is_empty() {
+            let p: serde_json::Value = serde_json::from_slice(&rsr)?;
             p.as_array()
                 .ok_or(ErrorKinds::Invalid("params not an array".to_string()))?
                 .iter()
@@ -318,12 +315,24 @@ fn do_single_asset(
     let is_video = result.offering == "implied";
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
-    let imgbits = &general_purpose::STANDARD.decode(&exr.body)?;
-    bcc.log_debug(&format!(
-        "imgbits decoded size = {} fout size = {}",
-        imgbits.len(),
-        exr.body.len()
-    ))?;
+
+    let mut body_size = 0;
+    let sid = exr.body;
+    loop {
+        const SZ: usize = 10000;
+        let partial = match bcc.read_stream(sid.to_string(), SZ) {
+            Ok(p) => p,
+            Err(e) => {
+                bcc.log_error(&format!("Error reading stream: {e}"))?;
+                break;
+            }
+        };
+        if partial.is_empty() {
+            break;
+        }
+        body_size += partial.len();
+        bcc.write_stream("fos", &partial)?;
+    }
     let mut filename = meta
         .get("title")
         .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?
@@ -355,28 +364,20 @@ fn do_single_asset(
     ))?;
     if is_download {
         let content_disp = format!("attachment; filename=\"{}\"", filename);
-        bcc.callback_disposition(
-            200,
-            &content_returned[0],
-            imgbits.len(),
-            &content_disp,
-            VERSION,
-        )?;
+        bcc.callback_disposition(200, &content_returned[0], body_size, &content_disp, VERSION)?;
     } else if is_document {
-        bcc.callback(200, &ct, imgbits.len())?;
+        bcc.callback(200, &ct, body_size)?;
     } else {
-        bcc.callback(200, &content_returned[0], imgbits.len())?;
+        bcc.callback(200, &content_returned[0], body_size)?;
     }
-
-    bcc.write_stream("fos", imgbits)?;
     bcc.make_success_json(&json!({}))
 }
 
 fn get_single_offering_image(bcc: &BitcodeContext, url: &str, is_video: bool) -> CallResult {
     if is_video {
-        return bcc.fetch_link(json!(url));
+        return bcc.fetch_link_reader(json!(url));
     }
-    bcc.fetch_link(json!(format!("./rep{url}")))
+    bcc.fetch_link_reader(json!(format!("./rep{url}")))
 }
 
 #[no_mangle]

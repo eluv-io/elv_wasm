@@ -50,22 +50,6 @@ pub struct QRef {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct ReadResult {
-    pub result: String,
-    #[serde(rename = "return", default)]
-    pub ret: String,
-}
-
-impl TryFrom<CallResult> for ReadResult {
-    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
-    fn try_from(
-        cr: CallResult,
-    ) -> Result<ReadResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
-        Ok(serde_json::from_slice(&cr?)?)
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WritePartResult {
     pub written: usize,
 }
@@ -357,14 +341,6 @@ impl TryFrom<CallResult> for WriteResult {
     }
 }
 
-/*
-type FetchResult struct {
-    Status  int         `json:"status,omitempty"`
-    Headers http.Header `json:"headers,omitempty"`
-    Body    []byte      `json:"body,omitempty"`
-}
-*/
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FetchResult {
     #[serde(default)]
@@ -453,29 +429,9 @@ impl TryFrom<CallResult> for NewStreamResult {
     }
 }
 
-/// Bitcode representation of a result from read_stream
-/// ```
-/// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
-///   let res = bcc.new_stream()?;
-///   let stream1:elvwasm::NewStreamResult = serde_json::from_slice(&res)?;
-///   // stream1.stream_id has new id
-///   Ok(res)
-/// }
-/// ```
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ReadStreamResult {
-    #[serde(rename = "return")]
-    pub retval: String,
-    pub result: String,
-}
-
-impl TryFrom<CallResult> for ReadStreamResult {
-    type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
-    fn try_from(
-        cr: CallResult,
-    ) -> Result<ReadStreamResult, Box<dyn std::error::Error + Sync + Send + 'static>> {
-        Ok(serde_json::from_slice(&cr?)?)
-    }
+pub struct ReadCount {
+    pub read: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

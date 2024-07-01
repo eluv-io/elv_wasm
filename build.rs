@@ -17,7 +17,7 @@ fn setup_version() {
     // Write the version to a file
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = format!("{}/version.rs", out_dir);
-    let mut file = File::create(&dest_path).unwrap();
+    let mut file = File::create(dest_path).unwrap();
 
     write!(
         &mut file,
