@@ -341,14 +341,6 @@ impl TryFrom<CallResult> for WriteResult {
     }
 }
 
-/*
-type FetchResult struct {
-    Status  int         `json:"status,omitempty"`
-    Headers http.Header `json:"headers,omitempty"`
-    Body    []byte      `json:"body,omitempty"`
-}
-*/
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FetchResult {
     #[serde(default)]
