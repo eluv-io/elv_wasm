@@ -6,6 +6,9 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use(defer)]
 extern crate scopeguard;
+const VERSION: &str = "1.1.3";
+
+use std::collections::HashMap;
 
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, QPartList,
@@ -76,6 +79,44 @@ impl<'a> std::io::Seek for FabricWriter<'a> {
     }
 }
 
+fn get_set_content_disposition(
+    headers: HashMap<String, Vec<String>>,
+    query: &HashMap<String, Vec<String>>,
+    default: &str,
+) -> CallResult {
+    let mut res = Vec::new();
+
+    // Extract from headers
+    if let Some(values) = headers.get("X-Content-Fabric-Set-Content-Disposition") {
+        for value in values {
+            res.push(value.clone());
+        }
+    }
+
+    // Extract from query parameters
+    if let Some(value) = query.get("header-x_set_content_disposition") {
+        res.push(value[0].clone());
+    }
+
+    // Handle the results
+    if res.is_empty() {
+        return Ok(default.as_bytes().to_vec());
+    }
+    if res.len() > 1 {
+        let first = &res[0];
+        for s in &res[1..] {
+            if s != first {
+                return Err(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                    "GetSetContentDisposition: multiple values (inconsistent): {}",
+                    res.join(",")
+                )));
+            }
+        }
+    }
+
+    Ok(res[0].clone().as_bytes().to_vec())
+}
+
 #[no_mangle]
 fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
@@ -84,6 +125,20 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let obj_id = match qp.get("object_id_or_hash") {
         Some(x) => x,
         None => vqhot,
+    };
+    let bdisp = get_set_content_disposition(http_p.headers.clone(), qp, "")?;
+    let content_disp = match String::from_utf8(bdisp) {
+        Ok(v) => v,
+        Err(e) => {
+            bcc.log_debug(&std::format!(
+                "Error converting content disposition to String: {}",
+                e
+            ))?;
+            return Err(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "Error converting content disposition to String: {}",
+                e
+            )));
+        }
     };
     const DEF_CAP: usize = 50000000;
     let buf_cap = match qp.get("buffer_capacity") {
@@ -112,7 +167,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         let usz = part.size.try_into()?;
         let data = bcc.read_stream(stream_wm.stream_id.clone(), usz)?;
         bcc.write_stream("fos", &data)?;
-        bcc.callback(200, "application/octet-stream", usz)?;
+        bcc.callback_disposition(200, "application/octet-stream", usz, &content_disp, VERSION)?;
         return bcc.make_success_json(&json!({}));
     }
     let mut fw = FabricWriter::new(bcc, total_size);
@@ -149,7 +204,6 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         finished_writer.flush()?;
     }
     bcc.log_debug(&format!("Callback size = {}", fw.size))?;
-    bcc.callback(200, "application/x-tar", fw.size)?;
-
+    bcc.callback_disposition(200, "application/x-tar", fw.size, &content_disp, VERSION)?;
     bcc.make_success_json(&json!({}))
 }
