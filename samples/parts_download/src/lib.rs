@@ -121,10 +121,10 @@ fn get_set_content_disposition(
 fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
     let http_p = &bcc.request.params.http;
     let qp = &http_p.query;
-    let vqhot = &vec![bcc.request.q_info.qhot()];
-    let obj_id = match qp.get("object_id_or_hash") {
+    let empty_vec = Vec::<String>::new();
+    let part_hash = match qp.get("part_hash") {
         Some(x) => x,
-        None => vqhot,
+        None => &empty_vec,
     };
     let bdisp = get_set_content_disposition(http_p.headers.clone(), qp, "")?;
     let content_disp = match String::from_utf8(bdisp) {
@@ -148,10 +148,9 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         }
         None => DEF_CAP,
     };
-    let total_size = 0;
-    let pl: QPartList = bcc.q_part_list(obj_id[0].to_string()).try_into()?;
-    if pl.part_list.parts.len() == 1 {
-        let part = &pl.part_list.parts[0];
+    let mut total_size = 0;
+    if part_hash.len() > 0 {
+        let part = part_hash[0].clone();
         let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
         defer! {
             bcc.log_debug(&format!("Closing part stream {}", &stream_wm.stream_id)).unwrap_or_default();
@@ -159,22 +158,32 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         }
         let _wprb = bcc.write_part_to_stream(
             stream_wm.stream_id.clone(),
-            part.hash.clone(),
+            part.clone(),
             bcc.request.q_info.hash.clone(),
             0,
             -1,
         )?;
-        let usz = part.size.try_into()?;
+        let pl: QPartList = bcc
+            .q_part_list(bcc.request.q_info.hash.to_string())
+            .try_into()?;
+        pl.part_list.parts.iter().for_each(|x| {
+            if x.hash == part {
+                total_size = x.size;
+            }
+        });
+        let usz = total_size.try_into()?;
         let data = bcc.read_stream(stream_wm.stream_id.clone(), usz)?;
         bcc.write_stream("fos", &data)?;
         bcc.callback_disposition(200, "application/octet-stream", usz, &content_disp, VERSION)?;
         return bcc.make_success_json(&json!({}));
     }
-    let mut fw = FabricWriter::new(bcc, total_size);
+    let mut fw = FabricWriter::new(bcc, total_size.try_into()?);
     {
         let bw = BufWriter::with_capacity(buf_cap, &mut fw);
 
-        let pl: QPartList = bcc.q_part_list(obj_id[0].to_string()).try_into()?;
+        let pl: QPartList = bcc
+            .q_part_list(bcc.request.q_info.hash.clone())
+            .try_into()?;
 
         let mut a = tar::Builder::new(bw);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
