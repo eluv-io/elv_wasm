@@ -149,7 +149,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         None => DEF_CAP,
     };
     let mut total_size = 0;
-    if part_hash.len() > 0 {
+    if !part_hash.is_empty() {
         let part = part_hash[0].clone();
         let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
         defer! {
