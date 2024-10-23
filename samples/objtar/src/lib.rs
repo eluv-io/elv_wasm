@@ -111,6 +111,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 bcc.request.q_info.hash.clone(),
                 0,
                 -1,
+                false,
             )?;
             let usz = part.size.try_into()?;
             let data = bcc.read_stream(stream_wm.stream_id.clone(), usz)?;

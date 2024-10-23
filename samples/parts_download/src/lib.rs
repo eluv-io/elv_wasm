@@ -162,6 +162,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
             bcc.request.q_info.hash.clone(),
             0,
             -1,
+            true,
         )?;
         let pl: QPartList = bcc
             .q_part_list(bcc.request.q_info.hash.to_string())
@@ -199,6 +200,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 bcc.request.q_info.hash.clone(),
                 0,
                 -1,
+                true,
             )?;
             let usz = part.size.try_into()?;
             let data = bcc.read_stream(stream_wm.stream_id.clone(), usz)?;
