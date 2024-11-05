@@ -254,23 +254,19 @@ impl<'a> BitcodeContext {
         if !j_res.is_object() {
             return Ok(call_ret_val);
         }
-        return match j_res.get("result") {
+        match j_res.get("result") {
             Some(x) => {
                 let r = serde_json::to_vec(&x)?;
                 Ok(r)
             }
-            None => {
-                match j_res.get("error") {
-                    Some(x) => {
-                        let r = serde_json::to_vec(&x)?;
-                        return Ok(r);
-                    }
-                    None => {
-                        return Ok(call_ret_val);
-                    }
-                };
-            }
-        };
+            None => match j_res.get("error") {
+                Some(x) => {
+                    let r = serde_json::to_vec(&x)?;
+                    Ok(r)
+                }
+                None => Ok(call_ret_val),
+            },
+        }
     }
 
     /// call_external_bitcode - enables the calling of fabric api's
@@ -318,7 +314,6 @@ impl<'a> BitcodeContext {
     ///     Ok(imgbits)
     /// }
     /// ```
-
     pub fn call_external_bitcode(
         &'a self,
         function: &str,
@@ -339,28 +334,25 @@ impl<'a> BitcodeContext {
         if !j_res.is_object() {
             return Ok(call_ret_val);
         }
-        return match j_res.get("result") {
+        match j_res.get("result") {
             Some(x) => {
                 let r = serde_json::to_vec(&x)?;
                 Ok(r)
             }
-            None => {
-                match j_res.get("error") {
-                    Some(x) => {
-                        let r = serde_json::to_vec(&x)?;
-                        return Ok(r);
-                    }
-                    None => {
-                        return Ok(call_ret_val);
-                    }
-                };
-            }
-        };
+            None => match j_res.get("error") {
+                Some(x) => {
+                    let r = serde_json::to_vec(&x)?;
+                    Ok(r)
+                }
+                None => Ok(call_ret_val),
+            },
+        }
     }
 
     /// close_stream closes the fabric stream
     /// - sid:    the sream id (returned from one of the new_file_stream or new_stream)
-    ///  Returns the checksum as hex-encoded string
+    ///
+    /// Returns the checksum as hex-encoded string
     ///
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/b6a5e5b79022d52138b29aa1779b44f29f65ef51/samples/external/src/lib.rs#L60)
     ///

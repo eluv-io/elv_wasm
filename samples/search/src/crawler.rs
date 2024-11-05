@@ -33,7 +33,7 @@ impl Prefix {
         let mut prefix: Vec<PrefixValue> = Vec::new();
         let otokens: Vec<&str> = jpath.split('/').collect();
         let mut start = 0;
-        if (*otokens.get(start).unwrap()).eq("") {
+        if otokens.is_empty() {
             start = 1;
         }
         for &otokens in &otokens[start..] {

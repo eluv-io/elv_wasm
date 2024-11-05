@@ -116,7 +116,7 @@ struct LinkScannerIterator<'a, 'b> {
     scanning_queue: VecDeque<(&'b Value, NodeIndex<u32>, Vec<String>)>,
 }
 
-impl<'a, 'b> Iterator for LinkScannerIterator<'a, 'b> {
+impl<'b> Iterator for LinkScannerIterator<'_, 'b> {
     type Item = (&'b Value, NodeIndex, Vec<String>);
 
     fn next(&mut self) -> Option<(&'b Value, NodeIndex, Vec<String>)> {
@@ -208,7 +208,7 @@ struct DictScannerIterator<'a, 'b> {
     scanning_queue: VecDeque<(&'b Value, NodeIndex<u32>, Vec<String>)>,
 }
 
-impl<'a, 'b> Iterator for DictScannerIterator<'a, 'b> {
+impl<'b> Iterator for DictScannerIterator<'_, 'b> {
     type Item = (&'b Value, NodeIndex, Vec<String>);
 
     fn next(&mut self) -> Option<(&'b Value, NodeIndex, Vec<String>)> {

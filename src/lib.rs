@@ -132,14 +132,19 @@ macro_rules! implement_bitcode_module {
     use std::io;
     use elvwasm::register_handlers;
 
-    fn hook_impl(info: &std::panic::PanicInfo) {
-      let _ = console_log(&format!("Panic in WASM!! {}", info));
-    }
     #[no_mangle]
     pub extern "C" fn wapc_init() {
       register_handlers!($handler_name, $handler_func $(, $more_lit, $more)*);
       register_function("_JPC", jpc);
-      panic::set_hook(Box::new(hook_impl));
+      panic::set_hook(Box::new(|panic_info| {
+            if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+                let _ = console_log(&format!("Panic in WASM!! {0}", s));
+            } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+                let _ = console_log(&format!("Panic in WASM!! {0}", s));
+            } else {
+                let _ = console_log(&format!("Panic in WASM!!"));
+            }
+        }));
     }
   }
 }

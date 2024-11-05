@@ -6,7 +6,7 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use(defer)]
 extern crate scopeguard;
-const VERSION: &str = "1.1.3";
+const VERSION: &str = "1.1.3.1";
 
 use std::collections::HashMap;
 
@@ -35,7 +35,7 @@ impl<'a> FabricWriter<'a> {
         FabricWriter { bcc, size: sz }
     }
 }
-impl<'a> std::io::Write for FabricWriter<'a> {
+impl std::io::Write for FabricWriter<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         match self.bcc.write_stream("fos", buf) {
             Ok(s) => {
@@ -56,7 +56,7 @@ impl<'a> std::io::Write for FabricWriter<'a> {
     }
 }
 
-impl<'a> std::io::Seek for FabricWriter<'a> {
+impl std::io::Seek for FabricWriter<'_> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
             SeekFrom::Start(s) => {
@@ -207,7 +207,9 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
             let mut header = tar::Header::new_gnu();
             header.set_size(usz as u64);
             header.set_cksum();
+            header.set_mode(0o644);
             header.set_mtime(time_cur.time);
+
             a.append_data(&mut header, part.hash.clone(), data.as_slice())?;
         }
         a.finish()?;
