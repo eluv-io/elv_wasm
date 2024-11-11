@@ -123,7 +123,7 @@ impl<'a> BitcodeContext {
     /// * `qhash` - a finalized hash
     /// # Returns
     /// * slice of [u8] that is empty
-    /// e.g.
+    ///   e.g.
     /// ```rust
     /// fn do_something<'s>(bcc: &'s mut elvwasm::BitcodeContext) -> wapc_guest::CallResult {
     ///   let res = bcc.q_commit_content("hq__jd7sd655fffg7HrF76mHDolzzwe")?;
@@ -202,6 +202,7 @@ impl<'a> BitcodeContext {
         qihot: String,
         offset: i64,
         length: i64,
+        decrypt: bool,
     ) -> CallResult {
         let msg = json!(
           {
@@ -210,6 +211,7 @@ impl<'a> BitcodeContext {
             "len" : length,
             "qphash":qphash,
             "qihot" : qihot,
+            "decrypt" : decrypt,
          }
         );
         self.call_function("QWritePartToStream", msg, "core")
@@ -410,8 +412,7 @@ impl<'a> BitcodeContext {
     /// in the fabric.  As such, each content has meta data that is directly associated.  This meta forms a standard tree
     /// at the `/` root level.
     ///
-
-    /// sqmd_set_json ets the metadata at path
+    /// sqmd_set_json sets the metadata at path
     /// # Arguments
     /// * `path` : path to the meta data
     /// * `val` : serde_json::Value to set
@@ -575,16 +576,15 @@ impl<'a> BitcodeContext {
     /// }
     /// ```
     pub fn fetch_link_reader(&'a self, link: serde_json::Value) -> CallResult {
-      let fetch_params = json!
-      (
-        {
-          "link": link,
-          "use_reader": true,
-        }
-      );
-      self.call_function("FetchLink", fetch_params, "core")
-  }
-
+        let fetch_params = json!
+        (
+          {
+            "link": link,
+            "use_reader": true,
+          }
+        );
+        self.call_function("FetchLink", fetch_params, "core")
+    }
 
     /// fetch_link resolves the fabric file link
     /// # Arguments

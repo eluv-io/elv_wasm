@@ -6,6 +6,8 @@ authors = ["panic <panic@eluv.io>"]
 license = "MIT"
 repository = "https://www.github.com/eluv-io/elv-wasm"
 description = "A Rust wasm bitcode example triggering a panic through division by zero"
+edition = "2021"
+
 
 [lib]
 name = "panic"

@@ -17,7 +17,7 @@ struct Searcher<'a> {
     bcc: &'a BitcodeContext,
 }
 
-impl<'a> Searcher<'a> {
+impl Searcher<'_> {
     fn query(&self, query_str: &str) -> CallResult {
         // let hash_part_id_vec = self
         //     .bcc

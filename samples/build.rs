@@ -2,10 +2,15 @@ use std::env;
 use std::process::Command;
 
 pub fn execute(exe: &str, args: &[&str]) {
-    Command::new(exe)
+    let status = Command::new(exe)
         .args(args)
         .spawn()
-        .unwrap_or_else(|_| panic!("failed to start external executable {exe}"));
+        .unwrap_or_else(|_| panic!("failed to start external executable {exe}"))
+        .wait()
+        .expect("failed to wait on child process");
+    if !status.success() {
+        panic!("external executable {exe} failed with status: {}", status);
+    }
 }
 
 fn main() {

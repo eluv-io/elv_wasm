@@ -58,7 +58,7 @@ fn extract_body(v: Value) -> Option<Value> {
         };
         return http.get("body").cloned();
     }
-    return res.get("body").cloned();
+    res.get("body").cloned()
 }
 
 // fn do_search<'a>(bcc: &'a mut elvwasm::BitcodeContext) -> CallResult{

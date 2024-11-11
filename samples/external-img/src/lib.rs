@@ -429,12 +429,12 @@ struct FabricWriter<'a> {
     size: usize,
 }
 
-impl<'a> FabricWriter<'a> {
-    fn new(bcc: &'a BitcodeContext, sz: usize) -> FabricWriter<'a> {
+impl FabricWriter<'_> {
+    fn new(bcc: &BitcodeContext, sz: usize) -> FabricWriter<'_> {
         FabricWriter { bcc, size: sz }
     }
 }
-impl<'a> std::io::Write for FabricWriter<'a> {
+impl std::io::Write for FabricWriter<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         match self.bcc.write_stream("fos", buf) {
             Ok(s) => {
@@ -452,7 +452,7 @@ impl<'a> std::io::Write for FabricWriter<'a> {
     }
 }
 
-impl<'a> std::io::Seek for FabricWriter<'a> {
+impl std::io::Seek for FabricWriter<'_> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
             SeekFrom::Start(_s) => {}
