@@ -6,7 +6,6 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use base64::{engine::general_purpose, Engine as _};
 use elvwasm::{
     implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, SystemTimeResult,
 };
@@ -171,7 +170,7 @@ fn process_multi_entry(bcc: &BitcodeContext, link: &str) -> CallResult {
     bcc.log_debug(&std::format!(
         "process_multi_entry path_string = {path_string}"
     ))?;
-    bcc.fetch_link(json!(path_string))
+    bcc.fetch_link_reader(json!(path_string))
 }
 
 // This function is used to download multiple assets
@@ -250,8 +249,8 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
             };
 
             let mut header = tar::Header::new_gnu();
-            let b64_decoded = general_purpose::STANDARD.decode(&exr.body)?;
-            header.set_size(b64_decoded.len() as u64);
+            let read_bytes = bcc.read_stream(exr.body, 0)?;
+            header.set_size(read_bytes.len() as u64);
             header.set_cksum();
             header.set_mtime(time_cur.time);
             header.set_mode(0o644);
@@ -267,7 +266,7 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
                 .map(|s| s.trim_matches(|c| c == '"' || c == '\''))
                 .ok_or(ErrorKinds::NotExist("filename= not found".to_string()))?
                 .to_string();
-            a.append_data(&mut header, &filename, b64_decoded.as_slice())?;
+            a.append_data(&mut header, &filename, read_bytes.as_slice())?;
             v_file_status.push(SummaryElement {
                 asset: filename.to_string(),
                 status: "success".to_string(),
