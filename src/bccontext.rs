@@ -82,21 +82,14 @@ impl<'a> BitcodeContext {
     ///
     pub fn read_stream_chunked(&'a self, stream_to_read: String, chunk_size: usize) -> CallResult {
         self.log_debug(&format!("imput len = {}", chunk_size))?;
-        let mut data: Vec<u8> = Vec::new();
-        loop {
-            let partial = match self.read_stream(stream_to_read.clone(), chunk_size) {
-                Ok(p) => p,
-                Err(e) => {
-                    self.log_error(&format!("Error reading stream: {e}"))?;
-                    break;
-                }
-            };
-            if partial.is_empty() {
-                break;
+        let partial = match self.read_stream(stream_to_read.clone(), chunk_size) {
+            Ok(p) => p,
+            Err(e) => {
+                self.log_error(&format!("Error reading stream: {e}"))?;
+                vec![]
             }
-            data.extend_from_slice(&partial);
-        }
-        Ok(data)
+        };
+        Ok(partial)
         // Read was previously being called with a json object containing the length
         // resulting in a full read of the part and itsd subsequent return as a base64 encoded string
         // The new convention is to call Reader which will return a byte slice or error

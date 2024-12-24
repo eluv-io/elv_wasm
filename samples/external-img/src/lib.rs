@@ -12,7 +12,7 @@ use elvwasm::{
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
-use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
+use std::io::{BufWriter, ErrorKind, Read, SeekFrom, Write};
 use std::path::Path;
 
 use elvwasm::ErrorKinds;
@@ -30,6 +30,45 @@ implement_bitcode_module!(
 
 const VERSION: &str = "1.1.3";
 const MANIFEST: &str = ".download.info";
+
+struct FabricSteamReader<'a> {
+    stream_id: String,
+    bcc: &'a BitcodeContext,
+}
+
+impl<'a> FabricSteamReader<'a> {
+    fn new(sid: String, bcc_in: &'a BitcodeContext) -> FabricSteamReader<'a> {
+        FabricSteamReader {
+            stream_id: sid,
+            bcc: bcc_in,
+        }
+    }
+}
+
+impl Read for FabricSteamReader<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let read_bytes = match self
+            .bcc
+            .read_stream_chunked(self.stream_id.clone(), buf.len())
+        {
+            Ok(rb) => rb,
+            Err(e) => {
+                let _ = self.bcc.log_error(&format!("Error reading stream: {e}"));
+                Vec::new()
+            }
+        };
+        let _ = self.bcc.log_debug("I am HERE!!!!!");
+        if read_bytes.is_empty() {
+            return Ok(0);
+        }
+        let len = std::cmp::min(buf.len(), read_bytes.len());
+        buf[..len].copy_from_slice(&read_bytes[..len]);
+        let _ = self
+            .bcc
+            .log_debug(&format!("Read {len} bytes in FabricSteamReader"));
+        Ok(len)
+    }
+}
 
 // This function is used to compute the image url based on the operation and meta data
 // The content type is aquired from meta and is used to determine if the file is a video or image
@@ -249,11 +288,21 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
             };
 
             let mut header = tar::Header::new_gnu();
-            let read_bytes = bcc.read_stream_chunked(exr.body, 10000000)?;
-            header.set_size(read_bytes.len() as u64);
-            header.set_cksum();
-            header.set_mtime(time_cur.time);
-            header.set_mode(0o644);
+            let sz_file: i32 = exr
+                .headers
+                .get("Content-Length")
+                .unwrap_or(&vec!["0".to_string()])[0]
+                .parse::<i32>()
+                .unwrap_or(0);
+            bcc.log_debug(&std::format!("Bulk download asset {p} size = {sz_file}"))?;
+            if sz_file < 0 {
+                v_file_status.push(SummaryElement {
+                    asset: format!("{0} Error=Size is negative", p),
+                    status: "failed".to_string(),
+                });
+                continue;
+            }
+
             let filename: String = exr
                 .headers
                 .get("Content-Disposition")
@@ -266,7 +315,13 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
                 .map(|s| s.trim_matches(|c| c == '"' || c == '\''))
                 .ok_or(ErrorKinds::NotExist("filename= not found".to_string()))?
                 .to_string();
-            a.append_data(&mut header, &filename, read_bytes.as_slice())?;
+            let fsr = FabricSteamReader::new(exr.body.clone(), bcc);
+            header.set_size(sz_file as u64);
+            header.set_mtime(time_cur.time);
+            header.set_mode(0o644);
+            header.set_path(&filename)?;
+            header.set_cksum();
+            a.append(&header, fsr)?;
             v_file_status.push(SummaryElement {
                 asset: filename.to_string(),
                 status: "success".to_string(),
@@ -315,10 +370,22 @@ fn do_single_asset(
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
 
-    let body_size = 0;
+    let mut body_size = 0;
     let sid = exr.body;
-    let input = bcc.read_stream_chunked(sid.to_string(), 1000000)?;
-    bcc.write_stream("fos", &input)?;
+    loop {
+        let read_bytes = match bcc.read_stream_chunked(sid.to_string(), 1000000) {
+            Ok(rb) => rb,
+            Err(e) => {
+                bcc.log_error(&format!("Error reading stream: {e}"))?;
+                Vec::new()
+            }
+        };
+        if read_bytes.is_empty() {
+            break;
+        }
+        body_size += read_bytes.len();
+        bcc.write_stream("fos", &read_bytes)?;
+    }
     let mut filename = meta
         .get("title")
         .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?
