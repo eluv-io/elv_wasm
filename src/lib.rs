@@ -66,6 +66,7 @@ pub mod bccontext;
 pub mod bccontext_core;
 pub mod bccontext_error;
 pub mod bccontext_ext;
+pub mod bccontext_fabric_io;
 pub mod bccontext_search;
 pub mod bccontext_struct;
 

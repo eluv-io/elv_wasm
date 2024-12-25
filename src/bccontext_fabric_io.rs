@@ -1,0 +1,88 @@
+extern crate thiserror;
+extern crate wapc_guest as guest;
+
+use crate::BitcodeContext;
+
+use std::io::{ErrorKind, Read, SeekFrom};
+
+pub struct FabricSteamReader<'a> {
+    stream_id: String,
+    bcc: &'a BitcodeContext,
+}
+
+impl<'a> FabricSteamReader<'a> {
+    pub fn new(sid: String, bcc_in: &'a BitcodeContext) -> FabricSteamReader<'a> {
+        FabricSteamReader {
+            stream_id: sid,
+            bcc: bcc_in,
+        }
+    }
+}
+
+impl Read for FabricSteamReader<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let read_bytes = match self
+            .bcc
+            .read_stream_chunked(self.stream_id.clone(), buf.len())
+        {
+            Ok(rb) => rb,
+            Err(e) => {
+                let _ = self.bcc.log_error(&format!("Error reading stream: {e}"));
+                Vec::new()
+            }
+        };
+        let _ = self.bcc.log_debug("I am HERE!!!!!");
+        if read_bytes.is_empty() {
+            return Ok(0);
+        }
+        let len = std::cmp::min(buf.len(), read_bytes.len());
+        buf[..len].copy_from_slice(&read_bytes[..len]);
+        let _ = self
+            .bcc
+            .log_debug(&format!("Read {len} bytes in FabricSteamReader"));
+        Ok(len)
+    }
+}
+
+//FabricWriter is a struct that implements the Write trait
+//The struct is used to write the image bits to the qfab based stream
+// The is no buffer in the struct as the BufWriter will write immediately to "fos" of qfab's context
+#[derive(Debug)]
+pub struct FabricWriter<'a> {
+    pub bcc: &'a BitcodeContext,
+    pub size: usize,
+}
+
+impl FabricWriter<'_> {
+    pub fn new(bcc: &BitcodeContext, sz: usize) -> FabricWriter<'_> {
+        FabricWriter { bcc, size: sz }
+    }
+}
+impl std::io::Write for FabricWriter<'_> {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
+        match self.bcc.write_stream("fos", buf) {
+            Ok(s) => {
+                let w: crate::WritePartResult = serde_json::from_slice(&s)?;
+                self.size += w.written;
+                Ok(w.written)
+            }
+            Err(e) => Err(std::io::Error::new(ErrorKind::Other, e)),
+        }
+    }
+
+    fn flush(&mut self) -> Result<(), std::io::Error> {
+        // Nothing to flush.  The BufWriter will handle its buffer independant using writes
+        Ok(())
+    }
+}
+
+impl std::io::Seek for FabricWriter<'_> {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
+        match pos {
+            SeekFrom::Start(_s) => {}
+            SeekFrom::Current(_s) => {}
+            SeekFrom::End(_s) => {}
+        }
+        Ok(self.size as u64)
+    }
+}
