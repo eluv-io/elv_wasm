@@ -25,17 +25,17 @@ implement_bitcode_module!(
 );
 
 #[derive(Debug)]
-struct FabricWriter<'a> {
+struct FabricStreamWriter<'a> {
     bcc: &'a BitcodeContext,
     size: usize,
 }
 
-impl<'a> FabricWriter<'a> {
-    fn new(bcc: &'a BitcodeContext, sz: usize) -> FabricWriter<'a> {
-        FabricWriter { bcc, size: sz }
+impl<'a> FabricStreamWriter<'a> {
+    fn new(bcc: &'a BitcodeContext, sz: usize) -> FabricStreamWriter<'a> {
+        FabricStreamWriter { bcc, size: sz }
     }
 }
-impl std::io::Write for FabricWriter<'_> {
+impl std::io::Write for FabricStreamWriter<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         match self.bcc.write_stream("fos", buf) {
             Ok(s) => {
@@ -56,7 +56,7 @@ impl std::io::Write for FabricWriter<'_> {
     }
 }
 
-impl std::io::Seek for FabricWriter<'_> {
+impl std::io::Seek for FabricStreamWriter<'_> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
             SeekFrom::Start(s) => {
@@ -178,7 +178,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         bcc.callback_disposition(200, "application/octet-stream", usz, &content_disp, VERSION)?;
         return bcc.make_success_json(&json!({}));
     }
-    let mut fw = FabricWriter::new(bcc, total_size.try_into()?);
+    let mut fw = FabricStreamWriter::new(bcc, total_size.try_into()?);
     {
         let bw = BufWriter::with_capacity(buf_cap, &mut fw);
 

@@ -7,7 +7,7 @@ extern crate serde_derive;
 extern crate serde_json;
 
 use elvwasm::{
-    bccontext_fabric_io::FabricSteamReader, bccontext_fabric_io::FabricWriter,
+    bccontext_fabric_io::FabricSteamReader, bccontext_fabric_io::FabricStreamWriter,
     implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, SystemTimeResult,
 };
 
@@ -203,15 +203,17 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         }
         None => DEF_CAP,
     };
-    let total_size = 0;
-    let mut fw = FabricWriter::new(bcc, total_size);
+    let mut fw = FabricStreamWriter::new(bcc, "fos".to_string(), 0);
     {
         let bw = BufWriter::with_capacity(buf_cap, &mut fw);
 
         //let zip = GzEncoder::new(bw, flate2::Compression::default());
         let mut a = tar::Builder::new(bw);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
-        let rsr = bcc.read_stream_chunked("fis".to_string(), 10000000)?;
+        let mut fir = FabricSteamReader::new("fis".to_string(), bcc);
+        let mut buffer = Vec::new();
+        std::io::copy(&mut fir, &mut buffer)?;
+        let rsr: Vec<u8> = buffer;
 
         let params: Vec<String> = if !rsr.is_empty() {
             let p: serde_json::Value = serde_json::from_slice(&rsr)?;
@@ -333,22 +335,10 @@ fn do_single_asset(
 
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
 
-    let mut body_size = 0;
     let sid = exr.body;
-    loop {
-        let read_bytes = match bcc.read_stream_chunked(sid.to_string(), 1000000) {
-            Ok(rb) => rb,
-            Err(e) => {
-                bcc.log_error(&format!("Error reading stream: {e}"))?;
-                Vec::new()
-            }
-        };
-        if read_bytes.is_empty() {
-            break;
-        }
-        body_size += read_bytes.len();
-        bcc.write_stream("fos", &read_bytes)?;
-    }
+    let mut fsr = FabricSteamReader::new(sid.clone(), bcc);
+    let mut fsw = FabricStreamWriter::new(bcc, "fos".to_string(), 0);
+    let body_size = std::io::copy(&mut fsr, &mut fsw)? as usize;
     let mut filename = meta
         .get("title")
         .ok_or(ErrorKinds::NotExist("title not found in meta".to_string()))?

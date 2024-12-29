@@ -31,7 +31,6 @@ impl Read for FabricSteamReader<'_> {
                 Vec::new()
             }
         };
-        let _ = self.bcc.log_debug("I am HERE!!!!!");
         if read_bytes.is_empty() {
             return Ok(0);
         }
@@ -44,23 +43,28 @@ impl Read for FabricSteamReader<'_> {
     }
 }
 
-//FabricWriter is a struct that implements the Write trait
+//FabricStreamWriter is a struct that implements the Write trait
 //The struct is used to write the image bits to the qfab based stream
 // The is no buffer in the struct as the BufWriter will write immediately to "fos" of qfab's context
 #[derive(Debug)]
-pub struct FabricWriter<'a> {
+pub struct FabricStreamWriter<'a> {
     pub bcc: &'a BitcodeContext,
+    stream_id: String,
     pub size: usize,
 }
 
-impl FabricWriter<'_> {
-    pub fn new(bcc: &BitcodeContext, sz: usize) -> FabricWriter<'_> {
-        FabricWriter { bcc, size: sz }
+impl FabricStreamWriter<'_> {
+    pub fn new(bcc: &BitcodeContext, sid: String, sz: usize) -> FabricStreamWriter<'_> {
+        FabricStreamWriter {
+            bcc,
+            stream_id: sid,
+            size: sz,
+        }
     }
 }
-impl std::io::Write for FabricWriter<'_> {
+impl std::io::Write for FabricStreamWriter<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        match self.bcc.write_stream("fos", buf) {
+        match self.bcc.write_stream(&self.stream_id, buf) {
             Ok(s) => {
                 let w: crate::WritePartResult = serde_json::from_slice(&s)?;
                 self.size += w.written;
@@ -76,7 +80,7 @@ impl std::io::Write for FabricWriter<'_> {
     }
 }
 
-impl std::io::Seek for FabricWriter<'_> {
+impl std::io::Seek for FabricStreamWriter<'_> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
             SeekFrom::Start(_s) => {}
