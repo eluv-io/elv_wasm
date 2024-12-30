@@ -21,10 +21,7 @@ impl<'a> FabricSteamReader<'a> {
 
 impl Read for FabricSteamReader<'_> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        let read_bytes = match self
-            .bcc
-            .read_stream_chunked(self.stream_id.clone(), buf.len())
-        {
+        let read_bytes = match self.bcc.read_stream(self.stream_id.clone(), buf.len()) {
             Ok(rb) => rb,
             Err(e) => {
                 let _ = self.bcc.log_error(&format!("Error reading stream: {e}"));
