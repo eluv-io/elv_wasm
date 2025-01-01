@@ -124,7 +124,6 @@ fn do_img(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         image::imageops::FilterType::Lanczos3,
     );
     if !offering_json.image_watermark.image.is_empty() {
-        bcc.log_info("WATERMARK")?;
         let stream_wm: NewStreamResult = bcc.new_stream().try_into()?;
         defer! {
           let _ = bcc.close_stream(stream_wm.stream_id.clone());
