@@ -31,7 +31,7 @@ fn do_external_fail(bcc: &mut BitcodeContext) -> CallResult {
     let tar_hash = &qp
         .get("tar_hash")
         .ok_or(ErrorKinds::Invalid("tar_hash not present".to_string()))?[0];
-    bcc.log_info(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
+    bcc.log_debug(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
     let params = json!({
         "http" : {
             "verb" : "some",
@@ -113,7 +113,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     let tar_hash = &qp
         .get("tar_hash")
         .ok_or(ErrorKinds::Invalid("tar_hash not present".to_string()))?[0];
-    bcc.log_info(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
+    bcc.log_debug(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
     let params = json!({
         "http" : {
             "verb" : "GET",
@@ -131,7 +131,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
     let exr: ExternalCallResult = bcc
         .call_external_bitcode("image", &params, img_obj, "builtin")
         .try_into()?;
-    bcc.log_info("here")?;
+    bcc.log_debug("do external")?;
     let imgbits = &general_purpose::STANDARD.decode(&exr.fout)?;
     console_log(&format!(
         "imgbits decoded size = {} fout size = {}",
@@ -173,7 +173,7 @@ fn do_external(bcc: &mut BitcodeContext) -> CallResult {
         .call_external_bitcode("tar", &tar_params, &fc.qhash, tar_hash)
         .try_into()?;
     let tarbits = &general_purpose::STANDARD.decode(&exr_tar.fout)?;
-    bcc.log_info(&format!(
+    bcc.log_debug(&format!(
         "fout size = {} tar_ bit len = {}",
         &exr_tar.fout.len(),
         tarbits.len()

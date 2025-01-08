@@ -5,21 +5,21 @@ use crate::BitcodeContext;
 
 use std::io::{ErrorKind, Read, SeekFrom};
 
-pub struct FabricSteamReader<'a> {
+pub struct FabricStreamReader<'a> {
     stream_id: String,
     bcc: &'a BitcodeContext,
 }
 
-impl<'a> FabricSteamReader<'a> {
-    pub fn new(sid: String, bcc_in: &'a BitcodeContext) -> FabricSteamReader<'a> {
-        FabricSteamReader {
+impl<'a> FabricStreamReader<'a> {
+    pub fn new(sid: String, bcc_in: &'a BitcodeContext) -> FabricStreamReader<'a> {
+        FabricStreamReader {
             stream_id: sid,
             bcc: bcc_in,
         }
     }
 }
 
-impl Read for FabricSteamReader<'_> {
+impl Read for FabricStreamReader<'_> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let read_bytes = match self.bcc.read_stream(self.stream_id.clone(), buf.len()) {
             Ok(rb) => rb,
@@ -35,7 +35,7 @@ impl Read for FabricSteamReader<'_> {
         buf[..len].copy_from_slice(&read_bytes[..len]);
         let _ = self
             .bcc
-            .log_debug(&format!("Read {len} bytes in FabricSteamReader"));
+            .log_debug(&format!("Read {len} bytes in FabricStreamReader"));
         Ok(len)
     }
 }

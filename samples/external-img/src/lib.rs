@@ -7,7 +7,7 @@ extern crate serde_derive;
 extern crate serde_json;
 
 use elvwasm::{
-    bccontext_fabric_io::FabricSteamReader, bccontext_fabric_io::FabricStreamWriter,
+    bccontext_fabric_io::FabricStreamReader, bccontext_fabric_io::FabricStreamWriter,
     implement_bitcode_module, jpc, register_handler, BitcodeContext, FetchResult, SystemTimeResult,
 };
 
@@ -210,7 +210,7 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
         //let zip = GzEncoder::new(bw, flate2::Compression::default());
         let mut a = tar::Builder::new(bw);
         let time_cur: SystemTimeResult = bcc.q_system_time().try_into()?;
-        let mut fir = FabricSteamReader::new("fis".to_string(), bcc);
+        let mut fir = FabricStreamReader::new("fis".to_string(), bcc);
         let mut buffer = Vec::new();
         std::io::copy(&mut fir, &mut buffer)?;
         let rsr: Vec<u8> = buffer;
@@ -280,7 +280,7 @@ fn do_bulk_download(bcc: &mut BitcodeContext) -> CallResult {
                 .map(|s| s.trim_matches(|c| c == '"' || c == '\''))
                 .ok_or(ErrorKinds::NotExist("filename= not found".to_string()))?
                 .to_string();
-            let fsr = FabricSteamReader::new(exr.body.clone(), bcc);
+            let fsr = FabricStreamReader::new(exr.body.clone(), bcc);
             header.set_size(sz_file as u64);
             header.set_mtime(time_cur.time);
             header.set_mode(0o644);
@@ -336,7 +336,7 @@ fn do_single_asset(
     let exr: FetchResult = get_single_offering_image(bcc, &result.url, is_video).try_into()?;
 
     let sid = exr.body;
-    let mut fsr = FabricSteamReader::new(sid.clone(), bcc);
+    let mut fsr = FabricStreamReader::new(sid.clone(), bcc);
     let mut fsw = FabricStreamWriter::new(bcc, "fos".to_string(), 0);
     let body_size = std::io::copy(&mut fsr, &mut fsw)? as usize;
     let mut filename = meta

@@ -11,7 +11,7 @@ const VERSION: &str = "1.1.3.1";
 use std::collections::HashMap;
 
 use elvwasm::{
-    bccontext_fabric_io::{FabricSteamReader, FabricStreamWriter},
+    bccontext_fabric_io::{FabricStreamReader, FabricStreamWriter},
     implement_bitcode_module, jpc, register_handler, NewStreamResult, QPartList, SystemTimeResult,
 };
 use serde_json::json;
@@ -118,7 +118,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
             }
         });
         let usz = total_size.try_into()?;
-        let mut fsr = FabricSteamReader::new(stream_wm.stream_id.clone(), bcc);
+        let mut fsr = FabricStreamReader::new(stream_wm.stream_id.clone(), bcc);
         let mut fsw = FabricStreamWriter::new(bcc, "fos".to_string(), usz);
         std::io::copy(&mut fsr, &mut fsw)?;
         bcc.callback_disposition(200, "application/octet-stream", usz, &content_disp, VERSION)?;
@@ -149,7 +149,7 @@ fn do_parts_download(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 true,
             )?;
             let usz = part.size.try_into()?;
-            let fsr = FabricSteamReader::new(stream_wm.stream_id.clone(), bcc);
+            let fsr = FabricStreamReader::new(stream_wm.stream_id.clone(), bcc);
             let mut header = tar::Header::new_gnu();
             header.set_size(usz);
             header.set_mode(0o644);

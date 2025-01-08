@@ -8,7 +8,7 @@ extern crate serde_json;
 extern crate scopeguard;
 
 use elvwasm::{
-    bccontext_fabric_io::FabricSteamReader, bccontext_fabric_io::FabricStreamWriter,
+    bccontext_fabric_io::FabricStreamReader, bccontext_fabric_io::FabricStreamWriter,
     implement_bitcode_module, jpc, register_handler, NewStreamResult, QPartList, SystemTimeResult,
 };
 use flate2::write::GzEncoder;
@@ -59,7 +59,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 false,
             )?;
             let usz = part.size as u64;
-            let fsr = FabricSteamReader::new(stream_wm.stream_id.clone(), bcc);
+            let fsr = FabricStreamReader::new(stream_wm.stream_id.clone(), bcc);
             let mut header = tar::Header::new_gnu();
             header.set_size(usz);
             header.set_cksum();

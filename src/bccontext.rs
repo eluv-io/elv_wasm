@@ -293,7 +293,7 @@ impl<'a> BitcodeContext {
     ///     let img_hash = &qp.get("img_hash").ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
     ///     let img_obj= &qp.get("img_obj").ok_or(ErrorKinds::Invalid("img_hash not present".to_string()))?[0];
     ///     let tar_hash = &qp.get("tar_hash").ok_or(ErrorKinds::Invalid("tar_hash not present".to_string()))?[0];
-    ///     bcc.log_info(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
+    ///     bcc.log_debug(&format!("img_hash ={img_hash:?} tar_hash = {tar_hash:?}"))?;
     ///     let params = json!({
     ///         "http" : {
     ///             "verb" : "some",
