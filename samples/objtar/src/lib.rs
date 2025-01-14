@@ -8,69 +8,14 @@ extern crate serde_json;
 extern crate scopeguard;
 
 use elvwasm::{
-    implement_bitcode_module, jpc, register_handler, BitcodeContext, NewStreamResult, QPartList,
-    SystemTimeResult,
+    bccontext_fabric_io::FabricStreamReader, bccontext_fabric_io::FabricStreamWriter,
+    implement_bitcode_module, jpc, register_handler, NewStreamResult, QPartList, SystemTimeResult,
 };
 use flate2::write::GzEncoder;
 use serde_json::json;
-use std::io::{BufWriter, ErrorKind, SeekFrom, Write};
+use std::io::{BufWriter, Write};
 
 implement_bitcode_module!("tar", do_tar_from_obj, "content", do_tar_from_obj);
-
-#[derive(Debug)]
-struct FabricWriter<'a> {
-    bcc: &'a BitcodeContext,
-    size: usize,
-}
-
-impl FabricWriter<'_> {
-    fn new(bcc: &BitcodeContext, sz: usize) -> FabricWriter<'_> {
-        FabricWriter { bcc, size: sz }
-    }
-}
-impl std::io::Write for FabricWriter<'_> {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        match self.bcc.write_stream("fos", buf) {
-            Ok(s) => {
-                self.bcc
-                    .log_debug(&format!("Wrote {} bytes", buf.len()))
-                    .unwrap_or_default(); // to gobble the log result
-                let w: elvwasm::WritePartResult = serde_json::from_slice(&s)?;
-                self.size += w.written;
-                Ok(w.written)
-            }
-            Err(e) => Err(std::io::Error::new(ErrorKind::Other, e)),
-        }
-    }
-
-    fn flush(&mut self) -> Result<(), std::io::Error> {
-        // Nothing to flush.  The BufWriter will handle its buffer independant using writes
-        Ok(())
-    }
-}
-
-impl std::io::Seek for FabricWriter<'_> {
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
-        match pos {
-            SeekFrom::Start(s) => {
-                self.bcc
-                    .log_debug(&format!("SEEK from START {s}"))
-                    .unwrap_or_default();
-            }
-            SeekFrom::Current(s) => {
-                self.bcc
-                    .log_debug(&format!("SEEK from CURRENT {s}"))
-                    .unwrap_or_default();
-            }
-            SeekFrom::End(s) => {
-                self.bcc
-                    .log_debug(&format!("SEEK from END {s}"))
-                    .unwrap_or_default();
-            }
-        }
-        Ok(self.size as u64)
-    }
-}
 
 #[no_mangle]
 fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
@@ -90,7 +35,7 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
         None => DEF_CAP,
     };
     let total_size = 0;
-    let mut fw = FabricWriter::new(bcc, total_size);
+    let mut fw = FabricStreamWriter::new(bcc, "fos".to_string(), total_size);
     {
         let bw = BufWriter::with_capacity(buf_cap, &mut fw);
 
@@ -113,13 +58,13 @@ fn do_tar_from_obj(bcc: &mut elvwasm::BitcodeContext) -> CallResult {
                 -1,
                 false,
             )?;
-            let usz = part.size.try_into()?;
-            let data = bcc.read_stream(stream_wm.stream_id.clone(), usz)?;
+            let usz = part.size as u64;
+            let fsr = FabricStreamReader::new(stream_wm.stream_id.clone(), bcc);
             let mut header = tar::Header::new_gnu();
-            header.set_size(usz as u64);
+            header.set_size(usz);
             header.set_cksum();
             header.set_mtime(time_cur.time);
-            a.append_data(&mut header, part.hash.clone(), data.as_slice())?;
+            a.append_data(&mut header, part.hash.clone(), fsr)?;
         }
         a.finish()?;
         let mut finished_writer = a.into_inner()?;
