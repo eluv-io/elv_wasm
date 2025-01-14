@@ -80,10 +80,27 @@ impl std::io::Write for FabricStreamWriter<'_> {
 impl std::io::Seek for FabricStreamWriter<'_> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, std::io::Error> {
         match pos {
-            SeekFrom::Start(_s) => {}
-            SeekFrom::Current(_s) => {}
-            SeekFrom::End(_s) => {}
-        }
+            SeekFrom::Start(s) => {
+                self.bcc
+                    .seek_stream(
+                        &self.stream_id,
+                        s.try_into()
+                            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?,
+                        0,
+                    )
+                    .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+            }
+            SeekFrom::Current(s) => {
+                self.bcc
+                    .seek_stream(&self.stream_id, s, 1)
+                    .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+            }
+            SeekFrom::End(s) => {
+                self.bcc
+                    .seek_stream(&self.stream_id, s, 2)
+                    .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+            }
+        };
         Ok(self.size as u64)
     }
 }

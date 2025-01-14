@@ -71,10 +71,31 @@ impl<'a> BitcodeContext {
         host_call(&self.request.id, stream, "Write", src)
     }
 
+    /// seek_stream seeks within a fabric stream
+    /// # Arguments
+    /// * `id`-    a unique identifier (can use BitcodeContext's request id)
+    /// * `stream`-  the fabric stream to write to [BitcodeContext::new_stream]
+    /// * `offset`-  offset to seek to
+    /// * `whence` - 0, 1, 2 for start, current, end
+    /// # Returns
+    /// utf8 bytes stream containing json
+    /// { "offset" : offset }
+    ///
+    /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/external/src/lib.rs#L111)
+    ///
+    pub fn seek_stream(&'a self, stream: &str, offset: i64, whence: i8) -> CallResult {
+        host_call(
+            &self.request.id,
+            stream,
+            "Seek",
+            serde_json::to_string(&json!({ "offset": offset, "whence": whence }))?.as_bytes(),
+        )
+    }
+
     /// read_stream reads usize bytes from a fabric stream returning a slice of [u8]
     /// # Arguments
     /// * `stream_to_read`-  the fabric stream to read from
-    /// * `sz`-  usize size of bytes
+    // / * `sz`-  usize size of bytes (0 size will read the entire stream)
     /// # Returns
     ///   byte slice of the read stream
     /// [Example](https://github.com/eluv-io/elv-wasm/blob/019b88ac27635d5022c2211751f6af5957df2463/samples/objtar/src/lib.rs#L112)
